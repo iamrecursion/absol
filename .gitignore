@@ -1,3 +1,8 @@
+
+# Vim Files
+.*.swp
+
+# Haskell Files
 dist
 dist-*
 cabal-dev
@@ -17,3 +22,25 @@ cabal.sandbox.config
 *.eventlog
 .stack-work/
 cabal.project.local
+
+# C++ Build Artefacts
+*.o
+*.tsk
+*.tags
+*.ctags
+
+# Sublime Files
+*.sublime-project
+*.sublime-workspace
+
+# LaTeX Output
+*.pdf
+
+# LaTeX Working Files
+*.aux
+*.fdb*
+*.fls
+*.log
+*.out
+*.synctex*
+*.toc
