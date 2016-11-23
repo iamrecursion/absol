@@ -1,0 +1,1092 @@
+%DocumentClass
+\documentclass[a4paper,11pt]{report}
+
+%Additional Packages
+\usepackage{scrextend} %for variable indentation
+\usepackage{algorithm} %For algorithms
+\usepackage{algpseudocode} %For algorithms
+\usepackage[]{array}
+\usepackage{amsmath} %Extra formula-writing functionality
+\usepackage{amssymb} %More formula-writing functionality
+\usepackage[toc]{appendix}
+\usepackage{bm}
+\usepackage{bold-extra} %Small caps
+\usepackage{caption}
+\usepackage{color} %Colour stuff (mostly for the highlight custom command)
+\usepackage{enumerate} %For lists
+\usepackage{fancyhdr}
+\usepackage{float} %better float control
+\usepackage[utf8]{inputenc} %for font encoding
+\usepackage{framed} %For frames around blocks
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=3cm]{geometry} %Fix page margins
+\usepackage[hidelinks]{hyperref} %For URL formleatting (makes clickable links)
+\usepackage[toc, xindy, acronym, nonumberlist, nopostdot]{glossaries}
+\usepackage{graphicx} %For including images, etc.
+\usepackage{listings} %For including code
+\usepackage{longtable} %for multi-page tables
+\usepackage{mathrsfs} %For maths script fonts
+\usepackage{newclude}
+\usepackage{titling}
+\usepackage{titlesec}
+\usepackage[nottoc]{tocbibind}
+\usepackage[]{natbib} %For the bibliography
+%\usepackage[superscript]{cite}
+\usepackage{pdfpages} %For including PDFs
+\usepackage[]{pdflscape}
+\usepackage{stmaryrd}
+\usepackage{subcaption}
+\usepackage{tabu} %more pretty tables
+\usepackage{tabulary} %for nice tables
+\usepackage{tabularx} %also for nice tables
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage{xparse}
+\usepackage{textcomp}
+\usepackage[prefix=sol-]{xcolor-solarized}
+\usepackage[]{marvosym}
+\usepackage{microtype}
+
+\usepackage{relsize}
+
+%CustomCommands
+\newcommand{\highlight}[1]{\colorbox{yellow}{#1}} %Highlights text
+\newcommand{\limplies}{\to} %Creates the logical implication sign
+\newcommand{\liff}{\leftrightarrow} %Creates the double logical implication sign
+\newcommand{\leftabs}{\left\lvert} %Left absolute value bracket
+\newcommand{\rightabs}{\right\rvert} %Right absolute value bracket
+\newcommand{\textbsc}[1]{\textsc{\textbf{#1}}}
+%\renewcommand\thesubsection{(\alph{subsection})} %Make subsections alphabetical
+\newcommand{\id}{\hspace*{12pt}}
+\newcommand{\newpar}{\vspace{12pt}}
+\newcommand{\lam}{$\lambda$}
+\newcommand{\alp}{$\alpha$}
+\newcommand{\bet}{$\beta$}
+\newcommand{\aequiv}{=_\alpha}
+\newcommand{\bequiv}{=_\beta}
+\newcommand{\bconv}{\limplies_\beta}
+\newcommand{\context}{$\Gamma$}
+\newcommand{\rspace}{\;\;\;\;\;\;\;\;}
+\newcommand{\eval}{\Downarrow}
+\newcommand{\goesto}[0]{\MVRightarrow}
+\newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
+
+% New Table Column Types
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+% Syntax: \newdualentry[glossary options][acronym options]{label}{abbrv}{long}{description}
+\DeclareDocumentCommand{\newdualentry}{ O{} O{} m m m m } {
+    \newglossaryentry{gls-#3}{name={#5},text={#5\glsadd{#3}},
+        description={#6},#1
+    }
+    % \makeglossaries
+    \newacronym[first=#5, firstplural=#5s, see={[Glossary:]{gls-#3}},#2]{#3}{#4}{#5 \glsseeformat[Glossary:]{gls-#3}{#5}\glsadd{gls-#3}}
+    % \newacronym[see={[Glossary:]{gls-#3}},#2]{#3}{#4}{#5\glsadd{gls-#3}}
+}
+
+% For quoting \quoteit{quote}{attribution}
+\newcommand{\quoteit}[2]{
+    \begin{longtable}{p{14cm}}
+        \textit{``#1''} \\
+        % \hspace{5mm} --- #2 
+        \begin{tabular}{R{14cm}}
+            --- #2
+        \end{tabular}
+    \end{longtable}
+}
+
+% For definitions \defblock{colsize}{name}{description}
+\newcommand{\defblock}[3]{
+    \begin{longtable}{l p{#1}} 
+        \textbf{#2} & #3
+    \end{longtable}
+}
+
+%Various Definitions
+\setcounter{tocdepth}{2}
+\definecolor{light-gray}{gray}{0.5}
+
+\titleformat{\chapter}
+    {\normalfont\huge}  % format
+    {\thechapter.}      % label
+    {10pt}              % separation
+    {\huge\it}          % before-code
+
+\pagestyle{fancy}
+\lhead{\color{light-gray}Ara Adkins}
+\rhead{\color{light-gray}Literature Review}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setlength{\parindent}{0pt}
+\setlength{\headheight}{14pt}
+
+\hypersetup{
+    colorlinks,
+    linkcolor={blue!30!black},
+    citecolor={blue!30!black},
+    urlcolor={blue!80!black}
+}
+
+\makeatletter
+\renewcommand\@dotsep{200}
+\makeatother
+
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+
+% Listings Styles
+\lstset{
+    % How/what to match
+    sensitive=true,
+    % Border (above and below)
+    frame=lines,
+    % Extra margin on line (align with paragraph)
+    xleftmargin=0.5cm,
+    % Put extra space under caption
+    belowcaptionskip=1\baselineskip,
+    % Colors
+    backgroundcolor=\color{sol-base3},
+    basicstyle=\color{sol-base0}\ttfamily,
+    keywordstyle=\color{sol-cyan},
+    commentstyle=\color{sol-base01},
+    stringstyle=\color{sol-blue},
+    numberstyle=\color{sol-violet},
+    identifierstyle=\color{sol-base00},
+    % Break long lines into multiple lines?
+    breaklines=true,
+    % Show a character for spaces?
+    showstringspaces=false,
+    tabsize=4,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{sol-base1},
+    rulecolor=\color{sol-base01},
+    aboveskip=2em,
+    belowskip=2em,
+    upquote=true
+}
+
+% Title
+% \pretitle{
+% 	\begin{center}
+% }
+% \posttitle{
+%     \end{center}
+% }
+
+\title{ABSOL: Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
+\author{Ara Adkins}
+\date{\today}
+
+% Glossaries
+\makeglossaries
+\include{resources/glossary}
+\glsaddall % add all items to the glossaries
+
+% Marking Criteria
+% Demonstrate ability to learn independently, apply research skills, critically evaluate the work of others.
+% Search Phase: Identification of appropriate previous work, note key ideas, theories, directions and concepts that are revealed. 
+% Review Phase: A structured summary and critique of the reading you have done. Use the project idea to identify ideas and threads of development, and relate ideas that may have not previously been related. REFINE THE HYPOTHESIS
+% Should tell a story that should identify the idea development as the literature and technology search was constructed. 
+% 
+% THINGS TO DO:
+% - Consideration of the key texts based on the projcted ideas, with a CRITICAL EVALUATION of these texts.
+% - Gather disparate sources into a coherent whole with a structured argument.
+% - What are the 'clear conclusions' to be made --- that the project is useful
+% - Covers a lot of ground with a tight focus (a lot of literature in a limited area)
+% - Selective use of references, quotations, illustrations and results --- DO NOT DISRUPT THE WRITING
+% - Professional, lucid and concise writing style with a high level of consistency. 
+% TODO Want examples of things and code examples throughout, where relevant
+
+%Document
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\printglossaries
+
+\chapter{Literature and Technology Survey} % (fold)
+\label{cha:literature_and_technology_survey}
+Absol has proposed the investigation and development of a toolchain for the development of provably-correct Domain-Specific Languages. 
+Even within such a well-defined scope, such a project draws on a significant breadth of disciplines within Computer Science, necessitating a broad knowledge-base.\\
+
+This project exists at the intersection of the study of Domain-Specific Languages, programming language development and formalisations of program semantics. 
+As such, it is important to understand the relevant work in these domains. 
+While each of these fields is large in its own right, this review aims to distil the relevant bodies of knowledge. \\
+
+This document provides a broad understanding of domain-specific languages, including their types, uses and limitations.
+Additionally, it explores the state-of-the-art methods for specifying language syntax and semantics, with an accompanying critical evaluation of these techniques.\\
+
+The second portion of this review examines methods for formal program verification while identifying the limitations of these techniques as they exist today. 
+Finally, it provides an examination of techniques for automated compiler generation, and a discussion of relevant technologies to support such tasks. 
+
+\section{Domain Specific Languages} % (fold)
+\label{sec:domain_specific_languages}
+\defblock{12cm}{DSL}{``A Domain-Specific Language (DSL) is a programming language or executable specification language that offers, through appropriate notations and abstractions, expressive power focused on ... a particular problem domain'' \citep{van2000domain}}
+
+While a Turing-Complete General-Purpose Programming Language (GPL) is capable of expressing any computation that can be imagined, \citet{fowler2010domain} finds that it is often the case that the use of a GPL provides the wrong level of abstraction in a problem domain.
+When attempting to express domain knowledge and domain rules using a GPL, there is often a mismatch between the GPL and the knowledge to be expressed. 
+DSLs allow expression of solutions ``at the level of abstraction of the problem domain'' \citep{van2000domain}.\\
+
+Use of a DSL allows an encoding of ``bits of important logic that [don't] fit well within [GPLs]'', allowing an expression of domain-expert knowledge at a higher level of abstraction \citep{fowler2010domain,van2000domain}. 
+This embodiment of domain knowledge, was found by \citet{fowler2010domain} to ``enable a much richer communication channel'' between programmers and domain experts, allowing domain-experts to interact with the configuration and behaviour of complex software systems. \\
+
+The term `DSL' encompasses a family of languages, as discussed in Section~\ref{sub:types_of_dsls}, so the definition provided by \citet{van2000domain} at the start of this section is perhaps too restrictive. 
+DSLs encompass a wide range of programming styles, from declarative to functional, and a similarly varied set of execution models. 
+However, in all cases the ``DSLs trade generality for expressiveness in a given domain'', and so the DSL approach should be chosen to maximise that expressiveness \citep{Mernik:2005:DDL:1118890.1118892}. \\
+
+While DSLs offer significant benefits in their encapsulation of domain knowledge, there is significant challenge in creating a DSL to accurately reflect the domain. 
+\citet{fowler2010domain} states that DSLs take ``narrow parts of programming'' and make them ``easier to understand and therefore quicker to write, quicker to modify and less likely to breed bugs''. 
+Such a statement, however, is only true if the DSL has been implemented correctly, with ``a solid understanding of the domain'' \citep[pg. 1]{bosch1997domain}.\\
+
+Even with such an understanding of the domain, it is possible to make mistakes in the DSL compiler, known as an \textit{application generator}.
+Through automatic generation of such tools, this project aims to support the correct implementation of formally correct DSLs, hence avoiding the potential for mistakes in tooling. 
+Such constraints on the DSL make it much more difficult to make damaging mistakes in systems where the DSL is in use. 
+
+% While DSLs have multiple disadvantages (including the cost, limited availability, scoping and balance with the host language), this project deals with the support of correct use of DSLs, and through the generation of embeddable DSLs will help to constrain DSL scope. 
+
+\subsection{Types of DSLs} % (fold)
+\label{sub:types_of_dsls}
+Knowing what a DSL \textit{is} explains little about what forms they might take. 
+In reality, the term DSL can be used to describe any limited (non-GPL) programming language, and so one might expect a huge variety in the kinds of DSLs seen in use. \\
+
+In order to better understand the broad variety of DSLs, \citet{van2000domain} proposes a taxonomic classification system, analysing domain-specific languages on five different axes:
+\begin{itemize}
+    \item \textbf{Execution Strategy:} Domain-Specific Lanaguages can be designed to be \textit{interpreted} (translated from program statements to executable code as they are run), or \textit{compiled} (the same translation performed ahead of time, providing additional opportunities for optimisation and domain-logic checking).
+    \item \textbf{Design Strategies:} \citet{van2000domain} claims that a DSL can emerge from a \textit{restricted subset of a GPL}. 
+    While this is evidenced by DSLs such as Promela++, a DSL for the construction and validation of protocols, this is limited in its ability to encapsulate domain knowledge \citep{basu1997language}.
+    A DSL \textit{designed from scratch} is able to match both syntax and semantics to the domain without restriction. 
+    \item \textbf{Implementation Strategy:} \citet{van2000domain} proposes a set of implementation strategies for a DSL:
+    \begin{itemize}
+        \item \textit{Embedded DSLs:} Such languages use mechanisms that exist in a GPL to define the DSL. 
+        The literature surrounding embedded DSLs recognises the limitations imposed by the syntactic and semantic structure of the host language, risking compromises to ``the optimal domain-specific notation'' to work in the host language \citep[pg. 3]{van2000domain}.
+        \item \textit{Preprocessed DSLs:} DSLs of this kind translate statements in the syntax of the DSL into statements in a GPL. 
+        This, however, also suffers from semantic and syntactic constraints imposed by the macro language or preprocessor. 
+        Furthermore, there is no understanding here of the DSL domain, preventing the incorporation of domain-level semantics checking \citep{van2000domain}.
+        \item \textit{Compiler Extension:} The preprocessing phase is integrated into a compiler or interpreter, allowing better checking of syntax and types.
+        This still provides no ability for checking program semantics at the domain level. 
+        \item \textit{Compile from Scratch:} Compilation of DSL program code into executables that can be used from within a GPL. 
+        This provides the potential for full domain-level semantic checking, as well as static type-checking and optimisation \citep{van2000domain}.
+    \end{itemize}
+\end{itemize}
+
+While \citet{van2000domain} provides a useful classification system for Domain-Specific Languages, the work of \citet{Mernik:2005:DDL:1118890.1118892} proposes a connected taxonomy that expands upon the work of \citet{van2000domain}, while proposing additional axes for classification.
+The taxonomy of \citet{Mernik:2005:DDL:1118890.1118892} conflates the execution and implementation strategy axes proposed by \citet{van2000domain}:
+\begin{itemize}
+    \item \textbf{Interpreter:} Recognition, decoding and execution of DSL constructs using a standard interpreter paradigm.
+    \citet{Mernik:2005:DDL:1118890.1118892} suggests that this allows high levels of control over the DSL execution environment, and provides for easier language extension.
+    \item \textbf{Application Generators:} The translation of DSL constructs to base language constructs and library calls (where the base language may be assembly or a GPL). 
+    It is claimed that this allows full static analysis of the DSL program or specification, as the application generator can operate at the semantic level of the DSL.
+    \item \textbf{Preprocessing:} Translation of DSL constructs to existing languages, with static analysis limited to that performed by the target language processor.
+    \item \textbf{Embedding:} The creation of constructs (new abstract data-types and operators) in a GPL to model a given domain.
+    This is most commonly found in the form of an application library. 
+    \item \textbf{Compiler Extension:} Extension of an existing compiler or interpreter with domain-specific optimisation rules (e.g. Template Haskell Optimisation Rules, as discussed in Section~\ref{sec:technological_support}).
+    \item \textbf{COTS:} Application of existing tools and notations to a new problem domain. 
+    \item \textbf{Hybrid:} Any combination of the above approaches. 
+\end{itemize}
+
+While the classification system by \citet{Mernik:2005:DDL:1118890.1118892} agrees with both \citet{van2000domain} and \citet{fowler2010domain}, it is much broader. 
+It proposes further axes for classification, the most important of which are highlighted below:
+\begin{itemize}
+    \item \textbf{Execution Style:} \citet{Mernik:2005:DDL:1118890.1118892} recognises that Domain-Specific Languages fall onto a spectrum of `executability', as it is termed. 
+    This refers to the nature of the execution which the DSL undergoes in use, and has modes as follows:
+    \begin{itemize}
+        \item Well-defined execution semantics (e.g. Excel Macro Language).
+        \begin{lstlisting}
+=SUM(COUNTIF(A3:A24, 0))
+        \end{lstlisting}
+        \item Inputs to applications with a declarative character and less well-defined execution semantics (e.g. ATMOL, a DSL for the specification of atmospheric models, example from \citep{a2001atmol}).
+        \begin{lstlisting}
+p :: float(0..107000) dim ``Pa''
+    field (x(grid), y(grid), z(grid))
+        monotonic k(+) on i=1..n by j=1..m by k=1..l        
+        \end{lstlisting}
+        \item DSLs for application generation intended as non-executable input (e.g. Extended Backus-Naur Form, the example is for the specification of floating-point numbers in Python 3 \cite{Python3Lexical}).
+        \begin{lstlisting}
+floatnumber   ::=  pointfloat | exponentfloat
+pointfloat    ::=  [intpart] fraction | intpart "."
+exponentfloat ::=  (intpart | pointfloat) exponent
+intpart       ::=  digit+
+fraction      ::=  "." digit+
+exponent      ::=  ("e" | "E") ["+" | "-"] digit+
+        \end{lstlisting}
+        \item Non-executable DSLs, such as those for declaration of static application configuration or definition of data structures (e.g. representation of data structures, such as a satellite's coverage \cite{s2001supporting}).
+        \begin{lstlisting}
+[(sat, gs) | 
+    gs <- groundstations,
+    sat <- satellites,
+    (coverage sat) (location gs)]
+        \end{lstlisting}
+    \end{itemize}
+    Some of these classifications are somewhat imprecise, however, and could benefit from further clarification.
+    Nevertheless, the most important observation made on this classification axis is that not all DSLs must be executable.
+    Domain-specific rules can be encoded as static configuration as well as executable specification, a facet that was left un-addressed by the taxonomy proposed by \citet{van2000domain}.
+    \item \textbf{Resuability:} The nature of a DSL is to encapsulate domain-specific logic, configuration and behaviour. 
+    \begin{itemize}
+        \item \citet{Mernik:2005:DDL:1118890.1118892} recognises that an external DSL can act as a portable store for this information that can be reused across multiple systems. 
+        \item In contrast, an embedded DSL is non-portable as its implementation is wedded to the language in which it is embedded. 
+        This means that similar DSL concepts would have to be implemented again in other languages, increasing the potential for implementation errors. 
+    \end{itemize}
+\end{itemize}
+
+The much broader classification scheme proposed by \citet{Mernik:2005:DDL:1118890.1118892} demonstrates the limited scope of the analysis provided by \citet{van2000domain}. \\
+
+The literature also notes an important point about compiled DSLs: while embedded DSLs are Turing-Complete, compiled DSLs offer ``possibilities for ... verification ... that would be much harder or unfeasible (sic) if a GPL has been used'', due to their limited scope \citep[pg. 3]{Mernik:2005:DDL:1118890.1118892}.
+This is very important to the progress of this project, as it proposes to produce compilers for DSLs in which the programs are provably correct. 
+
+\subsubsection{Implementation Errors in DSLs} % (fold)
+\label{ssub:implementation_errors_in_dsls}
+With many DSLs acting as portable stores of domain-specific logic and configuration, the impact of errors in DSL implementations is potentially exacerbated.\\
+
+In situations of reuse, an incorrectly implemented DSL will carry the same implementation flaws to everywhere that it is used.
+Resultant from this, \citet{Mernik:2005:DDL:1118890.1118892} stresses the importance of performing the domain analysis phase correctly, as the results of such an analysis may persist for a long time. \\
+
+If a DSL is going to persist for some time, it is all the more important that the domain analysis be correctly translated into the DSL implementation. 
+
+% subsubsection implementation_errors_in_dsls (end)
+
+\subsubsection{Detailed Implementation Strategies} % (fold)
+\label{ssub:detailed_implementation_strategies}
+\citet{Mernik:2005:DDL:1118890.1118892} claims that the application generator or compiled DSL approach and the embedded approach are the two most common DSL implementation strategies. 
+As a result, the paper provides a detailed analysis of these strategies. \\
+
+Compiled DSLs, in a general sense, is a category that encompasses any DSL that is translated directly to executable code, whether that be by an interpreter or compiler \citep{Mernik:2005:DDL:1118890.1118892}. 
+Building such tools from scratch allows these DSLs to match the notation of domain experts as closely as possible, significantly reducing the cognitive load required to translate domain rules into program code \citep{fowler2010domain}.
+The compiled approach allows opportunities for domain-semantics-related error reporting, rather than reporting based on the semantics of a host language.
+Furthermore, it provides opportunities for domain-specific Analysis, Verification, Optimisation, Parallelisation and Transformation (AVOPT) that are unparalleled by other approaches \citep{Mernik:2005:DDL:1118890.1118892}.\\
+
+Such DSLs are not without their downsides, however, as they require significant development effort due to the requirement for a complex language processor. 
+Such processors are rarely designed with extension in mind, resulting in alterations to the DSL being difficult to achieve. 
+However, in recognising these deficiencies, \citet{Mernik:2005:DDL:1118890.1118892} fails to note the existence of tools such as compiler generators that significantly decrease this implementation effort \citep{Mandell:1966:MDA:800267.810785}. \\
+
+\citet{Mernik:2005:DDL:1118890.1118892} contrasts the compiled approach with the embedded approach, which refers to any DSL that uses extension mechanisms provided by the host language. 
+Such DSLs are an almost perfect counterpoint to compiled DSLs, requiring a far smaller implementation effort due to the ability to reuse existing language features (and produce a more powerful DSL without additional effort). 
+Furthermore, such DSLs often benefit from the tooling support around the host language, which has the potential to increase the DSL's ease of use. \\
+
+Embedded DSLs, however, suffer significantly from suboptimal syntax and semantics due to host-language restrictions, with domain-specific constructs and abstractions unable to map to a GPL or GPL-based library \citep{Mernik:2005:DDL:1118890.1118892,van2000domain}. 
+While some languages such as Lisp/Scheme allow arbitrary syntax extensions, in most cases this can produce a confusing mismatch between the domain knowledge and its representation \citep{jennings1999verischemelog}. 
+These host language restrictions also manifest in the form of error reporting. 
+This will take place in terms of the host language constructs, causing a conceptual mismatch between the domain and the language. 
+Furthermore, \citet{Mernik:2005:DDL:1118890.1118892} suggests that the embedded approach restricts AVOPT, though there are some languages that can assist with this \citep{seefried2004optimising}.\\
+
+While these categories were established by \citet{van2000domain}, \citet{Mernik:2005:DDL:1118890.1118892} recognises that these approaches are less restricted than they were initially credited as being. 
+These two approaches are again corroborated by \citet{fowler2010domain}, who proposes the concepts of Internal DSLs (written in the host language and exposed via an API) and External DSLs (languages with their own semantics parsed independently of the host language). \\
+
+It seems possible to utilise a hybrid approach that combines the syntactic and semantic freedom of compilation with the language power of embedding. 
+Such an approach is discussed in Section~\ref{ssub:transpilation} below. 
+
+% subsubsection detailed_implementation_strategies (end)
+
+\subsubsection{Transpilation} % (fold)
+\label{ssub:transpilation}
+All of these classification systems, while useful, fail to explicitly recognise an additional implementation strategy: transpilation. \\
+
+While transpiling a language can technically be classified under `hybrid' the transpilation process, as defined by \citet{Mernik:2005:DDL:1118890.1118892}, parses the source language into its Abstract Syntax Tree (AST).
+The semantics associated with the nodes in the AST are then used to generate code in the target language \citep[pg. 4]{Bouraqadi:2016:MPT:2991041.2991051}.
+This aims to totally preserve the semantics of the source language, while encapsulated in the different target language. \\
+
+The transpilation process combines some benefits of both the compiled and embedded DSL approaches \citep{kulkarnitranspiler}.
+It allows:
+\begin{itemize}
+    \item \textbf{Flexible Syntax and Semantics:} The DSL's syntax and semantics can be defined independently of the eventual target language. 
+    This means that the DSL can match the domain as closely as possible. 
+    \item \textbf{Domain-Specific AVOPT:} The source language's parser and compiler stages operate directly on the DSL and can perform analysis and verification based on the Domain-Level concepts. 
+    \item \textbf{Domain-Level Error Reporting:} As errors can be detected and reported by the source-language semantic analysis, these can be reported in terms of domain-level concepts. 
+    \item \textbf{Powerful Language Features:} As the actual semantic functionality of the DSL is being provided via the target language, complex language features are already available as a translation target.
+    This removes the need for them to be recreated as for a normal compiler. 
+\end{itemize}
+
+While a transpilation approach brings significant benefits, it does not address issues around tooling for the DSL, nor does it address the issues with lack of extensibility in source language parsers, which would require implementation by hand. \\
+
+Furthermore, while the transpiler is able to catch static errors (such as syntax errors, domain-logic errors and other errors expressed in program syntax), any runtime errors will still be expressed in terms of the target language's syntax and semantics. 
+This issue can be addressed by a source-mapping technique, in which the debug symbols for the target language are mapped onto the debug symbols for the source language, but this requires additional work in the transpiler to maintain this information \citep{kulkarnitranspiler}.
+
+% subsubsection transpilation (end)
+
+% subsection types_of_dsls (end)
+
+\subsection{Uses of DSLs} % (fold)
+\label{sub:uses_of_dsls}
+DSLs provide value in two main ways: ``improving productivity for developers and improving communication with domain experts'' \citep{fowler2010domain}. 
+While DSLs are generally \textit{small} languages, as discussed by \citet{van2000domain}, they take a variety of forms.
+\citet{fowler2010domain} shows that these forms range from small, declarative programming languages, to statically defined specifications and even include traditional functional programming-based rulesets for domain functionality.\\
+
+Due to the wide variety of forms that DSLs can take, they are found in a comparatively wide range of uses.
+Some of the key uses are listed below:
+\begin{itemize}
+    \item A ``common text that acts both as executable software and a description that domain experts can read to understand how their ideas are represented in a system'' \citep{fowler2010domain}.
+    Much of the literature focuses on DSLs as enablers of communication through defining important program concepts in terms of the domain at hand.
+    \item A form of ``end-user programming'', where domain experts are able to use programming to perform tasks or otherwise configure their tools \citep{van2000domain}.
+    \item A portable form of domain-specific rules, configuration and behaviour. 
+    Such ``executable specifications'', as they are termed in \citet{fabry2015taxonomy} provide a centralised repository of domain knowledge in a form that is easy to understand and reason about. 
+    \item Improving testability and allowing validation of domain logic through expression of the logic in domain concepts \citep{van2000domain}.
+    The opportunities for AVOPT are extended significantly in compiled (external) DSLs \citep{Mernik:2005:DDL:1118890.1118892}.
+    \item Provides ``substantial gains in expressiveness and ease of use'' \citep[pg. 2]{Mernik:2005:DDL:1118890.1118892} over GPLs due to the tailored encoding of domain constructs and semantics. 
+\end{itemize}
+
+In all of the above situations it is important that the DSL both represents the correct domain constructs, and that the behaviour of the DSL is as intended by the language designers.
+To this end, \citet{van2000domain} suggests a rigorous design methodology for a DSL, performing domain analysis and first implementing it as a library in a host language. \\
+
+This reflects a seemingly predominant view of DSLs as evolutions of object-oriented design frameworks or application libraries designed for modelling a problem domain \citep{van2000domain,Mernik:2005:DDL:1118890.1118892}. 
+While this is true, it reflects a limited understanding of the capabilities of DSLs, with small external languages featuring a much greater range of syntactic and semantic expressive power through their ability to encapsulate domain concepts \citep{fowler2010domain}.
+Other language interface paradigms, such as use of a Foreign-Function Interface can permit far more flexible integration with a DSL.\\
+
+In all cases, the key role of a DSL is to encapsulate the knowledge and rules embodied by a domain in a form that allows the validation of that knowledge. 
+To that end, it is important to ensure that the resultant DSL accurately captures the semantics of the domain \citep{fowler2010domain}.
+
+% subsection uses_of_dsls (end)
+
+\subsection{Designing Domain-Specific Languages} % (fold)
+\label{sub:designing_domain_specific_languages}
+The design of DSLs can be a task that is ``sometimes error-prone and usually time-consuming'' \citep{karsai2014design}. 
+This is due to the complex domain-analysis process that has to take place, elucidating the relevant domain constructs and semantics into a form ready for implementation. \\
+
+Despite this difficulty, tool support for the design of DSLs usually encompasses the implementation phase, with little support for the analysis phase. 
+Such tools are often encapsulated in a ``language development system'', which is capable of generating tools from a description of the DSL. 
+Such tools may include consistency checkers, language interpreters or compilers and even Integrated Development Environments (IDEs) with integrated editors, analysis tools and debuggers \citep[pg. 19-20]{Mernik:2005:DDL:1118890.1118892}. \\
+
+Such systems often take an opinionated stance on the design of the resultant DSL. 
+Sprint, for example, assumes an interpreter for the DSL that uses a partial evaluation technique to lower the overhead of running the DSL program \citep{Consel98architecturingsoftware}.
+Environments such as ASF+SDF \citep{van2001asf+}, DMS \citep{baxter2004dms} and Stratego \citep{visser2003stratego}, in contrast, allow definition of the DSL in a variety of forms:
+\begin{itemize}
+    \item \textbf{Interpretive:} A definition that provides the language semantics for direct execution by an interpreter.
+    \item \textbf{Translational:} A definition that provides rules to support a source-to-source transpilation of the DSL into another programming language.
+    The target language is usually a GPL \citep{Mernik:2005:DDL:1118890.1118892}.
+    \item \textbf{Transformational:} A definition style that specifies the language semantics for direct translation to assembly for direct execution or embedding into another language via a Foreign-Function Interface (FFI) \citep{van2001asf+}.
+\end{itemize}
+
+Choice of the implementation style is one of the major decisions to be made as part of the design process.
+Each implementation style result in a DSL with different capabilities, including how it can be used from other languages and opportunities for domain-level AVOPT. \\
+
+In order to help make such design decisions, multiple papers offer recommendations.
+\citet{Mernik:2005:DDL:1118890.1118892}, for example, suggests that embedded DSLs should be the initial strategy, unless AVOPT is required of the DSL.
+Such a suggestion, however, is somewhat fallacious given that the paper previously argued for the importance of DSL syntax matching the domain, and the culpability of embedded DSLs for suboptimal syntax, as discussed in Section~\ref{sub:types_of_dsls}. \\
+
+The choice of implementation strategy and design for a DSL should hence be made carefully, as it can have significant impacts on the usability of the final language. 
+
+% subsection designing_domain_specific_languages (end)
+
+% section domain_specific_languages (end)
+
+\section{Metalanguages} % (fold)
+\label{sec:metalanguages}
+\defblock{10.5cm}{Metalanguage}{A metalanguage is a language that is, itself, used to describe aspects of a language \citep{jakobson1980metalanguage}.}
+
+As implementing verifiable DSLs requires formal descriptions of both the syntax and semantics of a DSL, it necessarily involves the use of one or more metalanguages. \\
+
+Various aspects of DSLs are usually ``developed in terms of specialised metalanguages'', and it is often true that these languages are DSLs themselves \citep{Mernik:2005:DDL:1118890.1118892}.
+These metalanguages are concerned with the specification of a property or some set of properties of the DSL such as its syntax or semantics. \\
+
+Metalanguages are used to make user-defined abstractions into first-class citizens through accurate description of the abstraction \citep{Siek:2010:GPL:1706356.1706358}.
+To this end, the project needs to create a combined notation, in itself a DSL, for the specification of both syntax and semantics of a DSL. \\
+
+With the field having been in development for ``more than 40 years'', there is a wide variety of metalanguages in use today for the specification of language syntax and semantics \citep{Zhang:2004:SSD:981009.981013}. 
+This section aims to explore and evaluate these techniques. 
+
+\subsection{Specifying Language Syntax} % (fold)
+\label{sub:specifying_language_syntax}
+\defblock{11.8cm}{Syntax}{
+    Programming language syntax refers to the ways in which language symbols may be combined to create well-formed sentences (otherwise known as programs) in a given languages \citep[pg. 1]{slonneger1995formal}.
+}
+
+The syntax of a language defines the formal relationships between the language components (known as non-terminal symbols), and thereby provides a structured description of the valid strings in a language. 
+Such formal definitions have three main uses in that they name the syntactic elements, define the valid sentences and provide the syntactic structure of sentences in the language \citep{Scowen:1982:SSM:947912.947917,standard1996ebnf}.
+
+Languages are defined by a grammar $<\Sigma,N,P,S>$, which consists of four parts \citep{slonneger1995formal}:
+\begin{enumerate}
+    \item A finite set of terminal symbols $\Sigma$ --- the alphabet of the language that is assembled to make sentences in the language.
+    \item A finite set $N$ of nonterminal symbols, which represents the subphrases of sentences in the language.
+    \item A finite set $P$ of productions that describe the definition of nonterminals in terms of the terminals and nonterminals in the language. 
+    \item A special nonterminal $S$, the start symbol, that identifies the principle category being defined.
+\end{enumerate}
+
+In practice, programming language syntax is specified through use of a variant of Backus-Naur Form (BNF), a metalanguage \citep[pg. 21]{Mernik:2005:DDL:1118890.1118892}.
+Rules in BNF are specified as follows, with nonterminals represented \lstinline{<category-name>} and productions as follows:
+\begin{lstlisting}
+    <declaration> ::= var <variable-list> : <type> ;
+\end{lstlisting}
+where:
+\begin{itemize}
+    \item \lstinline{var}, \lstinline{:} and \lstinline{;} are terminal symbols in the language. 
+    \item \lstinline{::=} is a syntactic construct read to mean ``is defined to be'' or ``is composed of''.
+\end{itemize}
+
+\subsubsection{The Chomsky Hierarchy} % (fold)
+\label{ssub:the_chomsky_hierarchy}
+Languages fall into a set of categories defined by the Chomsky hierarchy \citep{slonneger1995formal}:
+\begin{itemize}
+    \item \textbf{Level 0 Grammars:} These are unrestricted grammars, which consist of all languages that can be recognised by a Turing Machine.
+    Such languages are known as \textit{recursively enumerable}, and require that at least one nonterminal occur on the left side of the rule: $\alpha ::= \beta$
+    \item \textbf{Level 1 Grammars:} These are Context-Sensitive grammars, and can be recognised by a linear bounded automaton. 
+    These have the additional restriction that the right side contains no fewer symbols than the left side: $\alpha<B>\gamma ::= \alpha\beta\gamma$ where $<B>$ is a nonterminal.
+    \item \textbf{Level 2 Grammars:} Known as Context-Free grammars, these are grammars that can be recognised by a nondeterministic pushdown automaton.
+    These restrict the left side to being a single nonterminal: $<A> :: \alpha$.
+    These correspond to the BNF grammar, and play a major role in the definition of programming languages. 
+    \item \textbf{Level 3 Grammars:} These are regular grammars and recognise regular languages, and can be recognised by Finite Automata. 
+    These are restricted to allowing only a terminal or terminal followed by a non-terminal on the right side: $<A> ::= \alpha$ or $<A> ::= \alpha<A>$.
+\end{itemize}
+
+While there are many categories, most Domain-Specific Languages fall into the category of Context-Free Grammars \citep{Siek:2010:GPL:1706356.1706358}.
+However, there is additional contextual information that cannot be defined by standard BNF.\\
+
+Examples of such context-sensitive language features are ``declaration of identifiers before use'' and ``well-typedness of expressions'' \citep{mosses2005action}.
+Such syntax can either be defined by attribute grammars (which can be specified in EBNF, discussed in Section~\ref{ssub:extended_backus_naur_form}), or as static program semantics (semantics defined by program structure) \citep{mosses2005action}. 
+Such features include:
+\begin{itemize}
+    \item Well-typedness information
+    \item Constraints on programs
+    \item Grouping of operations and ordering
+\end{itemize}
+
+% subsubsection the_chomsky_hierarchy (end)
+
+\subsubsection{Extended Backus-Naur Form} % (fold)
+\label{ssub:extended_backus_naur_form}
+Due to limitations of the original BNF, such as an inability to express language elements that were similar to BNF syntax, it has been extended to produce many ``slightly different notations'' that are in use today \citep{standard1996ebnf}.\\
+
+The EBNF is standardised in ISO Standard 14977, and includes the most widely adopted extensions to the original BNF \citep{standard1996ebnf}.
+More importantly, the standard has been designed such that ``various extensions can be made in a natural way''.
+While this was originally intended to support multi-level grammars (and hence allow BNF to support context-free grammars), ``the format between the special sequence characters [is] almost completely arbitrary'' \citep[pg. vii]{standard1996ebnf}.
+This means that it could also be used to support semantic specifications about the grammar, or any other extensions required.\\
+
+EBNF, as a result, provides a flexible, and more importantly extensible, mechanism for specifying language syntax.
+These extensions can be used to specify meta-rules about the productions of the language, with \citet{slonneger1995formal} stating the three main forms as:
+\begin{itemize}
+    \item \textbf{Attributed Syntax Rules:} RUles that define the attributes of productions within a grammar, often used for the definition of context-sensitive syntactical structures. 
+    Such rules are evaluated as the language is parsed. 
+    \item \textbf{Conditional Rewrite Rules:} Syntactic rules that apply based on the evaluation of some condition to provide an alternative form for a given piece of syntax (e.g. an optimisation). 
+    \item \textbf{Transition Rules:} Rules defining allowable transitions between states of the parser. 
+\end{itemize}
+
+% subsubsection extended_backus_naur_form (end)
+
+\subsubsection{Abstract Syntax} % (fold)
+\label{ssub:abstract_syntax}
+\defblock{12cm}{AST}{
+    An Abstract Syntax Tree (AST) is a tree-based representation of the syntactic structure of the source code of a program, without any of the extraneous information required for parsing.
+}
+
+While the EBNF definition of a programming language is sometimes referred to as the \textit{concrete syntax} of the language, the language's structure can be expressed in a simplified form as an \textit{Abstract Syntax Tree (AST)}.
+This is produced from a derivation tree (a tree showing the parsed result of a program expression) by removing any information only required by the parser.\\
+
+This simplification enables the abstract syntax to communicate the structure of phrases in terms of their semantics in the programming language, and the rules for producing an AST are similar to the EBNF grammar for the language \citep{slonneger1995formal}.
+However, the AST rules factor out any extraneous detail to help define the language semantics. \\
+
+Nodes in an AST denote constructs in the source code of the program, and it is abstract in the sense that the tree will not explicitly represent all elements of the original source (e.g. grouping by parentheses may be implicit). 
+This relationship between concrete and abstract syntax is defined by a relation $\text{unparse} : \text{AST} \mathgoesto \text{concrete syntax}$.
+This relation is, ideally, a function, and so restrictions are usually placed on the canonical representations for concrete phrases to disambiguate the reversal process. 
+Correct application of unparse to the AST is able to demonstrate the correctness of the parsing algorithm \citep[pg. 29]{slonneger1995formal}.
+
+% subsubsection abstract_syntax (end)
+
+% subsection specifying_language_syntax (end)
+
+\subsection{Specifying Language Semantics} % (fold)
+\label{sub:specifying_language_semantics}
+\defblock{11cm}{Semantics}{
+    The semantics of a language defines the meaning of syntactically valid strings in the language.
+    This can be viewed as either the \textit{behaviour} followed when executing a program in this language \citep{slonneger1995formal}.
+    Alternatively, it is the \textit{effect} of executing these syntactically valid strings \citep{hennessy1990semantics}.
+    These definitions differ due to the multitude of semantic options available. 
+}
+
+Much of the literature agrees that formal semantic description is key to the design of and reasoning about programming languages \citep{Zhang:2004:SSD:981009.981013,mosses1986use,Binsbergen:2016:TSC:2892664.2893464}.
+However, most common semantic description methods are inadequate for describing the complex semantics of real-world GPLs, meaning that most language standards use natural-language descriptions of semantics, leaving much scope for ambiguity \citep{mosses1986use}.
+This inadequacy is compounded by an almost complete lack of tooling to support the formal semantic definition of programming languages \citep{Binsbergen:2016:TSC:2892664.2893464}.\\
+
+Program semantics are modelled by semantic functions: expressions that map the abstract syntax of a program to the semantic entity that represents the program behaviour \citep{mosses2005action}:
+\begin{equation*}
+    f_s(\text{abstract syntax}) \mathgoesto \text{semantics}
+\end{equation*}
+
+\citet{mosses2005action} defines two semantic functions to be equivalent at a given level of decomposition if two phrases of program syntax are interchangeable without altering the meaning of the program. 
+Consider, for example, the following Haskell code:
+\begin{lstlisting}[language=haskell]
+let x = sort(xs)
+let y = heapsort(xs)
+-- x == y -> true
+\end{lstlisting}
+In this case, both program phrases will have the same semantic meaning, as both ingest the list \lstinline[language=haskell]{xs} and return a sorted version of that list.\\
+
+Any compositions of such phrases with the same semantics are called \textit{fully abstract}. 
+When the semantics of a phrase composed of sub-phrases depends only on the semantics of its sub-phrases this is known as a \textit{compositional} semantics. 
+While such semantics are simpler to reason about, not all program expressions can be represented as compositional semantics \citep{mosses2005action}.\\
+
+Such notions of program semantics take into account only the result of the expression, and do not account for any complexity of the algorithm.
+While such concerns are rarely considered as part of the program semantics, they can be useful when considering program synthesis from semantics \citep{kanovich1991efficient}.\\
+
+In practice, there is a wide variety of semantic description frameworks, with the diversity suggested to stem from the fact that program behaviour ``exhibits far greater complexity than program structure'' \citep[pg. 14]{Zhang:2004:SSD:981009.981013}.
+The paper suggests that the main semantic description frameworks are:
+\begin{itemize}
+    \item Operational Semantics
+    \item Denotational Semantics
+    \item Axiomatic Semantics
+    \item Hybrid Semantics
+\end{itemize}
+
+These different frameworks are concerned with different elements of program execution. 
+Some frameworks concern themselves with only the results of execution, while others are concerned with the details of execution and program continuation structure during statement execution \citep{mosses2001varieties}.
+
+\subsubsection{Operational Semantics} % (fold)
+\label{ssub:operational_semantics}
+There are multiple kinds of operational semantics, but the two most common semantic frameworks are \textit{Structured Operational Semantics (SOS)} and \textit{Natural Semantics}.\\
+
+Structured operational semantics (also known as small-step operational semantics) specify transition relations (semantic functions) that are characterised by phrase transitions depending only on the transitions of one or more of its sub-phrases \citep{Zhang:2004:SSD:981009.981013}:
+\begin{itemize}
+    \item Transition relations in this semantic framework are specified as sets of axioms and inference rules.
+    \item Each transition modifies the syntax part of the state as a reflection of a portion of the execution of some sub-phrase. 
+    \item When execution of a semantic sub-phrase is completed, the sub-phrase is replaced by the resultant value. 
+\end{itemize}
+
+Such semantics have seen wide use in program analysis due to their fine-grained nature, but this granularity has the potential for detail overload in the definition of programming languages. 
+An example of such semantics can be seen in the following equation:
+\begin{equation*}
+    [\text{asgn}_\text{sos}]: \langle x := \alpha, s \rangle \rightarrow s[x \mapsto \mathbb{A} \llbracket \alpha \rrbracket s]
+\end{equation*}
+
+Natural semantics (also known as big-step operational semantics) exists as an alternative, hiding more execution details than SOS:
+\begin{itemize}
+    \item This semantics is concerned with the description of how the overall computed result of an expression was obtained, rather than the description of the individual steps.
+    \item Evaluations in Natural semantics are also specified as sets of axioms and accompanying inference rules. 
+\end{itemize}
+
+While natural semantics has seen ``extensive'' use in the definition of programming languages, it is not suitable for describing concurrent or interleaved execution due to the lack of intermediate states \citep{Zhang:2004:SSD:981009.981013}.
+An example of such semantics can be seen in the following equation:
+\begin{equation*}
+    [\text{if}^\text{ tt}_\text{ ns}]: 
+    \frac
+    {\langle S_1, s \rangle \rightarrow s'}
+    {\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s \rangle \rightarrow s'} 
+    \text{ if } \mathbb{B}\llbracket b \rrbracket s = {tt}
+\end{equation*}
+
+While the above semantic frameworks have poor modularity, further operational semantics exist, such as the Modular Operational Semantics proposed by \cite{mosses2004modular}.
+This is a variant on SOS that restricts states to syntax and computed values.
+It incorporates all auxiliary entities (e.g. memory stores, loads and environments/continuations --- data structures that model the computational process at a given point in the program's execution) as labels on transitions.
+The hope is that this brings additional modularity to the semantics to allow for easy composition, but this has seen little uptake in practice.
+
+% subsubsection operational_semantics (end)
+
+\subsubsection{Denotational Semantics} % (fold)
+\label{ssub:denotational_semantics}
+Denotational semantics model the behaviour of program phrases through use of \textit{denotations} --- mathematical objects that are usually continuous functions \citep{Zhang:2004:SSD:981009.981013,mosses2001varieties}.
+\begin{itemize}
+    \item These functions reflect the contribution of a given program phrase to the overall program behaviour, focusing on the result of a given computation rather than how the result was obtained. 
+    \item Program semantics can be defined through the composition of these denotational functions.
+    \item They also provide the ability to denote sequencing via the use of continuation passing as arguments to the semantic functions. 
+\end{itemize}
+
+While such semantics provide a high-level overview of the computational semantics, they may not provide enough computational detail for use in a metacompiler system.
+An example of denotational semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
+\begin{equation*}
+    S_{ds} \llbracket x := a \rrbracket = \lambda s.s [x \mapsto \mathbb{A}\llbracket a \rrbracket s]
+\end{equation*}
+
+Denotational and Operational semantics can be written to be fully equivalent; such semantics are known as \textit{fully abstract} \citep{mosses2001varieties}.
+
+% subsubsection denotational_semantics (end)
+
+\subsubsection{Axiomatic Semantics} % (fold)
+\label{ssub:axiomatic_semantics}
+Axiomatic Semantics describe the properties of a program as a set of constraints on behaviour, with programs modelled as transformations of these constraints \citep{Zhang:2004:SSD:981009.981013}.
+These constraints are known as \textit{assertions}, and were initially developed to formalise the verification of abstract algorithms.
+\begin{itemize}
+    \item Axiomatic semantics are not particularly well suited to producing descriptions of programming languages due to their highly abstract nature.
+    \item They are, however, suitable for proving properties about the programs that they describe, as the assertions act as rules to constrain program behaviour \citep{mosses2001varieties}.
+\end{itemize}
+
+An example of axiomatic semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
+\begin{equation*}
+    [if_{as}]: 
+    \frac
+    {\{t \lor P\} S_1 \{Q\}, \{\lnot t \lor P\} S_2 \{Q\}}
+    {\{P\} \text{ if } b \text{ then } S_1 \text{ else } S_2 \{Q\}}
+    \text{ where }
+    t = \mathbb{B}\llbracket b \rrbracket 
+\end{equation*}
+
+% subsubsection axiomatic_semantics (end)
+
+\subsubsection{Hybrid Semantics} % (fold)
+\label{ssub:hybrid_semantics}
+Hybrid Semantics is a term used to refer to any combination or augmentation of the previously listed frameworks to produce a new system for semantic description \citep{Zhang:2004:SSD:981009.981013}.\\
+
+There have been multiple hybrid frameworks, but one of the most studied is the Action Semantics framework designed by \citet{mosses2005action}, and used in multiple projects such as \citet{brown1992actress} and \citet{diehl1996semantics}.
+Action semantics recognised the inability of the traditional semantic description methods to scale to more complex programming languages such as the GPLs used in day-to-day systems programming.
+\begin{itemize}
+    \item It improves the modularity of denotational semantics by treating denotations as actions to be defined using a fixed \textit{action notation} consisting of primitives and combinators.
+    \item It provides direct support for the specification of control flow, data flow, scoping and concurrent communication \citep{mosses2005action,doh2001composing}.
+    \item As it is based upon operational and denotational semantics, it can be used to verify properties of the programs it is used to specify.
+    \item Action semantics was extended to form Modular Action Semantics, which encapsulated the semantic description of each language construct in a separate module to allow for reuse \citep{Zhang:2004:SSD:981009.981013}. 
+\end{itemize}
+
+An example of action semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
+\begin{equation*}
+    \textbf{execute} \llbracket x := a \rrbracket = (\text{evaluate } a \textbf{ then } \text{store the primitive value in the cell bound } x)
+\end{equation*}
+
+Action Semantics, however, is limited in that ``not all programming language concepts can be directly represented within action semantics'' \citep{wansbrough1997modular}. 
+This restriction is imposed by the set of computational constructs originally envisioned by \citet{mosses2005action}, with the system proving hard to extend.\\
+
+In the search for a more modular system, \citet{wansbrough1997modular} proposed a system called Modular Monadic Action Semantics (MMAS) based upon both Action Semantics and the earlier Modular Monadic Semantics.
+This system aimed to combine the benefits of both systems into a single semantics framework.
+\begin{itemize}
+    \item MMAS provides a truly extensible version of Action Semantics, allowing the representation of additional programming concepts such as first-class continuations that cannot be expressed in Action Semantics \citep{wansbrough1997modular}.
+    \item It replaces the original Structural Operation Semantics that underlie Action Semantics, maintaining the readability of Action Semantics alongside the flexibility of the Modular Monadic Semantics, allowing the semantic model to be refined or extended based upon the application to model new forms of computation.
+\end{itemize}
+
+% subsubsection hybrid_semantics (end)
+
+\subsubsection{Modularity of Language Semantics} % (fold)
+\label{ssub:modularity_of_language_semantics}
+Despite the wide variety of ways in which language semantics can be specified, it is still an open problem to develop a truly flexible semantic framework. 
+\cite{Churchill:2014:RCS:2577080.2577099} states that ``various semantic frameworks do not have good modularity'', and this is evidenced by the issues seen when extending existing semantic frameworks \citep{wansbrough1997modular}.\\
+
+Simple semantic specifications such as Operational and Denotational semantics suffer from issues with extensibility and modularity, even though ``various programming constructs are common to many languages'' \citep{Churchill:2014:RCS:2577080.2577099,Zhang:2004:SSD:981009.981013,mosses2001varieties,mosses2004modular}. 
+While it is possible to specify a limited semantic framework that encompasses a set of computational actions, it is very possible to create a new kind of computation that does not fit easily into the existing framework \citep{wansbrough1997modular}. \\
+
+While there has been much research into the subject, with proposals such as Modular Monadic Semantics, Modular Action Semantics and even Modular Monadic Action Semantics, none of these frameworks have seen particular use \citep{wansbrough1997modular,mosses2005action,Zhang:2004:SSD:981009.981013,Mosses:2009:CS:1596486.1596489,mosses2001varieties}.
+Peter Mosses has written extensively about modular semantic frameworks as embodied by his PLanCompS project, but such semantic models that he terms `Funcons' have seen little uptake in practice \cite{Mosses:2009:CS:1596486.1596489,Churchill:2014:RCS:2577080.2577099,Binsbergen:2016:TSC:2892664.2893464}.
+
+% subsubsection modularity_of_language_semantics (end)
+
+% subsection specifying_language_semantics (end)
+
+% section metalanguages (end)
+
+\section{Formal Program Verification} % (fold)
+\label{sec:formal_program_verification}
+Having designed the syntax and semantics of a domain-specific language, there still needs to be some mechanism by which the properties of a language can be proved. \\
+
+The notion of program correctness and program verification refers to the ability to prove, via formal methods, that a computer program is ``totally correct''.
+A program is called ``totally correct'' when it can be shown to both \textit{terminate} and \textit{perform the operations as defined by its specification} \citep{manna1974axiomatic}.
+In general this is an undecidable problem \citep{walther1994proving}.\\
+
+Proving program correctness is a complex task, and in many cases requires an examination of the environment in which the program executes.
+With a total understanding of this \textit{environment} and a set of \textit{well-defined program semantics}, it is theoretically possible to apply deductive reasoning to sets of axiomatic program properties to reason about the program's correctness in that environment \citep{Hoare:1969:ABC:363235.363259}.\\
+
+While \citet{Hoare:1969:ABC:363235.363259} and \citet{manna1974axiomatic} propose a generic axiomatic framework for reasoning about computer programs, the best framework is the well-specified semantics of the programming language in which the program is written.
+Under such circumstances, if the language semantics can be proven correct regardless of the execution environment (for a subset of program operations as discussed in Section~\ref{sub:data_and_codata}), it is possible to prove properties of programs in that language.
+
+\subsection{Data and Codata} % (fold)
+\label{sub:data_and_codata}
+While, in general, it is an undecidable problem to determine if an arbitrary Turing-Complete program is correct, it is possible to restrict the set of allowable operations to a set that can be shown to terminate \citep{walther1994proving}.
+Basing the semantics of a DSL upon these allowable operations will, theoretically, allow for a DSL that can be shown to be correct.\\
+
+This restriction of allowable computational operations is based on the duality of \textit{data} and \textit{codata}.\\
+
+Data is captured by the notion of \textit{inductive} data types, whose elements can be constructed in a finite number of steps.
+This means that properties of data can be shown by well-founded induction on recursive programs \citep{hinze2010reasoning}.
+\begin{itemize}
+    \item As a result, it is possible in general to prove that well-founded recursive programs will terminate, and can hence be proven correct.
+    \item While it is undecidable to prove termination for general recursion (unlike primitive recursion, for which it is always provable), it is shown by \citet{nordstrom1988terminating} that it is possible to prove termination for well-founded general recursion (recursion which operates on data, not unbounded constructs). 
+    This is represented by the following recursion rule, which states that well-founded general recursion can be equated to primitive recursion over the natural numbers as long as $A$ is well-founded by $\prec_A$:
+    \begin{equation*}
+        \frac{
+            \text{Wellfounded}(A, \prec_A)\;\;\;\;
+            p \in A\;\;\;\;
+            e(x, y) \in C(x) [x \in A, y(z) \in C(z) [z \prec_A x]]
+        }{\text{rec}(e, p) \in C(p)}
+    \end{equation*}
+\end{itemize}
+
+Dual to data is the concept of codata.
+While data is defined inductively, with elements constructed in a finite number of steps, codata is constructed additively from a base-case, allowing it to represent infinite structures such as streams and infinite trees \citep{hinze2010reasoning}.
+While it is possible to reason about data using total functions (those shown to terminate, have no side effects and not return error states), the same cannot be said for codata.\\
+
+Reasoning about codata instead requires a technique known as \textit{coinduction} which describes how to destructure (break-down) codata to permit well-founded reasoning about it. 
+Coinduction allows reasoning about the termination properties of codata, but is unable to prove termination of algorithms operating on codata in the general case. 
+
+% subsection data_and_codata (end)
+
+\subsection{Proving Termination} % (fold)
+\label{sub:proving_termination}
+Through a separation of data and codata, it is possible to define a language whose semantics can be reasoned about purely by well-founded induction, as defined by \citet{nordstrom1988terminating}. 
+This encompasses proofs on arbitrary length, finite data structures (those that are, hence, well-formed); inductive reasoning applied to such structures is guaranteed to reach a base-case, as examined in Godel's System-T and System-F \citep{alves2010godel,girard1989proofs}.\\
+
+This would, hopefully, allow a demonstration that the language semantics can be defined inductively on the language syntax.\\
+
+Such a proof requires the definition of the following relation for a program $M$ with unique configurations $s$:
+\begin{equation*}
+    s, M \rightarrow s', M'
+\end{equation*}
+where:
+\begin{itemize}
+    \item A configuration $s$ refers to any additional computational state (which may include heap state, the continuation, etc).
+    \item The relation $\rightarrow$ is termed ``converges to'', and is inductively defined.
+\end{itemize}
+
+However, the inductive definition of the convergence relation does not guarantee that the relation is total.\\
+
+If it can be shown, by induction on the structure of $M$, that the rules by which $\rightarrow$ is inductively defined are defined in such a way that the convergence hypothesis for $M$ is given in terms of the sub-programs of $M$, the result follows as long as each base-case terminates. \\
+
+If this holds, then it can be shown for every program $M$ and every unique configuration $s$, there exists a program and configuration $s', M'$ such that $s, M \rightarrow s', M'$.\\
+
+If such a property can be shown for the all base-cases and each semantic construct in the language, it is possible to state that all programs written in this language terminate. 
+
+% subsection proving_termination (end)
+
+\subsection{Total Functional Programming} % (fold)
+\label{sub:total_functional_programming}
+The distinction is accurately represented by \citet{turner2004total}, where the notion of disciplining the use of a functional programming language to exclude the possibility of non-termination is proposed. 
+The paper draws the same distinction between data and codata, and restricts the language to the use of only total functions. \\
+
+In order to better illustrate this, \citet{turner2004total} proposes an augmentation to the language typing discipline, adding an explicit $\bot$ (bottom, a type which has no values) to denote functions that may error or not terminate (those functions that operate on codata). 
+Languages such as Haskell already incorporate an expression for this idea via the notion of Monads and Monad Transformers.
+Turner aims to omit any incidence of $\bot$ in a total functional program, hence restricting the program to the use of total functions, and omitting the use of partial functions. \\
+
+While this is not feasible in practice for a general purpose programming language, it is interesting for a DSL, as all functions could be constrained to being total:
+\begin{itemize}
+    \item Recursion is used to traverse data.
+    \item Corecursion is used to traverse codata, where all the infinite structures (and corecursive functions) are total. 
+\end{itemize}
+
+Such a language is not Turing-Complete, and hence cannot express all programs (even if such programs terminate). 
+Such a restricted language is unable, for example, to express its own parser \citep{turner2004total}.\\
+
+Nevertheless, the notion of Total Functional Programming has interesting implications for the design of provably correct DSLs.
+
+% subsection total_functional_programming (end)
+
+% section formal_program_verification (end)
+
+\section{Automating the Generation of the Compiler} % (fold)
+\label{sec:automating_the_generation_of_the_compiler}
+\defblock{10cm}{Compiler Generator}{
+    A compiler generator, or metacompiler, is ``a tool that constructs a compiler automatically, given a syntactic and semantic description of the source language'' \citep{brown1992actress}.
+}
+
+The literature having established that it is possible to specify a language with provably correct semantics, some mechanisms needs to exist to translate such programs into an executable form.
+While it is possible to manually build a compiler for each DSL that is designed, this is a time-consuming undertaking requiring significant effort that may produce implementation defects, resulting in a non-correct compiler \citep{Mernik:2005:DDL:1118890.1118892}.\\
+
+In order to verify that the resultant DSL is correct, it is better to utilise a compiler generator, a specific form of \textit{application generator}.
+\citet{cleaveland1988building} suggests that application generators ``let you customise and reuse a general software design easily'', providing a significant benefit in the reduction of programming errors.\\
+
+This decoupling of the language specification and implementation, as discussed by \citet{cleaveland1988building} is key to the implementation of correct languages.
+As long as the metacompiler is correct, the resultant compilers should maintain the semantics of the input programs \citep{Gray:1992:ECF:129630.129637}.
+Centralisation of the semantic properties of DSLs into the metacompiler allows the centralisation of the proof infrastructure to allow automation.\\
+
+\subsection{Metacompiler Systems} % (fold)
+\label{sub:metacompiler_systems}
+Metacompilers can, in general, be categorised as syntax- and semantics-directed compilers \citep{Mandell:1966:MDA:800267.810785,diehl1996semantics}.
+They ingest definitions of the language syntax and semantics and generate a compiler for that language. \\
+
+Traditional compiler design divides the work of the compiler into multiple phases: syntactical and lexical analysis, semantic analysis, optimisation and code generation. 
+Generator programs exist for multiple of these phases:
+\begin{itemize}
+    \item \textbf{LEX:} A generator for lexical analysers --- programs that convert a sequence of characters into a stream of syntax tokens.
+    \item \textbf{YACC:} A generator for LALR (Look-Ahead, Left to Right) parsers --- programs that make sense of the source code based upon a provided grammar.
+\end{itemize}
+
+Such systems, however, suffer from a somewhat arbitrary mapping between source and target language constructs, with the translation schemes being predetermined, rather than generated alongside the parser. 
+Such translation schemes must be implemented by hand, as they are not automatically generated. \\
+
+\citet{diehl1996semantics} suggests that the generation of the compiler can be directed by \textit{semantics} in addition to the \textit{syntax}.
+Doing so provides multiple advantages over handwriting compilers in accordance with a language specification:
+\begin{itemize}
+    \item \textbf{Correctness:} If the generator can be verified, this implies that the generated compilers are proved correct.
+    \item \textbf{Readability:} The specification of a programming language is generally more intelligible than a compiler.
+    \item \textbf{Maintainability:} Altering the language specification results in a compiler that automatically supports the new features after regeneration.
+    \item \textbf{Portability:} Changing the definition of the target language allows generation of compilers for different architectures without changes to the source languages.
+    \item \textbf{Insight:} Generation of compilers via semantics aims to use semantics preserving transformations which relate source code to target code. 
+    By tracing these transformations, the target code can be explained. 
+\end{itemize}
+
+While these benefits are certainly true, there are some downsides to such generated compilers:
+\begin{itemize}
+    \item Verification of the metacompiler is a non-trivial task for a GPL.
+    \item Programming language specifications, particularly those with formally specified semantics, are not necessarily legible to someone without appropriate experience. 
+    This means that writing and altering such specifications could be a significant source of maintenance burden for such compilers.
+    \item The design of the metacompiler may not easily permit alteration of the target language.
+    It may be easier in practice to target a single language with a simple FFI such as the C FFI (e.g. Haskell), allowing easy interoperability with other programming languages. 
+\end{itemize}
+
+The metacompiler system proposed by \citet{diehl1996semantics} utilises an Action Semantics (see Section~\ref{ssub:hybrid_semantics}) based specification of the underlying language, generating a compiler based upon the semantics. 
+The compiler targets an abstract machine, adding portability for native code generation, and uses a `Term Rewriting System' to generate both the compiler and program behaviour, deferring modifications of program and state to different portions of the compilation-execution pipeline \citep[pg. 59]{diehl1996semantics}.\\
+
+These Term Rewrite Rules are defined in such a fashion that the semantics of the original language are preserved, ensuring that any properties of the original program still hold in the compiled version.
+This means that the generated compiler will produce a program that is semantically correct insofar as the original language specification is semantically correct. \\
+
+Such a capability is key to the correct operation of this project, and so a rigorous Term-Rewriting System could be pursued. 
+
+% subsection metacompiler_systems (end)
+
+\subsection{Program Transformations} % (fold)
+\label{sub:program_transformations}
+\defblock{10cm}{Transformation}{
+    A transformation is a rule that operates on the parse-tree of the source language, providing well-specified constructions in the target language that maintain the semantics of the source language \citep{diehl1996semantics}.
+    Such transformations may operate on either an AST (see Section~\ref{ssub:abstract_syntax}) or individual portions of the language grammar \citep{brabrand2003metafront}.
+}
+
+The intention of this project is to transpile (see Section~\ref{ssub:transpilation}) the DSL source program to an equivalent Haskell program.
+The process of doing so will utilise program transformations, similar to those defined by \citet{brabrand2003metafront} for the Metafront Project.\\
+
+Transformations are defined by \citet{brabrand2003metafront} to have three properties that are important for formal verification of the semantic correctness of the translation:
+\begin{itemize}
+    \item They are designed to allow only well-founded induction, so termination of the transformations is ensured.
+    \item Transformations can be decided statically if they will map legal input to legal output. 
+    \item The transformation rules can perform expressive transformations that rearrange ASTs in a non-local manner, while preserving the semantics of the program.
+\end{itemize}
+
+The fact that such transformation ensure preservation of the language semantics is significant for their use in a metacompiler system. \\
+
+These semantics, however, are not without their limitations. 
+They only allow inductively defined semantics, and hence disallow any action-semantics or monadic semantics representations. 
+Additionally, they are only able to operate between context-free grammars. 
+As the target language of a metacompiler may not be context-free, or able to be restricted to a context-free subset, the ability to use such transformations in a metacompiler may be limited.\\
+
+Such limited translation rules can be contrasted with the Turing-Complete rewrite system used in language development systems such as ASF+SDF, which operate on the AST of the source language \citep{van2001asf+}.
+Such transformations, however, do not provide the same guarantees as the Metafront transformation system given by \citep{brabrand2003metafront}.
+
+% subsection program_transformations (end)
+
+\subsection{Intermediate Representations} % (fold)
+\label{sub:intermediate_representations}
+Many compiler systems use an Intermediate Representation (IR).
+This is as it ``hides details about the target execution platform'', allowing semantic-level optimisation and analysis of the program code \citep{Zhao:2012:FLI:2103621.2103709}.
+It is, however, often the case that these IRs do not have well-defined formal semantics, precluding the proving of properties of programs expressed in these IRs. \\
+
+In an effort to formalise the LLVM IR, their Low-Level Virtual Machine, \citet{Zhao:2012:FLI:2103621.2103709} found that the aggressive optimisations performed by industrial strength compilers often had non-deterministic semantics.
+Such semantics preclude the proving of certain termination properties of the transformed programs, even if they use linguistic features that are terminating.
+Such optimisation issues can be seen with the Glasgow Haskell Compiler (GHC), where certain heavy optimisations alter the semantic meaning of programs (see Section~\ref{sub:issues_with_ghc}.\\
+
+While the use of IRs bring benefits in terms of semantic analysis and AVOPT, the complexity of such representations means that for a DSL-based project that it is unlikely to be worth employing one.
+
+% subsection intermediate_representations (end)
+
+% section automating_the_generation_of_the_compiler (end)
+
+\section{Technological Support} % (fold)
+\label{sec:technological_support}
+A project such as this requires an implementation language with excellent support for symbolic manipulation, domain-specific optimisation, language parsing and control over program execution.
+While languages such as Lisp allow first-class syntax definitions, it has less library support for parsing, and less robust execution control due to the default eager evaluation semantics. \\
+
+Haskell, on the other hand, has robust support for metaprogramming, parsing and execution control, providing the \lstinline{seq} function to force evaluation of the default lazy semantics. 
+This makes Haskell an excellent choice for the building of modular language implementations \citep{hudak1996building}.\\
+
+Languages like Haskell and Lisp have excellent support for symbolic manipulation, and hence would be viable implementation languages for such a project. 
+This is to be contrasted with more traditional programming languages such as C++, which are more suited to numeric manipulation.
+Such languages, additionally require management of implementation features such as memory, which detracts from the ability to implement the required program features.\\
+
+The premier Haskell compiler in use today is the Glasgow Haskell Compiler (GHC), which provides a robust suite of well-tested language extensions.
+
+\subsection{Template Haskell} % (fold)
+\label{sub:template_haskell}
+One of these language extensions is Template Haskell, a robust metaprogramming mechanism to allow ``compile-time preprocessing of Haskell Source programs'', allowing the programmer to define new language syntax without compiler modification \citep{Sheard:2002:TMH:581690.581691,Czarnecki2004}.
+Template Haskell provides support for the ``algorithmic construction of programs at compile time'', including techniques for language rewriting and optimisation, techniques discussed in Sections~\ref{sub:program_transformations} and~\ref{sub:types_of_dsls} respectively \citep{Sheard:2002:TMH:581690.581691,jones2001playing}.
+\begin{itemize}
+    \item Through the use of Template Haskell's compile-time IO mechanism, DSL programs can be read as input, and transformed into an output Haskell program for compilation \citep[pg. 9]{Czarnecki2004}.
+    \item Template Haskell is capable of introducing new names and syntax, providing a mechanism for compile-time syntax extension \citep{Czarnecki2004}.
+    \item It allows the alteration of program semantics through rewriting at compile time, allowing significant flexibility with the implementation of DSLs. 
+    \item Through the ability to inspect the program AST as data (using a quoted expression), it can modify and parse the semantics of the input program as required, resulting in an equivalent Haskell program without performance compromises.
+\end{itemize}
+
+Furthermore, Template Haskell allows the specification of compile-time rewrite rules for language elements \citep{jones2001playing}.
+Such capabilities allow for the optimisation of domain-specific logic through definitions of domain-specific optimisations that may not be visible to the Haskell compiler. \\
+
+The major downside of the capabilities provided by Template Haskell is the introduction of additional complexity. 
+While using the metaprogramming mechanism does not restrict the use of any other language features, it can significantly contribute to program complexity.
+
+% subsection template_haskell (end)
+
+\subsection{Language Parsing} % (fold)
+\label{sub:language_parsing}
+If, on the other hand, a more traditional parsing approach is wanted, Haskell still provides significant and flexible support for doing so. 
+Through its extensive library support, Haskell provides significant tooling for the creation of parsers, including Happy and Parsec, two libraries for generating language parsers. \\
+
+Parsec is the more capable library of the two.
+It is a monadic parser combinator library that is capable of parsing context-sensitive, infinite-lookahead grammars \citep{leijen2001parsec}.
+While traditional parser generators such as YACC use event-based parsing, combinator parsing is unique in that it allows the programmer to write expressions which appear to be language grammars, and yet describe a parser for such grammars.
+\begin{itemize}
+    \item This avoids the need for significant amounts of preprocessing by harnessing the power of Haskell itself. 
+    The strict type-system of Haskell is ideal for the description of embedded DSLs \citep{swierstra2009combinator}.
+    \item Parsec features a novel combinator-based implementation technique that enhances the parser efficiency and allow the production of useful error messages \citep{leijen2002parsec}.
+    \item Useful error messages decrease programmer burden for the users of the end-result, and hence are a significant benefit to using the library. 
+\end{itemize}
+
+The main downside of Parsec is that it provides no guarantees about left-recursion in grammars, which has the potential to cause the parser to hang at runtime. 
+Furthermore it is not as performant as some traditional parsers due to the additional state maintained for error reporting, as evidenced by the existence of Attoparsec \citep{gummelt2011hindsight}. \\
+
+While Parsec is much faster than many parser combinator libraries, it is still to slow for real-time use or efficient parsing of very complex grammars. 
+Attoparsec, however, sacrifices readability of error messages for performance, meaning that Parsec itself is still a more sensible choice for the implementation of user-facing compilers. \\
+
+Haskell's library support also provides Alex, a tool for generating lexical analysers. 
+While not strictly required for parsing using either Happy or Parsec, it can greatly simplify implementation of more complex parsers through elimination of certain bug-classes through the type system (e.g. parsing a keyword as an identifier).
+
+% subsection language_parsing (end)
+
+\subsection{The Haskell FFI} % (fold)
+\label{sub:the_haskell_ffi}
+\defblock{12cm}{FFI}{A Foreign Function Interface (FFI) is a mechanism by which a program written in one programming language can call functions written in another programming language.}
+
+A DSL is not useful if it isn't portable.
+As discussed in Section~\ref{sub:types_of_dsls}, DSLs with implementations rooted in a given language become specific stores of domain knowledge rather than portable encapsulations.
+\citet{Marlow:2004:EHF:1017472.1017479} suggests that the C FFI is the lowest-common-denominator for interactions between languages, and so is a useful target for DSL portability.\\
+
+While there are some issues surrounding the Haskell FFI and concurrency, it is possible to both call C-FFI functions from Haskell, and call Haskell functions using a C-FFI \citep{Marlow:2004:EHF:1017472.1017479,HaskellWikiFFIFromC}.
+This allows DSLs compiled with Haskell to act as a lowest-common-denominator interface to the DSL through automatic generation of the C-FFI function-call stubs. 
+As a result, the DSL can act as a portable repository of Domain-Specific knowledge and configuration. 
+
+% subsection the_haskell_ffi (end)
+
+\subsection{Desirable Language Properties} % (fold)
+\label{sub:desirable_language_properties}
+Haskell also contributes additional, desirable language properties to the project:
+\begin{itemize}
+    \item Haskell has desirable properties when it comes to automated proofs of termination \citep{Giesl:2011:ATP:1890028.1890030}.
+    This means that it is possible to automatically prove that, for well-founded implementations, the termination properties of the DSL can be verified in the final transpiled DSL code. 
+    This analysis examines some of the linguistic complexities of Haskell, and shows that termination can be shown even in the presence of lazy evaluation, equation definition order, polymorphic typing and potentially infinite codata structures. 
+    \item Embedded DSLs are difficult to optimise as the host language's optimising compiler only operates at the level of the host language constructs. 
+    Future work may want to increase the efficiency of generated code, and the compile-time metaprogramming provided by Template Haskell to express compile-time optimisation opportunities in a declarative fashion such that the GHC optimising compiler can take advantage of them \citep{seefried2004optimising}.
+\end{itemize}
+
+% subsection desirable_language_properties (end)
+
+\subsection{Issues with GHC} % (fold)
+\label{sub:issues_with_ghc}
+Despite all of the benefits that the use of Haskell and GHC can bring to the project, it is not without its flaws.
+GHC is an optimising compiler and, as discussed in Section~\ref{sub:intermediate_representations}, some optimisations can alter the semantic meaning of programs.\\
+
+While optimisations, in general aim to preserve the semantic correctness of programs, there are certain documented optimisations that GHC can perform that may alter the program semantics. 
+These optimisations are collectively known as Short-Cut Fusion, and they aim to eliminate successive data-structure allocations in chained functional calls, optimising the code to a tight loop over the final structure \citep{HaskellWikiShortCutFusionCorrectness}.\\
+
+While it is strongly conjectured that such an optimisation cannot create a non-terminating program from a terminating program, it has not been conclusively proven \citep{voigtlander2008semantics}.
+This means that projects dealing with the correctness of programs must be careful when utilising certain optimisations in GHC, avoiding any optimisations that may semantically alter the code.
+
+% subsection issues_with_ghc (end)
+
+% section technological_support (end)
+
+\section{Combining the Ideas} % (fold)
+\label{sec:combining_the_ideas}
+This literature and technology review has examined a broad base of previous work surrounding the creation of provably correct domain-specific languages.\\
+
+It has focused on the study of DSLs themselves, as well as mechanisms for the formalisation of program syntax and semantics. 
+Furthermore, it has explored methods for program verification and proving program correctness, and techniques for automated compiler generation. \\
+
+As a result of the survey, it is clear that the project wants to pursue a limited set of DSLs, namely external DSLs, allowing a flexibility of syntax, with transpilation (ensuring semantic preservation) into Haskell.
+The DSLs would have their syntax specified using EBNF, and semantics likely specified using some form of operational semantics as a compromise between simplicity and expressiveness. 
+Such semantic specifications are hoped to allow the compiler system to prove the termination properties of input programs in the DSL. \\
+
+The project will likely see an implementation of a metacompiler system in Haskell, ingesting the language specifications to produce a compiler for that language. 
+The resultant language compilers will use a transpilation approach via program transformation rules to transform input programs in the DSL into equivalent Haskell programs, allowing use from a multitude of host languages. \\
+
+It is hoped that these techniques will produce a flexible compiler system that is capable of generating programs written in provably correct Domain-Specific Languages.
+
+% section combining_the_ideas (end)
+
+% chapter literature_and_technology_survey (end)
+
+\bibliographystyle{abbrvnat}
+\bibliography{resources/bibliography}
+
+\begin{appendix}
+
+\end{appendix}
+
+\end{document}

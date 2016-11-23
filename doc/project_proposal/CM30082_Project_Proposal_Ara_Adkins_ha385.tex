@@ -32,6 +32,7 @@
 \usepackage[]{natbib} %For the bibliography
 %\usepackage[superscript]{cite}
 \usepackage{pdfpages} %For including PDFs
+\usepackage[]{pdflscape}
 \usepackage{stmaryrd}
 \usepackage{subcaption}
 \usepackage{tabu} %more pretty tables
@@ -110,7 +111,7 @@
 
 \pagestyle{fancy}
 \lhead{\color{light-gray}Ara Adkins}
-\rhead{\color{light-gray}TODO THIS}
+\rhead{\color{light-gray}Project Proposal}
 \cfoot{\thepage}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
@@ -172,7 +173,7 @@
 %     \end{center}
 % }
 
-\title{Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
+\title{ABSOL: Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
 \author{Ara Adkins}
 \date{\today}
 
@@ -198,47 +199,54 @@
 % - External references and sources are appropriately cited and used, no use of inappropriate sources.
 \chapter{Problem Description} % (fold)
 \label{cha:problem_description}
-This project aims to create a logical framework and tool for the formal verification of embedded, executable Domain-Specific Languages.
-This is to allow the generation of provably correct, tailored programming languages for the encapsulation of domain logic inside another program.
-These languages can be compiled through use of a Haskell metacompiler that takes both syntax and semantics for the Domain-Specific Language, generating executables. 
+This project aims to create a framework and toolchain for the formal verification of embedded, executable Domain-Specific Languages.
+The hope is to allow the generation of provably correct, tailored programming languages that can encapsulate domain logic inside another program.
+These languages will be compiled through the use of a Haskell metacompiler (a compiler that generates a compiler) that takes both syntax and semantics for the Domain-Specific Language, generating executable libraries for embedding the DSL.
 
 \section{An Introduction to Domain-Specific Languages} % (fold)
 \label{sec:an_introduction_to_domain_specific_languages}
-Modern software systems are increasing in complexity, with everything from flight computers to business software growing larger \citep{dvorak2009nasa}.
-As domain logic is becoming integrated throughout systems, leading to tightly coupled code, there is increasing risk that changes to the software create modes of incorrect operation \cite{khawar2001developing}.\\
+Modern software systems are increasing in complexity, with everything from flight computers to business software growing \citep{dvorak2009nasa}.
+As these systems grow, the domain logic is becoming integrated throughout the systems, leading to increased levels of coupling throughout the code.
+This means that there is an increased risk that changes to the software create modes of incorrect operation \citep{khawar2001developing}.\\
 
 In reaction to the dispersion of domain logic throughout modern software systems, Domain-Specific Languages (DSLs) have seen ``a significant uptick in interest'' \citep{fowler2010domain}. 
-A DSL is a limited, application-specific language that is embedded into another software system, providing a custom encoding of domain rules and logic often beyond the syntactic constraints of the host language \citep{Mernik:2005:DDL:1118890.1118892}.
+A DSL is a limited, application-specific language that is integrated with another software system, providing a custom encoding of domain rules and logic that can often go beyond the syntactic constraints of the host language \citep{Mernik:2005:DDL:1118890.1118892}.
 In the use of a DSL, software systems are able to centralise their domain logic using a common syntax, making it simple to change rules for the operation of the program.\\
 
 The term `Domain-Specific Language' is a broad one, encompassing a variety of embedded syntaxes for defining domain logic.
-Fowler defines `internal' and `external' DSLs; an internal DSL is written in the host language and exposed via an API, also known as a fluent interface, while an external DSL is a language parsed independently of the host language \citep{fowler2010domain}.\\
+Fowler defines `internal' and `external' DSLs.
+An internal DSL is written in the host language and exposed via an API, also known as a fluent interface.
+\cite{fowler2010domain} defines an external DSL, in contrast, as a language parsed independently of the host language.\\
 
 In addition to their structure, Domain-Specific Languages can also be defined in terms of their `executability' \citep{Mernik:2005:DDL:1118890.1118892}.
-Many DSLs are programming languages with `well-defined execution semantics', such as \LaTeX, a macro language for \TeX, and Template Haskell, which allows manipulation of Haskell code itself using Haskell \citep{sheard2002template}.
-As a counterpoint, some DSLs define configuration information for a software system, having no executable semantics of their own.
+Many DSLs are programming languages with `well-defined execution semantics'.
+Examples of this are \LaTeX, a macro language for \TeX, and Template Haskell, which allows manipulation of Haskell code itself using Haskell \citep{sheard2002template}.
+As a counterpoint, some DSLs only define configuration information for a software system, having no executable semantics of their own.
 
 % section an_introduction_to_domain_specific_languages (end)
 
 \section{The Need for Correct DSLs} % (fold)
 \label{sec:the_need_for_correct_dsls}
-Initial inspiration for this project was engendered by the observation of a financial technology company using the general-purpose programming language OCaml for runtime configuration.
-As a turing-complete programming language, this offered vastly greater expressive power than necessary for the domain in which it was applied, thus increasing the potential for bugs in the domain logic, as suggested by \cite{subramanyam2003empirical}.
-If a capable DSL could be designed that could have formally verified properties, then it would be a much better fit to the domain while reducing the capabilities for bugs.\\
+Initial inspiration for this project was engendered by the observation of a financial technology company using the general-purpose programming language OCaml for specifying logic at runtime.
+As a Turing-complete programming language, this offered vastly greater expressive power than necessary for the domain in which it was applied.
+This meant an increase in the potential for bugs in the domain logic, as suggested by \cite{subramanyam2003empirical}.
+If a capable DSL could be designed that could have formally verified properties, then it would be a much better fit to the domain while reducing the capacity for bugs.\\
 
-While the scope of common DSLs is necessarily very broad, encompassing everything from executable program logic to statically defined configuration, this project aims to focus on a small subset of the DSL universe.
+While the scope of common DSLs is necessarily very broad, encompassing everything from executable program logic to statically defined configuration, this project aims to focus on a small subset of DSLs.
 As formal correctness only applies to executable programs, this project will focus on external, executable DSLs. 
-While analysis could benefit internal DSLs as well, they are much better suited for analysis by traditional code-review mechanisms, and cannot satisfy the requirements for this project.\\
+While analysis could benefit internal DSLs as well, they are already covered by traditional code review mechanisms, and would be hard to integrate into this project.\\
 
 Even with the ``detailed analysis and structuring of the application domain'' \citep{van2000domain} performed when initially defining the DSL, it can be difficult to verify the correctness of the resulting language. 
-While current methods can utilise code-review to attempt to analyse the correctness of the DSL implementation, a lack of understanding of the domain by the application developers may allow logic errors to be missed. 
-This is because the domain logic is often embodied by expert knowledge, as found by \cite{studer1998knowledge}, and it can be difficult to verify the language implementation with those domain experts through code-review due to a lack of understanding.
-As core domain logic, often integral to the program, is embedded in this DSL, it is instrumental that it be formally correct.\\
+While current methods can utilise code-review to attempt to analyse the correctness of the DSL implementation, a lack of understanding of the domain by the application developers may cause logic errors to be missed. 
+This is because the domain logic is often embodied by expert knowledge, as found by \cite{studer1998knowledge}. 
+It can hence be difficult to verify the language implementation with those domain experts, through code-review, due to their lack of understanding of the implementing language.
+As core domain logic, often integral to the program, is encapsulated by the DSL, it is instrumental that it be formally correct.\\
 
 This project aims to provide a solution for the sixth step of DSL design as proposed by \cite{van2000domain}: ``design and implement a compiler that translates DSL programs''. 
-While the logic that the DSL aims to encode can be verified with domain experts, it is difficult to verify the resulting implementation.
-While the language semantics are integral to the design of the language, designing the semantic analysis and verification into the compiler tool will allow the automatic generation of DSLs from specification, removing the potential for errors introduced during the implementation.
-An automated system offers benefits over manual review, as the domain experts can work with the DSL designers to encode the correct semantics, before it becomes an executable program.
+While the logic that the DSL aims to encode can be verified with domain experts, it is often difficult to verify the resulting implementation.
+As the language semantics are integral to the operation of the DSL, providing the semantic analysis and verification as part of the toolchain will allow the automatic generation of DSLs.
+The generation from specification greatly reduces the potential for errors introduced during the implementation.
+An automated system offers benefits over manual review, as the domain experts can work with the DSL designers to encode the correct semantics before it becomes an executable program.
 
 % section the_need_for_correct_dsls (end)
 
@@ -252,26 +260,28 @@ As corecursion is dual to recursion, codata is the potentially infinite dual to 
 
 If the program semantics are limited to those that can be defined recursively rather than corecursively; that is, via structural induction rather than coinduction, then termination can be proven for such programs \citep{nordstrom1988terminating}.\\
 
-In the limited domain of recursively defined program semantics, this project aims to build on the of Peter Mosses, drawing on his work with his \textit{PlanCompS} project for specifying modular programming language semantics \cite{doh2001composing}.
-It will also draw upon the work of Godel's `System-T', a theory of arithmetic for finite types that allows reasoning about arbitrarily-sized, finite data structures via recursion \cite{girard1989proofs,alves2010godel}.\\
+In the limited domain of recursively defined program semantics, this project aims to build on the work of \cite{doh2001composing}, drawing on the \textit{PlanCompS} project for specifying modular programming language semantics.
+It will also draw upon the work of Godel's `System-T', a theory of arithmetic for finite types that allows reasoning about arbitrarily-sized, finite data structures via structural induction \cite{girard1989proofs,alves2010godel}.\\
 
 The aim is to define a set of what Mosses terms `funcons' (\textit{fundamental constructs}); a set of semantic building blocks that can all be proven to terminate \cite{churchill2014reusable}.
-Alongside a metalanguage that is able to specify both syntax and semantics for the DSL, the project aims to create a toolchain for verifying the DSL semantics.\\
+Alongside a metalanguage that is able to specify both syntax and semantics for the DSL, the project aims to create a toolchain for verifying the DSL semantics and producing an executable library for the DSL.\\
 
-From the metalanguage definition of syntax and semantics, the project toolchain will act as a metacompiler \cite{Mandell:1966:MDA:800267.810785} for the DSL.
-The provided semantics will allow decomposition, through structural induction, into the funcons.
+Using the metalanguage definition of the syntax and semantics for the DSL, the project toolchain will act as a metacompiler \cite{Mandell:1966:MDA:800267.810785}.
+This means it will produce an executable for the DSL via metacompilation and compilation steps.
+The provided semantics will allow decomposition, through structural induction, into the funcons, allowing the termination properties to be proved.
 The funcons and associated program code can then be composed to generate the program that matches the semantics defined for the DSL.\\
 
 % section verification_of_dsl_semantics (end)
 
 \section{The Novel Contribution of this Project} % (fold)
 \label{sec:the_novel_contribution_of_this_project}
-This project aims to make a novel research contribution through the production of two main components:
+This project aims to make a novel research contribution through the creation of two main components:
 \begin{itemize}
     \item \textbf{A DSL Metalanguage:} A metalanguage for the specification of the syntax of a DSL, along with its associated semantics. 
     The syntactic notation will likely be based upon the Extended Backus-Naur Form, a metasyntax notation for expressing languages whose syntax matches a context-free grammar. 
     The corresponding semantic notations will likely be based on the conventional big-step operational semantics \citep{Schmidt:2003:PLS:1074100.1074733} devised for automatic compiler generation \citep{diehl1996semantics}.
     \item \textbf{A Metacompiler:} This metacompiler program will take a DSL description in the above metalanguage, and a program in the described DSL, and produce a working executable from this. 
+    This may operate in a single-step or multipass process, depending on what makes for the most simple metacompiler architecture.
 \end{itemize}
 
 Through limiting scope to just recursively defined semantic constructs, and omitting consideration of corecursive constructs, this project will be able to produce a useful metacompiler for a set of language semantics within which arbitrary DSLs can be constructed. 
@@ -282,17 +292,19 @@ Through limiting scope to just recursively defined semantic constructs, and omit
 \label{sec:project_objectives}
 The main objectives of this project are as follows:
 \begin{itemize}
-    \item Conduct research on methods for the description of fundamental program syntax and semantics.
-    \item Use the knowledge gained from this research to develop the metalanguage \textit{Absol} to describe the syntax and semantics of an arbitrary domain-specific language.
+    \item Conduct research on methods for the syntactic description of fundamental program syntax and semantics.
+    \item Use the knowledge gained from this research to develop the \textit{Absol}\footnote{Automatic Builder for Semantically Organised Languages: The name of the metacompiler toolchain} metalanguage to describe the syntax and semantics of an arbitrary domain-specific language.
     \item Define a set of basic \textit{funcons} as fundamental building blocks for programs with purely recursively defined semantics. 
     These building blocks will have trivially true termination properties.
-    \item Describe methods for semantic decomposition, allowing the program semantics specified using \textit{Absol} to be decomposed to the \textit{funcons}, allowing termination proof for the semantics via structural induction.
+    \item Describe methods for semantic decomposition, allowing the program semantics specified using \textit{Absol} to be decomposed to the \textit{funcons}, allowing termination proof for the semantics via structural induction (they are all total functions, and compositions of total functions are also total).
     Structurally recursive semantic definitions allow us to decompose the semantics to the \textit{funcons}, as long as we can express all DSL semantics in terms of these building blocks. 
     \item Development of a basic DSL using the metalanguage.
     \item Development of a minimum working example for the metacompiler using hand-implemented semantics based on the \textit{Absol} metalanguage.
     \item Development of a working metacompiler that can ingest a description of the DSL's syntax and semantics using \textit{Absol}, as well as a program in the DSL itself, and produce a working executable program.
-    \item Evaluate the metacompiler in terms of real-world performance and theoretical contribution.
+    \item Creation of a more-capable and useful DSL with additional capabilities (as outlined in Section~\ref{sub:extended_dsl}).
+    \item Evaluate the metacompiler in terms of real-world utility and theoretical contribution based on the requirements and the theoretical and practical impact in relation to the literature surveyed.
 \end{itemize}
+
 
 % section project_objectives (end)
 
@@ -308,7 +320,7 @@ This section outlines the high-level requirements for the project.
 
 \section{Functional DSL} % (fold)
 \label{sec:functional_dsl}
-The DSL that will be devised for the project falls into two phases. 
+The DSL that will be devised for the project will be developed in two phases.
 The initial phase involves a very simple language that is capable of basic operations and data traversal, and is intended to be used for the hand-implemented metacompiler proof-of-concept.
 The more advanced phase brings additional language features if time permits, integrating them into the language to test the capabilities of the metacompiler.
 
@@ -318,7 +330,7 @@ The basic DSL has a set of functional and non-functional requirements.
 
 \subsubsection{Functional Requirements} % (fold)
 \label{ssub:functional_requirements_simple}
-The basic DSL will provide:
+The basic DSL \textit{will} provide:
 \begin{itemize}
     \item Simple data types (integers, floating-point numbers, strings), with operations defined on those data types.
     \item An error-handling mechanism
@@ -332,7 +344,7 @@ The basic DSL will provide:
 
 \subsubsection{Non-Functional Requirements} % (fold)
 \label{ssub:non_functional_requirements_simple}
-The non-functional requirements of the basic DSL are:
+The basic DSL \textit{will} fulfil the following requirements:
 \begin{itemize}
     \item A statically typed type system.
     \item The DSL will be purely functional, with all functions defined to be pure, total functions.
@@ -348,7 +360,7 @@ The extended DSL has all of the requirements of the simple DSL (Section~\ref{ssu
 
 \subsubsection{Functional Requirements} % (fold)
 \label{ssub:functional_requirements_extended}
-On top of the functionality defined for the basic DSL, the extended DSL will provide:
+On top of the functionality defined for the basic DSL, the extended DSL \textit{will} provide:
 \begin{itemize}
     \item Higher-order functional constructs, allowing functions to be first-class types in the language, and be passed as arguments.
     \item User-definable data-types (e.g. ADTs)
@@ -358,7 +370,7 @@ On top of the functionality defined for the basic DSL, the extended DSL will pro
 
 \subsubsection{Non-Functional Requirements} % (fold)
 \label{ssub:non_functional_requirements_extended}
-If time permits, the extended DSL may also provide:
+If time permits, the extended DSL \textit{may} also provide:
 \begin{itemize}
     \item Type-inference functionality utilising the Haskell type-inference engine (Hindley-Milner Type Inference).
     \item State propagation via an extension of the error mechanism.
@@ -376,7 +388,7 @@ The metalanguage has the following requirements.
 
 \subsection{Metalanguage: Functional Requirements} % (fold)
 \label{sub:metalanguage_functional_requirements}
-The metalanguage will satisfy the following requirements:
+The metalanguage \textit{will} satisfy the following requirements:
 \begin{itemize}
     \item Provide a syntax capable of specifying both the syntax and semantics of the DSL being expressed.
     \item Provide a set of funcons; building blocks from which the computational semantics of the DSL can be composed. 
@@ -387,7 +399,7 @@ The metalanguage will satisfy the following requirements:
 
 \subsection{Metalanguage: Non-Functional Requirements} % (fold)
 \label{sub:metalanguage_non_functional_requirements}
-The metalanguage may satisfy the following requirements:
+The metalanguage \textit{may} satisfy the following requirements:
 \begin{itemize}
     \item The syntax should be as natural as possible.
     \item The syntax should be intuitive where possible, drawing on existing concepts for specifying both syntax (e.g. EBNF) and semantics (e.g. big-step operational semantics).
@@ -404,7 +416,7 @@ The DSL metacompiler will satisfy the following requirements.
 
 \subsection{Metacompiler: Functional Requirements} % (fold)
 \label{sub:metacompiler_functional_requirements}
-The metacompiler will:
+The metacompiler \textit{will}:
 \begin{itemize}
     \item Take both a metalanguage specification and DSL source file as input.
     \item Provide a mechanism to parse the syntax specified in the metalanguage input file.
@@ -418,7 +430,7 @@ The metacompiler will:
 
 \subsection{Metacompiler: Non-Functional Requirements} % (fold)
 \label{sub:metacompiler_non_functional_requirements}
-The metacompiler will:
+The metacompiler \textit{will}:
 \begin{itemize}
     \item Be built using a sensible, modular design.
     \item Be designed with extensibility in mind.
@@ -429,19 +441,22 @@ The metacompiler will:
 
 \section{Project Scope} % (fold)
 \label{sec:project_scope}
-While this project is operating in an area of active research, the scope has been intentionally constrained.
+This project is operating in an area of active research and so the scope has been intentionally constrained.
+Through constraining the scope of this project it is hoped that a meaningful contribution can be made. 
 The following factors act to constrain project scope:
 \begin{itemize}
     \item \textbf{Static Typing:} Dealing with dynamic typing would impose significant constraints on the design of the metacompiler, adding additional complexity to its operation.
     Ensuring this worked correctly would likely take more time than is available for the project.
-    \item \textbf{No Codata:} While general-purpose programming languages have the ability to deal with codata and infinite data structures (e.g. streams, I/O), this project will omit this ability
+    \item \textbf{No Codata:} While general-purpose programming languages have the ability to deal with codata and infinite data structures (e.g. streams, I/O), this project will omit this ability.
     This is for two reasons:
     \begin{enumerate}
         \item It is unlikely to be useful for DSLs, as the DSL components can be called from the general-purpose programming language in which it is embedded.
-        \item Termination properties cannot be proved for codata, meaning that not all programs in DSLs where codata was allowed could be proved to be correct.
+        \item Termination properties cannot be proved for codata, meaning that not all programs in DSLs could be proved to be correct.
     \end{enumerate}
-    \item \textbf{Performance:} The project is not aiming to target performance and optimisation for the metacompiling process or the generator itself beyond what is afforded by GHCs optimising compiler.
+    \item \textbf{Performance:} The project is not aiming to target performance and optimisation for the metacompiling process or the generated code itself beyond what is afforded by GHCs optimising compiler (as the target language is Haskell).
     \item \textbf{No Consideration of Turing-Complete Programming Languages:} The project does not aim to consider turing-complete programming languages as part of its scope, mainly because codata is required to be turing complete.
+    \item \textbf{No Linguistic State:} In the default project requirements there is no need to work with state. 
+    State poses some interesting issues working with pure functions and functions that may have side-effects, so this is being ruled out of scope for the project.
 \end{itemize}
 
 % section project_scope (end)
@@ -455,7 +470,15 @@ The following factors act to constrain project scope:
 \chapter{Project Plan} % (fold)
 \label{cha:project_plan}
 This project plan aims to describe the intended progress of the project, including any planned contingencies.
-It highlights the major phases of the project, and also the major waypoints on the way.
+It highlights the major phases of the project, and also the major project milestones.\\
+
+The project plan assumes approximately 15 hours a week is spent on the project. 
+This will allow time to accommodate other coursework, as well as time for contingencies should things not go according to plan.\\
+
+The plan incorporated explicit contingencies, finishing the relevant stages ahead of any deadlines, ensuring that there will be something to hand in even if the task is not at the intended stage by the deadline.
+Each stage has the unwritten assumption that it includes time for additional research and note-taking where necessary.\\
+
+The gantt chart for the project plan can be found in Appendix~\ref{cha:project_plan_gantt_chart} on page~\pageref{cha:project_plan_gantt_chart}.
 
 % chapter project_plan (end)
 
@@ -464,7 +487,7 @@ It highlights the major phases of the project, and also the major waypoints on t
 % - A list of resources required to complete the project along with their availabilities.
 \chapter{Resources} % (fold)
 \label{cha:resources}
-Due to the highly theoretical nature of this project, it requires little in terms of software resources, and no equipment resources for project completion.
+Due to the highly theoretical nature of this project, it requires little in terms of software resources, and no physical equipment resources for project completion.
 
 \section{Software Resources} % (fold)
 \label{sec:software_resources}
@@ -472,14 +495,14 @@ The major software resources required for the completion of this project are:
 \begin{itemize}
     \item \textbf{The Glasgow Haskell Compiler:} GHC is the most advanced Haskell compiler currently available, providing multiple extensions on the Haskell language that will be invaluable in the project.
     The metaprogramming facilities devised by \cite{sheard2002template} will be valuable in the implementation of the metacompiler. 
-    \item \textbf{The Parsec Parsing Library:} Parsec is an industrial-strength, monadic, parser combinator library with the ability to parse Context-Sensitive and Infinite-Lookahead grammars.
+    \item \textbf{The Parsec Parsing Library:} Parsec is an industrial-strength, monadic, parser combinator library with the ability to parse languages with grammars as complex as Context-Sensitive and Infinite-Lookahead.
     Parsec will be used to simplify the parsing routines for both the syntax and semantics specified by the \textit{Absol} metalanguage.
     \item \textbf{Stack:} A modern build tool for Haskell, providing totally reproducible builds. 
     It also supports regular unit testing and comprehensive release management.
-    \item \textbf{Sublime Text 3:} A modern, extensible text editor with excellent performance characteristics.
+    \item \textbf{Sublime Text 3:} A modern, extensible text editor with excellent performance characteristics and a flexible plugin architecture.
     It will be used for working on the code portions of the project.
-    \item \textbf{SublimeHaskell Haskell Toolchain:} A toolchain to support writing complex Haskell projects. 
-    It provides semantic completion, refactoring support, linting, syntax styling and full type-inference, as well as integrating Haskell build tools with Sublime Text.
+    \item \textbf{SublimeHaskell Haskell Toolchain:} A Sublime Text plugin to support writing complex Haskell projects. 
+    It provides semantic completion, refactoring support, linting, syntax styling and full type-inference (type signature completion), as well as integrating Haskell build tools with Sublime Text.
 \end{itemize}
 
 % section software_resources (end)
@@ -488,18 +511,28 @@ The major software resources required for the completion of this project are:
 \label{sec:personnel_resources}
 While the project should be able to proceed without close support of personnel, it will be useful to have access to:
 \begin{itemize}
-    \item \textbf{Prof. Guy McCusker (Project Supervisor):} The project is highly theoretical, and there is the potential for a few instances where theoretical concepts found in various resources will required additional explanation or clarification.
+    \item \textbf{Prof. Guy McCusker (Project Supervisor):} The project is highly theoretical, and there is the potential for a few instances where theoretical concepts found in various resources will require additional explanation or clarification.
     \item \textbf{Prof. Peter Mosses (Swansea):} This project builds heavily upon his work with \textit{PlanCompS}, and it may be useful to be in communication with him to discuss ideas and request clarification on his work where necessary.
 \end{itemize}
 
 % section personnel_resources (end)
-
-- May be useful to contact mosses. 
 
 % chapter resources (end)
 
 % BIBLIOGRAPHY
 \bibliographystyle{abbrvnat}
 \bibliography{resources/bibliography}
+
+\begin{appendix}
+    
+\chapter{Project Plan: Gantt Chart} % (fold)
+\label{cha:project_plan_gantt_chart}
+This appendix contains the detailed Gantt chart project plan for this project.
+
+\includepdf[pages={-}, landscape]{resources/absol_final_year_project_plan.pdf}
+
+% chapter project_plan_gantt_chart (end)
+
+\end{appendix}
 
 \end{document}
