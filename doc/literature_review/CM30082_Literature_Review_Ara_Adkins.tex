@@ -328,7 +328,7 @@ exponent      ::=  ("e" | "E") ["+" | "-"] digit+
     Domain-specific rules can be encoded as static configuration as well as executable specification, a facet that was left un-addressed by the taxonomy proposed by \citet{van2000domain}.
     \item \textbf{Resuability:} The nature of a DSL is to encapsulate domain-specific logic, configuration and behaviour. 
     \begin{itemize}
-        \item \citet{Mernik:2005:DDL:1118890.1118892} recognises that an external DSL can act as a portable store for this information that can be reused across multiple systems. 
+        \item \citet{Mernik:2005:DDL:1118890.1118892} recognises that a compiled DSL can act as a portable store for this information that can be reused across multiple systems. 
         \item In contrast, an embedded DSL is non-portable as its implementation is wedded to the language in which it is embedded. 
         This means that similar DSL concepts would have to be implemented again in other languages, increasing the potential for implementation errors. 
     \end{itemize}
@@ -534,8 +534,8 @@ Languages fall into a set of categories defined by the Chomsky hierarchy \citep{
 While there are many categories, most Domain-Specific Languages fall into the category of Context-Free Grammars \citep{Siek:2010:GPL:1706356.1706358}.
 However, there is additional contextual information that cannot be defined by standard BNF.\\
 
-Examples of such context-sensitive language features are ``declaration of identifiers before use'' and ``well-typedness of expressions'' \citep{mosses2005action}.
-Such syntax can either be defined by attribute grammars (which can be specified in EBNF, discussed in Section~\ref{ssub:extended_backus_naur_form}), or as static program semantics (semantics defined by program structure) \citep{mosses2005action}. 
+Examples of such context-sensitive language features are ``declaration of identifiers before use'' and ``well-typedness of expressions'' \citep{mosses1992action}.
+Such syntax can either be defined by attribute grammars (which can be specified in EBNF, discussed in Section~\ref{ssub:extended_backus_naur_form}), or as static program semantics (semantics defined by program structure) \citep{mosses1992action}. 
 Such features include:
 \begin{itemize}
     \item Well-typedness information
@@ -557,7 +557,7 @@ This means that it could also be used to support semantic specifications about t
 EBNF, as a result, provides a flexible, and more importantly extensible, mechanism for specifying language syntax.
 These extensions can be used to specify meta-rules about the productions of the language, with \citet{slonneger1995formal} stating the three main forms as:
 \begin{itemize}
-    \item \textbf{Attributed Syntax Rules:} RUles that define the attributes of productions within a grammar, often used for the definition of context-sensitive syntactical structures. 
+    \item \textbf{Attributed Syntax Rules:} Rules that define the attributes of productions within a grammar, often used for the definition of context-sensitive syntactical structures. 
     Such rules are evaluated as the language is parsed. 
     \item \textbf{Conditional Rewrite Rules:} Syntactic rules that apply based on the evaluation of some condition to provide an alternative form for a given piece of syntax (e.g. an optimisation). 
     \item \textbf{Transition Rules:} Rules defining allowable transitions between states of the parser. 
@@ -599,12 +599,12 @@ Much of the literature agrees that formal semantic description is key to the des
 However, most common semantic description methods are inadequate for describing the complex semantics of real-world GPLs, meaning that most language standards use natural-language descriptions of semantics, leaving much scope for ambiguity \citep{mosses1986use}.
 This inadequacy is compounded by an almost complete lack of tooling to support the formal semantic definition of programming languages \citep{Binsbergen:2016:TSC:2892664.2893464}.\\
 
-Program semantics are modelled by semantic functions: expressions that map the abstract syntax of a program to the semantic entity that represents the program behaviour \citep{mosses2005action}:
+As the parser is a program that maps syntactically valid strings to an AST, program semantics can be modelled by semantic functions: expressions that map the abstract syntax of a program to the semantic entity that represents the program behaviour \citep{mosses1992action}:
 \begin{equation*}
     f_s(\text{abstract syntax}) \mathgoesto \text{semantics}
 \end{equation*}
 
-\citet{mosses2005action} defines two semantic functions to be equivalent at a given level of decomposition if two phrases of program syntax are interchangeable without altering the meaning of the program. 
+\citet{mosses1992action} defines two semantic functions to be equivalent at a given level of decomposition if two phrases of program syntax are interchangeable without altering the meaning of the program. 
 Consider, for example, the following Haskell code:
 \begin{lstlisting}[language=haskell]
 let x = sort(xs)
@@ -615,7 +615,7 @@ In this case, both program phrases will have the same semantic meaning, as both 
 
 Any compositions of such phrases with the same semantics are called \textit{fully abstract}. 
 When the semantics of a phrase composed of sub-phrases depends only on the semantics of its sub-phrases this is known as a \textit{compositional} semantics. 
-While such semantics are simpler to reason about, not all program expressions can be represented as compositional semantics \citep{mosses2005action}.\\
+While such semantics are simpler to reason about, not all program expressions can be represented as compositional semantics \citep{mosses1992action}.\\
 
 Such notions of program semantics take into account only the result of the expression, and do not account for any complexity of the algorithm.
 While such concerns are rarely considered as part of the program semantics, they can be useful when considering program synthesis from semantics \citep{kanovich1991efficient}.\\
@@ -634,9 +634,9 @@ Some frameworks concern themselves with only the results of execution, while oth
 
 \subsubsection{Operational Semantics} % (fold)
 \label{ssub:operational_semantics}
-There are multiple kinds of operational semantics, but the two most common semantic frameworks are \textit{Structured Operational Semantics (SOS)} and \textit{Natural Semantics}.\\
+There are multiple kinds of operational semantics, but the two most common semantic frameworks are \textit{Structural Operational Semantics (SOS)} and \textit{Natural Semantics}.\\
 
-Structured operational semantics (also known as small-step operational semantics) specify transition relations (semantic functions) that are characterised by phrase transitions depending only on the transitions of one or more of its sub-phrases \citep{Zhang:2004:SSD:981009.981013}:
+Structural operational semantics (also known as small-step operational semantics) specify transition relations (semantic functions) that are characterised by phrase transitions depending only on the transitions of one or more of its sub-phrases \citep{Zhang:2004:SSD:981009.981013}:
 \begin{itemize}
     \item Transition relations in this semantic framework are specified as sets of axioms and inference rules.
     \item Each transition modifies the syntax part of the state as a reflection of a portion of the execution of some sub-phrase. 
@@ -648,6 +648,8 @@ An example of such semantics can be seen in the following equation:
 \begin{equation*}
     [\text{asgn}_\text{sos}]: \langle x := \alpha, s \rangle \rightarrow s[x \mapsto \mathbb{A} \llbracket \alpha \rrbracket s]
 \end{equation*}
+
+This equation defines a rule for assignment, stating that assigning the value of $\alpha$ to the variable $x$ in state $s$ results in a new state $\mathbb{A}\llbracket \alpha \rrbracket s$ where the value of $x$ is $\alpha$.\\
 
 Natural semantics (also known as big-step operational semantics) exists as an alternative, hiding more execution details than SOS:
 \begin{itemize}
@@ -665,10 +667,12 @@ An example of such semantics can be seen in the following equation:
     \text{ if } \mathbb{B}\llbracket b \rrbracket s = {tt}
 \end{equation*}
 
+This semantic description defines the rule for an `if' statement, evaluating statement $S_1$ if the value of $b \in s$ evaluates to $tt$, else evaluating $S2$.\\ 
+
 While the above semantic frameworks have poor modularity, further operational semantics exist, such as the Modular Operational Semantics proposed by \cite{mosses2004modular}.
 This is a variant on SOS that restricts states to syntax and computed values.
 It incorporates all auxiliary entities (e.g. memory stores, loads and environments/continuations --- data structures that model the computational process at a given point in the program's execution) as labels on transitions.
-The hope is that this brings additional modularity to the semantics to allow for easy composition, but this has seen little uptake in practice.
+The hope is that this brings additional modularity to the semantics to allow for the semantic phrases to be reused when embedded in more complex programming languages, but this has seen little uptake in practice.
 
 % subsubsection operational_semantics (end)
 
@@ -686,6 +690,8 @@ An example of denotational semantics can be seen below \citep{Zhang:2004:SSD:981
 \begin{equation*}
     S_{ds} \llbracket x := a \rrbracket = \lambda s.s [x \mapsto \mathbb{A}\llbracket a \rrbracket s]
 \end{equation*}
+
+This semantic definition also defines a rule for assigning the value $\alpha$ to the variable $x$ in the state $s$. \\
 
 Denotational and Operational semantics can be written to be fully equivalent; such semantics are known as \textit{fully abstract} \citep{mosses2001varieties}.
 
@@ -710,17 +716,20 @@ An example of axiomatic semantics can be seen below \citep{Zhang:2004:SSD:981009
     t = \mathbb{B}\llbracket b \rrbracket 
 \end{equation*}
 
+Much akin to the rule shown for the natural semantics, this axiomatic rule defines the properties of an `if' expression. 
+It states that if the expression $t$, which has the value of evaluating the boolean expression $b$ is true, then expression $S_1$ is evaluated producing a state $Q$, otherwise the expression $S_2$ is evaluated, also producing a new state $Q$. 
+
 % subsubsection axiomatic_semantics (end)
 
 \subsubsection{Hybrid Semantics} % (fold)
 \label{ssub:hybrid_semantics}
 Hybrid Semantics is a term used to refer to any combination or augmentation of the previously listed frameworks to produce a new system for semantic description \citep{Zhang:2004:SSD:981009.981013}.\\
 
-There have been multiple hybrid frameworks, but one of the most studied is the Action Semantics framework designed by \citet{mosses2005action}, and used in multiple projects such as \citet{brown1992actress} and \citet{diehl1996semantics}.
+There have been multiple hybrid frameworks, but one of the most studied is the Action Semantics framework designed by \citet{mosses1992action}, and used in multiple projects such as those by \citet{brown1992actress} and \citet{diehl1996semantics}.
 Action semantics recognised the inability of the traditional semantic description methods to scale to more complex programming languages such as the GPLs used in day-to-day systems programming.
 \begin{itemize}
     \item It improves the modularity of denotational semantics by treating denotations as actions to be defined using a fixed \textit{action notation} consisting of primitives and combinators.
-    \item It provides direct support for the specification of control flow, data flow, scoping and concurrent communication \citep{mosses2005action,doh2001composing}.
+    \item It provides direct support for the specification of control flow, data flow, scoping and concurrent communication \citep{mosses1992action,doh2001composing}.
     \item As it is based upon operational and denotational semantics, it can be used to verify properties of the programs it is used to specify.
     \item Action semantics was extended to form Modular Action Semantics, which encapsulated the semantic description of each language construct in a separate module to allow for reuse \citep{Zhang:2004:SSD:981009.981013}. 
 \end{itemize}
@@ -731,7 +740,7 @@ An example of action semantics can be seen below \citep{Zhang:2004:SSD:981009.98
 \end{equation*}
 
 Action Semantics, however, is limited in that ``not all programming language concepts can be directly represented within action semantics'' \citep{wansbrough1997modular}. 
-This restriction is imposed by the set of computational constructs originally envisioned by \citet{mosses2005action}, with the system proving hard to extend.\\
+This restriction is imposed by the set of computational constructs originally envisioned by \citet{mosses1992action}, with the system proving hard to extend.\\
 
 In the search for a more modular system, \citet{wansbrough1997modular} proposed a system called Modular Monadic Action Semantics (MMAS) based upon both Action Semantics and the earlier Modular Monadic Semantics.
 This system aimed to combine the benefits of both systems into a single semantics framework.
@@ -750,8 +759,8 @@ Despite the wide variety of ways in which language semantics can be specified, i
 Simple semantic specifications such as Operational and Denotational semantics suffer from issues with extensibility and modularity, even though ``various programming constructs are common to many languages'' \citep{Churchill:2014:RCS:2577080.2577099,Zhang:2004:SSD:981009.981013,mosses2001varieties,mosses2004modular}. 
 While it is possible to specify a limited semantic framework that encompasses a set of computational actions, it is very possible to create a new kind of computation that does not fit easily into the existing framework \citep{wansbrough1997modular}. \\
 
-While there has been much research into the subject, with proposals such as Modular Monadic Semantics, Modular Action Semantics and even Modular Monadic Action Semantics, none of these frameworks have seen particular use \citep{wansbrough1997modular,mosses2005action,Zhang:2004:SSD:981009.981013,Mosses:2009:CS:1596486.1596489,mosses2001varieties}.
-Peter Mosses has written extensively about modular semantic frameworks as embodied by his PLanCompS project, but such semantic models that he terms `Funcons' have seen little uptake in practice \cite{Mosses:2009:CS:1596486.1596489,Churchill:2014:RCS:2577080.2577099,Binsbergen:2016:TSC:2892664.2893464}.
+While there has been much research into the subject, with proposals such as Modular Monadic Semantics, Modular Action Semantics and even Modular Monadic Action Semantics, none of these frameworks have seen particular use \citep{wansbrough1997modular,mosses1992action,Zhang:2004:SSD:981009.981013,Mosses:2009:CS:1596486.1596489,mosses2001varieties}.
+Peter Mosses has written extensively about modular semantic frameworks as embodied by his PLanCompS project, but such semantic models that he terms `Funcons' have seen little uptake in practice \citep{Mosses:2009:CS:1596486.1596489,Churchill:2014:RCS:2577080.2577099,Binsbergen:2016:TSC:2892664.2893464}.
 
 % subsubsection modularity_of_language_semantics (end)
 
@@ -770,12 +779,12 @@ In general this is an undecidable problem \citep{walther1994proving}.\\
 Proving program correctness is a complex task, and in many cases requires an examination of the environment in which the program executes.
 With a total understanding of this \textit{environment} and a set of \textit{well-defined program semantics}, it is theoretically possible to apply deductive reasoning to sets of axiomatic program properties to reason about the program's correctness in that environment \citep{Hoare:1969:ABC:363235.363259}.\\
 
-While \citet{Hoare:1969:ABC:363235.363259} and \citet{manna1974axiomatic} propose a generic axiomatic framework for reasoning about computer programs, the best framework is the well-specified semantics of the programming language in which the program is written.
+While \citet{Hoare:1969:ABC:363235.363259} and \citet{manna1974axiomatic} propose a generic axiomatic framework for reasoning about computer programs, the most appropriate framework to prove properties using is the well-specified semantics of the programming language in which the program is written.
 Under such circumstances, if the language semantics can be proven correct regardless of the execution environment (for a subset of program operations as discussed in Section~\ref{sub:data_and_codata}), it is possible to prove properties of programs in that language.
 
 \subsection{Data and Codata} % (fold)
 \label{sub:data_and_codata}
-While, in general, it is an undecidable problem to determine if an arbitrary Turing-Complete program is correct, it is possible to restrict the set of allowable operations to a set that can be shown to terminate \citep{walther1994proving}.
+While, in general, it is an undecidable problem to determine if an arbitrary program in a Turing-Complete language is correct, it is possible to restrict the set of allowable operations to a set that can be shown to terminate \citep{walther1994proving}.
 Basing the semantics of a DSL upon these allowable operations will, theoretically, allow for a DSL that can be shown to be correct.\\
 
 This restriction of allowable computational operations is based on the duality of \textit{data} and \textit{codata}.\\
@@ -809,7 +818,7 @@ Coinduction allows reasoning about the termination properties of codata, but is 
 Through a separation of data and codata, it is possible to define a language whose semantics can be reasoned about purely by well-founded induction, as defined by \citet{nordstrom1988terminating}. 
 This encompasses proofs on arbitrary length, finite data structures (those that are, hence, well-formed); inductive reasoning applied to such structures is guaranteed to reach a base-case, as examined in Godel's System-T and System-F \citep{alves2010godel,girard1989proofs}.\\
 
-This would, hopefully, allow a demonstration that the language semantics can be defined inductively on the language syntax.\\
+This would, hopefully, allow it to be shown that all well-formed programs in the language terminate and behave according to their specification (i.e. that they are \textit{correct}.\\
 
 Such a proof requires the definition of the following relation for a program $M$ with unique configurations $s$:
 \begin{equation*}
@@ -861,7 +870,7 @@ Nevertheless, the notion of Total Functional Programming has interesting implica
     A compiler generator, or metacompiler, is ``a tool that constructs a compiler automatically, given a syntactic and semantic description of the source language'' \citep{brown1992actress}.
 }
 
-The literature having established that it is possible to specify a language with provably correct semantics, some mechanisms needs to exist to translate such programs into an executable form.
+The literature having established that it is possible to specify a language such that it terminates (and behaves as specified) for all programs in that language, some mechanism needs to exist for translating such programs into an executable form.
 While it is possible to manually build a compiler for each DSL that is designed, this is a time-consuming undertaking requiring significant effort that may produce implementation defects, resulting in a non-correct compiler \citep{Mernik:2005:DDL:1118890.1118892}.\\
 
 In order to verify that the resultant DSL is correct, it is better to utilise a compiler generator, a specific form of \textit{application generator}.
@@ -1010,7 +1019,7 @@ While traditional parser generators such as YACC use event-based parsing, combin
 \end{itemize}
 
 The main downside of Parsec is that it provides no guarantees about left-recursion in grammars, which has the potential to cause the parser to hang at runtime. 
-Furthermore it is not as performant as some traditional parsers due to the additional state maintained for error reporting, as evidenced by the existence of Attoparsec \citep{gummelt2011hindsight}. \\
+Furthermore it does not perform as well as some traditional parsers due to the additional state maintained for error reporting, as evidenced by the existence of Attoparsec \citep{gummelt2011hindsight}. \\
 
 While Parsec is much faster than many parser combinator libraries, it is still to slow for real-time use or efficient parsing of very complex grammars. 
 Attoparsec, however, sacrifices readability of error messages for performance, meaning that Parsec itself is still a more sensible choice for the implementation of user-facing compilers. \\
