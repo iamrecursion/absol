@@ -1,0 +1,94 @@
+(*
+	This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
+
+	It uses the EBNF syntax defined in Sections 4 and 5 of the ISO-14977 EBNF 
+	standard. 
+*)
+
+(*
+	This section defines literals useful in the definition of the language. 
+	The UTF-8 literal is defined as all graphemes that can be represented by the
+	UTF-8 transformation format as defined in RFC 3629. 
+	For reference, the special symbols have the following meaning:
+
+		* 		repetition
+		-		except
+		, 		concatenate
+		| 		disjunction / definition separator
+		= 		defining
+		; 		rule terminator
+		[]		optional
+		{} 		repetition 
+		()		group	
+		? ?		special sequence
+*)
+
+utf-8-char = ? all-utf-8-glyphs ?
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+textual-glyph = utf-8-char - digit;
+eol-symbol = ? eol ?;
+
+(*
+	This section defines the terminal symbols of the language itself, including:
+    - Symbols for grammar definition
+    - Symbols for comments in the language
+*)
+
+(* Terminals used for defining the grammar *)
+
+repeat-count-symbol = "*";
+except-symbol = "-";
+disjunction-symbol = "|";
+defining-symbol = "::=";
+rule-termination-symbol = ";";
+
+optional-start-symbol = "[";
+optional-end-symbol = "]";
+group-start-symbol = "(";
+group-end-symbol = ")";
+repeat-start-symbol = "{";
+repeat-end-symbol = "}";
+
+special-sequence-start-symbol = "<?";
+special-sequence-end-symbol = "?>";
+
+(* Comment Symbols *)
+
+line-comment-start-symbol = "//";
+block-comment-start-symbol = "(*";
+block-comment-end-symbol = "*)";
+
+(* Semantic Definition Symbols *)
+
+semantic-behaves-as = "-->";
+evaluates-to = "<=";
+where-symbol = ":";
+semantic-and = ",";
+
+semantic-block-start = "{";
+semantic-block-end = "}";
+restriction-block-start = "(";
+restriction-block-end = ")";
+
+semantic-environment-symbol = "e";
+environment-access-symbol = ".";
+environment-defines-symbol = ":";
+
+syntax-access-start-symbol = "[";
+syntax-access-end-symbol = "]";
+
+(*
+	This section defines the grammar of metaspec itself.
+    The start symbol is 'metaspec'.
+*)
+
+metaspec = { metaspec-block | metaspec-comment }-,;
+
+metaspec-comment = 
+    line-comment-start-symbol, { utf-8-char }, eol-symbol | 
+    block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
+
+
+
+terminal-symbol =
+non-terminal-symbol = 
