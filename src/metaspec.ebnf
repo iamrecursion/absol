@@ -1,35 +1,48 @@
-(*
-	This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
 
-	It uses the EBNF syntax defined in Sections 4 and 5 of the ISO-14977 EBNF 
-	standard. 
+(*
+    This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
+
+    It uses the EBNF syntax defined in Sections 4 and 5 of the ISO-14977 EBNF
+    standard.
+
+    The grammar does not care about whitespace except in the case of single-line
+    comments which are ended by an EOL character (\n, \r, \r\n), in a
+    platform-specific manner.
+
+    Comments, defined by the metaspec-comment grammar element, are stripped 
+    before parsing.
 *)
 
 (*
-	This section defines literals useful in the definition of the language. 
-	The UTF-8 literal is defined as all graphemes that can be represented by the
-	UTF-8 transformation format as defined in RFC 3629. 
-	For reference, the special symbols have the following meaning:
+    This section defines literals useful in the definition of the language.
+    The UTF-8 literal is defined as all graphemes that can be represented by the
+    UTF-8 transformation format as defined in RFC 3629.
+    For reference, the special symbols have the following meaning:
 
-		* 		repetition
-		-		except
-		, 		concatenate
-		| 		disjunction / definition separator
-		= 		defining
-		; 		rule terminator
-		[]		optional
-		{} 		repetition 
-		()		group	
-		? ?		special sequence
+        *       repetition
+        -       except
+        ,       concatenate
+        |       disjunction / definition separator
+        =       defining
+        ;       rule terminator
+        []      optional
+        {}      repetition
+        ()      group
+        ? ?     special sequence
 *)
 
-utf-8-char = ? all-utf-8-glyphs ?
+utf-8-char = ? all-utf-8-glyphs ?;
+text = { utf-8-char }-;
 digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+natural-number = { digit }-,;
+integer = [ "+" | "-" ], natural-number;
+floating-point-number = natural-number, [ ".", natural-number ];
 textual-glyph = utf-8-char - digit;
-eol-symbol = ? eol ?;
+eol-symbol = ? EOL ?;
+literal-quote = ? double-quote-symbol ?;
 
 (*
-	This section defines the terminal symbols of the language itself, including:
+    This section defines the terminal symbols of the language itself, including:
     - Symbols for grammar definition
     - Symbols for comments in the language
 *)
@@ -78,17 +91,120 @@ syntax-access-start-symbol = "[";
 syntax-access-end-symbol = "]";
 
 (*
-	This section defines the grammar of metaspec itself.
+    This section defines the grammar of metaspec itself.
     The start symbol is 'metaspec'.
 *)
 
-metaspec = { metaspec-block | metaspec-comment }-,;
+metaspec = { metaspec-def | metaspec-comment }-,; (* file cannot be empty *)
 
-metaspec-comment = 
-    line-comment-start-symbol, { utf-8-char }, eol-symbol | 
+metaspec-comment =
+    line-comment-start-symbol, { utf-8-char }, eol-symbol |
     block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
 
+comment-list = { metaspec-comment };
 
+metaspec-def = metaspec-defblock, rule-termination-symbol;
 
-terminal-symbol =
-non-terminal-symbol = 
+(* 
+    All of these blocks must be defined once. If multiple definitions are found,
+    the first is used. 
+
+    NB: This is unsatisfactory, but I can't come up with a nice way to enforce
+    all of them being there only once without enforcing an ordering constraint.
+*)
+metaspec-defblock = 
+    name-defblock | 
+    version-defblock | 
+    using-defblock |
+    truths-defblock |
+    language-defblock ;
+
+(* names can be arbitrary *)
+name-defblock = "name", where-symbol, { utf-8-char }-,;
+
+(* Version strings can be alphanumeric *)
+version-defblock = "version", where-symbol, { utf-8-char }-,;
+
+using-defblock =
+    "using",
+    where-symbol,
+    semantic-block-start,
+    [ metaspec-feature, { ",", metaspec-feature }]
+    semantic-block-end;
+
+truths-defblock =
+    "truths",
+    where-symbol, 
+    semantic-block-start,
+    semantic-evaluation,
+    { ", ", semantic-evaluation },
+    semantic-block-end;
+
+(* For defining the language itself *)
+language-defblock =
+    "language",
+    where-symbol,
+    semantic-block-start,
+    language-definition,
+    semantic-block-end;
+
+(* 
+    These features import language features into scope.
+
+    The syntax and usage of these features is tbc, and they appear in semantic
+    portions of the defined language.
+
+    Is it better to not make the list part of the syntax?
+*)
+metaspec-feature = 
+    "funcall" |
+    "integer" |
+    "floating-point" |
+    "array" |
+    "text" |
+    "list" |
+    "matrix" |
+    "map" |
+    "reduce";
+
+(*
+    The language described by the metalanguage is defined in terms of rules 
+    that combine syntax definitions and semantics.
+
+    The start symbol must be defined somewhere, and can be the only production 
+    of the language.
+*)
+language-definition = { language-rule }, start-rule, { language-rule };
+
+non-terminal = "<", text, ">";
+terminal = literal-quote, text, literal-quote;
+start-symbol = "<<", text, ">>";
+
+start-rule = start-symbol, defining-symbol, language-rule-body;
+
+language-rule = non-terminal, defining-symbol, language-rule-body;
+
+language-rule-body = 
+    syntax-expression,
+    [ language-rule-semantics ],
+    ";";
+
+syntax-expression = 
+    syntax-alternative, { disjunction-symbol, syntax-alternative };
+
+language-rule-semantics = 
+    semantic-behaves-as,
+    semantic-block-start,
+    { semantic-rule }-, 
+    semantic-block-end;
+
+semantic-rule = 
+    environment-input-rule,
+    environment-access-rule,
+    special-syntax-rule,
+    semantic-evaluation-rule;
+
+semantic-evaluation = ;
+
+(* The symbols here are dependent on the language using imports *)
+semantic-type = ? imported-type-alternation ?;

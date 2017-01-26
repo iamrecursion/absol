@@ -91,6 +91,7 @@ introduced by the 'using' directive.
 
 // Issues with parsing from the perspective of syntactic and semantic operations
 // Need to have a reference of allowable semantic operations? 
+// These rely on operations imported with the types
 <arith-op> ::=
     <statement> + <statement> --> {
         int n : {n = n1 + n1}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
