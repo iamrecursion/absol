@@ -65,6 +65,11 @@ repeat-end-symbol = "}";
 special-sequence-start-symbol = "<?";
 special-sequence-end-symbol = "?>";
 
+start-symbol-start = "<<";
+start-symbol-end = ">>";
+non-terminal-start = "<";
+non-terminal-end = ">";
+
 (* Comment Symbols *)
 
 line-comment-start-symbol = "//";
@@ -77,18 +82,25 @@ semantic-behaves-as = "-->";
 evaluates-to = "<=";
 where-symbol = ":";
 semantic-and = ",";
+semantic-assign = "=";
+
+semantic-environment-symbol = "e";
+semantic-environment-input-symbol = "<--"
+environment-access-symbol = ".";
+environment-defines-symbol = ":";
+semantic-list-delimiter = ",";
+semantic-disjunction = "|";
 
 semantic-block-start = "{";
 semantic-block-end = "}";
 restriction-block-start = "(";
 restriction-block-end = ")";
 
-semantic-environment-symbol = "e";
-environment-access-symbol = ".";
-environment-defines-symbol = ":";
-
 syntax-access-start-symbol = "[";
 syntax-access-end-symbol = "]";
+
+special-syntax-start = "(";
+special-syntax-end = ")";
 
 (*
     This section defines the grammar of metaspec itself.
@@ -129,7 +141,7 @@ using-defblock =
     "using",
     where-symbol,
     semantic-block-start,
-    [ metaspec-feature, { ",", metaspec-feature }]
+    [ metaspec-feature, { semantic-list-delimiter, metaspec-feature }]
     semantic-block-end;
 
 truths-defblock =
@@ -176,9 +188,9 @@ metaspec-feature =
 *)
 language-definition = { language-rule }, start-rule, { language-rule };
 
-non-terminal = "<", text, ">";
+non-terminal = non-terminal-start, text, non-terminal-end;
 terminal = literal-quote, text, literal-quote;
-start-symbol = "<<", text, ">>";
+start-symbol = start-symbol-start, text, start-symbol-end;
 
 start-rule = start-symbol, defining-symbol, language-rule-body;
 
@@ -187,15 +199,49 @@ language-rule = non-terminal, defining-symbol, language-rule-body;
 language-rule-body = 
     syntax-expression,
     [ language-rule-semantics ],
-    ";";
+    rule-termination-symbol;
 
+(* These NTs use definitions adapted directly from ISO 14977 - EBNF *)
 syntax-expression = 
     syntax-alternative, { disjunction-symbol, syntax-alternative };
 
+syntax-alternative = syntax-term, { syntax-term };
+
+syntax-term = syntax-factor, [ except-symbol, syntax-exception ];
+
+syntax-exception = 
+    ? a syntax-factor that can be replaced by one containing no NT symbols ?;
+
+syntax-factor = [ integer, repeat-count-symbol ], syntax-primary;
+
+syntax-primary = 
+    syntax-optional | 
+    syntax-repeated |
+    syntax-grouped |
+    syntax-special |
+    syntax-empty |
+    non-terminal |
+    terminal;
+
+syntax-optional = optional-start-symbol, syntax-expression, optional-end-symbol;
+
+syntax-repeated = repeat-start-symbol, syntax-expression, repeat-end-symbol;
+
+syntax-grouped = group-start-symbol, syntax-expression, group-end-symbol;
+
+syntax-special =
+    special-sequence-start-symbol,
+    syntax-expression,
+    special-sequence-end-symbol;
+
+syntax-empty = ;
+
+(* These productions define the syntax of the semantic definition blocks *)
 language-rule-semantics = 
     semantic-behaves-as,
     semantic-block-start,
-    { semantic-rule }-, 
+    semantic-rule,
+    { semantic-disjunction, semantic-rule },
     semantic-block-end;
 
 semantic-rule = 
@@ -204,7 +250,84 @@ semantic-rule =
     special-syntax-rule,
     semantic-evaluation-rule;
 
-semantic-evaluation = ;
+environment-input-rule =
+    semantic-environment-symbol,
+    semantic-environment-input-symbol,
+    syntax-access-block, (* key *)
+    environment-defines-symbol,
+    syntax-access-list;
+
+syntax-access-block = 
+    non-terminal,
+    syntax-accessor;
+
+syntax-accessor = 
+    syntax-access-start-symbol,
+    natural-number,
+    syntax-access-end-symbol;
+
+syntax-access-list = 
+    syntax-access-block, { semantic-list-delimiter, syntax-access-block };
+
+environment-access-rule = 
+    semantic-environment-symbol,
+    environment-access-symbol,
+    syntax-access-block,
+    { environment-access-symbol, syntax-access-block };
+
+special-syntax-rule = 
+    semantic-operation,
+    special-syntax-start,
+    [ syntax-access-block | environment-access-rule ],
+    { semantic-list-delimiter, (syntax-access-block|environment-access-rule) },
+    special-syntax-end;
+
+semantic-identifier = text;
+
+semantic-evaluation-rule = 
+    semantic-type,
+    semantic-identifier,
+    where-symbol,
+    semantic-operation-list,
+    semantic-restiction-list,
+    where-symbol, 
+    semantic-eveluation-list;
+
+semantic-eveluation-list = 
+    semantic-block-start,
+    semantic-evaluation,
+    { semantic-list-delimiter, semantic-evaluation };
+
+semantic-evaluation = 
+    semantic-type, 
+    identifier,
+    evaluates-to,
+    [ syntax-access-block | special-syntax-rule ];
+
+semantic-operation-list = 
+    semantic-block-start,
+    semantic-operation-assignment
+    { semantic-list-delimiter, semantic-operation-assignment },
+    semantic-block-end;
+
+semantic-operation-assignment =
+    identifier,
+    semantic-assign,
+    semantic-operation;
+
+semantic-operation = ? TBC ?;
+
+semantic-restriction-list = 
+    restriction-block-start
+    semantic-restriction,
+    { semantic-list-delimiter, semantic-restriction },
+    restriction-block-end;
+
+semantic-restriction = ? TBC ?;
 
 (* The symbols here are dependent on the language using imports *)
 semantic-type = ? imported-type-alternation ?;
+
+sementic-operator = ? imported-type-op-alternation ?;
+
+semantic-restriction-operators ? imported-type-restriction-op-alternation ?;

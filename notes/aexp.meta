@@ -76,8 +76,8 @@ introduced by the 'using' directive.
 <param-list> ::= {<statement>};
 
 <function-call> ::= <identifier> "(" <param-list> ")" ";" --> {
-    n : {n = n1}() : {
-        n1 <= funcall(
+    any n : {n = n1}() : {
+        any n1 <= funcall(
             e.<identifier>[0].<statement>[0],
             <param-list>[0],
             e.<identifier>[0].<param-decl-list>[0]
@@ -93,20 +93,20 @@ introduced by the 'using' directive.
 // Need to have a reference of allowable semantic operations? 
 // These rely on operations imported with the types
 <arith-op> ::=
-    <statement> + <statement> --> {
-        int n : {n = n1 + n1}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+    <statement> "+" <statement> --> {
+        int n : {n = n1 + n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
-    <statement> - <statement> --> {
-        n : {n = n1 - n1}() : {n1 <= <statement>[0]}, {n2 <= <statement>[1]}
+    <statement> "-" <statement> --> {
+        int n : {n = n1 - n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
-    <statement> x <statement> --> {
-        n : {n = n1 * n1}() : {n1 <= <statement>[0]}, {n2 <= <statement>[1]}
+    <statement> "x" <statement> --> {
+        int n : {n = n1 * n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
-    <statement> / <statement> --> {
-        n : {n = n1 / n1}() : {n1 <= <statement>[0]}, {n2 <= <statement>[1]}
+    <statement> "/" <statement> --> {
+        int n : {n = n1 / n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
-    <statement> ^ <statement> --> {
-        n : {n = n1 ^ n1}() : {n1 <= <statement>[0]}, {n2 <= <statement>[1]}
+    <statement> "^" <statement> --> {
+        int n : {n = n1 ^ n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     };
 
 <bool> ::= ...
@@ -115,10 +115,10 @@ introduced by the 'using' directive.
 
 <ifthen> ::= 
     "if" <condition> "then" <statement> "else" <statement> --> {
-        n : {n = n2} (n1 == true) : 
+        bool n : {n = n2}(n1 == true) : 
             {bool n1 <= <condition>[0]}, 
-            {any n2 <= <statement>[0]} |
-        n : {n = n2} (n1 == false) : 
+            {any n2 <= <statement>[0]} | // need to make this syntax work
+        bool n : {n = n2}(n1 == false) : 
             {bool n1 <= <condition>[0]}, 
             {any n2 <= <statement>[1]}
     };
