@@ -32,8 +32,8 @@ These are the things guaranteed to terminate for this language. They are
 specified as semantic blocks.
 *)
 truths : {
-    {}, // Think about exactly what should be done here
-    {}
+    {int n <= <integer>}, // Think about exactly what should be done here
+    {string n <= <string>} // Add some more syntax to the grammar
 };
 
 (* A definition of the language syntax and semantics. *)
@@ -94,16 +94,20 @@ introduced by the 'using' directive.
 // These rely on operations imported with the types
 <arith-op> ::=
     <statement> "+" <statement> --> {
-        int n : {n = n1 + n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+        int n : {n = n1 + n2}() : 
+            {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
     <statement> "-" <statement> --> {
-        int n : {n = n1 - n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+        int n : {n = n1 - n2}() : 
+            {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
     <statement> "x" <statement> --> {
-        int n : {n = n1 * n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+        int n : {n = n1 * n2}() : 
+            {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
     <statement> "/" <statement> --> {
-        int n : {n = n1 / n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+        int n : {n = n1 / n2}() : 
+            {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
     <statement> "^" <statement> --> {
         int n : {n = n1 ^ n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
@@ -117,7 +121,7 @@ introduced by the 'using' directive.
     "if" <condition> "then" <statement> "else" <statement> --> {
         bool n : {n = n2}(n1 == true) : 
             {bool n1 <= <condition>[0]}, 
-            {any n2 <= <statement>[0]} | // need to make this syntax work
+            {any n2 <= <statement>[0]} |
         bool n : {n = n2}(n1 == false) : 
             {bool n1 <= <condition>[0]}, 
             {any n2 <= <statement>[1]}

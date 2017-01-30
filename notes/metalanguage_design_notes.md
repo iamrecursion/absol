@@ -193,3 +193,13 @@ The DSL Metalanguage layout will consist of:
 3. A block containing the language specification itself.
 
 It will use the `.meta` file extension. 
+
+## Revision Tracking
+This section 
+
+### Semantic Types
+These enforce valid type constraints on the semantics. Otherwise there would
+not have been ...
+
+### Matrix-Spreadsheet Language
+A spreadsheet language based on matrix...

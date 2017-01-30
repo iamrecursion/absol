@@ -1,5 +1,6 @@
-module Metagen 
-    ( someFunc
+module Absol.Metagen 
+    ( 
+        someFunc
     ) where
 
 import qualified Data.Text.IO as T

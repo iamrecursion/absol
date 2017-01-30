@@ -166,8 +166,6 @@ language-defblock =
 
     The syntax and usage of these features is tbc, and they appear in semantic
     portions of the defined language.
-
-    Is it better to not make the list part of the syntax?
 *)
 metaspec-feature = 
     "funcall" |
@@ -177,8 +175,11 @@ metaspec-feature =
     "text" |
     "list" |
     "matrix" |
+    "associative-array" |
     "map" |
-    "reduce";
+    "reduce" |
+    "state" |
+    "maybe";
 
 (*
     The language described by the metalanguage is defined in terms of rules 
@@ -258,9 +259,7 @@ environment-input-rule =
     environment-defines-symbol,
     syntax-access-list;
 
-syntax-access-block = 
-    non-terminal,
-    syntax-accessor;
+syntax-access-block = non-terminal, [ syntax-accessor ];
 
 syntax-accessor = 
     syntax-access-start-symbol,
@@ -361,7 +360,9 @@ semantic-type =
     "matrix" |
     "array" |
     "list" |
-    "map";
+    "map" |
+    "any" |
+    "maybe";
 
 semantic-binary-operator = 
     "+" |
@@ -377,19 +378,6 @@ semantic-binary-operator =
 prefix-semantic-unary-operator = "!" | "-" | "++" | "--";
 
 postfix-semantic-unary-operator = "--" | "++";
-
-metaspec-feature = 
-    "funcall" |
-    "integer" |
-    "floating-point" |
-    "array" |
-    "text" |
-    "list" |
-    "matrix" |
-    "associative-array" |
-    "map" |
-    "reduce" |
-    "state" ;
 
 semantic-special-syntax =
     "funcall" |

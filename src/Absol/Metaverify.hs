@@ -1,5 +1,6 @@
-module Metaverify 
-    ( someFunc
+module Absol.Metaverify 
+    ( 
+        someFunc
     ) where
 
 import qualified Data.Text.IO as T
