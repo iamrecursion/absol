@@ -110,7 +110,8 @@ introduced by the 'using' directive.
             {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     } |
     <statement> "^" <statement> --> {
-        int n : {n = n1 ^ n2}() : {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
+        int n : {n = n1 ^ n2}() : 
+            {int n1 <= <statement>[0]}, {int n2 <= <statement>[1]}
     };
 
 <bool> ::= ...
