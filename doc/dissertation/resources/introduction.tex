@@ -1,0 +1,113 @@
+
+\chapter{Project Introduction} % (fold)
+\label{cha:project_introduction}
+This project aims to create a framework and toolchain for the formal verification of embedded, executable Domain-Specific Languages.
+The hope is to allow the generation of provably correct, tailored programming languages that can encapsulate domain logic inside another program.
+These languages will be compiled through the use of a Haskell metacompiler (a compiler that generates a compiler) that takes both syntax and semantics for the Domain-Specific Language, generating executable libraries for embedding the DSL.
+
+\section{An Introduction to Domain-Specific Languages} % (fold)
+\label{sec:an_introduction_to_domain_specific_languages}
+Modern software systems are increasing in complexity, with everything from flight computers to business software growing \citep{dvorak2009nasa}.
+As these systems grow, the domain logic is becoming integrated throughout the systems, leading to increased levels of coupling throughout the code.
+This means that there is an increased risk that changes to the software create modes of incorrect operation \citep{khawar2001developing}.\\
+
+In reaction to the dispersion of domain logic throughout modern software systems, Domain-Specific Languages (DSLs) have seen ``a significant uptick in interest'' \citep{fowler2010domain}. 
+A DSL is a limited, application-specific language that is integrated with another software system, providing a custom encoding of domain rules and logic that can often go beyond the syntactic constraints of the host language \citep{Mernik:2005:DDL:1118890.1118892}.
+In the use of a DSL, software systems are able to centralise their domain logic using a common syntax, making it simple to change rules for the operation of the program.\\
+
+The term `Domain-Specific Language' is a broad one, encompassing a variety of embedded syntaxes for defining domain logic.
+Fowler defines `internal' and `external' DSLs.
+An internal DSL is written in the host language and exposed via an API, also known as a fluent interface.
+\cite{fowler2010domain} defines an external DSL, in contrast, as a language parsed independently of the host language.\\
+
+In addition to their structure, Domain-Specific Languages can also be defined in terms of their `executability' \citep{Mernik:2005:DDL:1118890.1118892}.
+Many DSLs are programming languages with `well-defined execution semantics'.
+Examples of this are \LaTeX, a macro language for \TeX, and Template Haskell, which allows manipulation of Haskell code itself using Haskell \citep{Sheard:2002:TMH:581690.581691}.
+As a counterpoint, some DSLs only define configuration information for a software system, having no executable semantics of their own.
+
+% section an_introduction_to_domain_specific_languages (end)
+
+\section{The Need for Correct DSLs} % (fold)
+\label{sec:the_need_for_correct_dsls}
+Initial inspiration for this project was engendered by the observation of a financial technology company using the general-purpose programming language OCaml for specifying logic at runtime.
+As a Turing-complete programming language, this offered vastly greater expressive power than necessary for the domain in which it was applied.
+This meant an increase in the potential for bugs in the domain logic, as suggested by \cite{subramanyam2003empirical}.
+If a capable DSL could be designed that could have formally verified properties, then it would be a much better fit to the domain while reducing the capacity for bugs.\\
+
+While the scope of common DSLs is necessarily very broad, encompassing everything from executable program logic to statically defined configuration, this project aims to focus on a small subset of DSLs.
+As formal correctness only applies to executable programs, this project will focus on external, executable DSLs. 
+While analysis could benefit internal DSLs as well, they are already covered by traditional code review mechanisms, and would be hard to integrate into this project.\\
+
+Even with the ``detailed analysis and structuring of the application domain'' \citep{van2000domain} performed when initially defining the DSL, it can be difficult to verify the correctness of the resulting language. 
+While current methods can utilise code-review to attempt to analyse the correctness of the DSL implementation, a lack of understanding of the domain by the application developers may cause logic errors to be missed. 
+This is because the domain logic is often embodied by expert knowledge, as found by \cite{studer1998knowledge}. 
+It can hence be difficult to verify the language implementation with those domain experts, through code-review, due to their lack of understanding of the implementing language.
+As core domain logic, often integral to the program, is encapsulated by the DSL, it is instrumental that it be formally correct.\\
+
+This project aims to provide a solution for the sixth step of DSL design as proposed by \cite{van2000domain}: ``design and implement a compiler that translates DSL programs''. 
+While the logic that the DSL aims to encode can be verified with domain experts, it is often difficult to verify the resulting implementation.
+As the language semantics are integral to the operation of the DSL, providing the semantic analysis and verification as part of the toolchain will allow the automatic generation of DSLs.
+The generation from specification greatly reduces the potential for errors introduced during the implementation.
+An automated system offers benefits over manual review, as the domain experts can work with the DSL designers to encode the correct semantics before it becomes an executable program.
+
+% section the_need_for_correct_dsls (end)
+
+\section{Verification of DSL Semantics} % (fold)
+\label{sec:verification_of_dsl_semantics}
+While it would be desirable to design a system for verification of arbitrary DSL semantics, there are certain classes of problem in semantic verification which are not decidable \citep{abdulla1994undecidable}. \\
+
+This is most elegantly expressed in the duality of data and codata, or recursion and corecursion. 
+While recursively defined structures are decomposed from a state into certain `base-cases', providing a well-defined termination property, corecursion aims to start from a `base-case' and build data from there \citep{hinze2010reasoning}.
+As corecursion is dual to recursion, codata is the potentially infinite dual to data, which is necessarily finite. \\
+
+If the program semantics are limited to those that can be defined recursively rather than corecursively; that is, via structural induction rather than coinduction, then termination can be proven for such programs \citep{nordstrom1988terminating}.\\
+
+In the limited domain of recursively defined program semantics, this project aims to build on the work of \cite{doh2001composing}, drawing on the \textit{PlanCompS} project for specifying modular programming language semantics.
+It will also draw upon the work of Godel's `System-T', a theory of arithmetic for finite types that allows reasoning about arbitrarily-sized, finite data structures via structural induction \cite{girard1989proofs,alves2010godel}.\\
+
+The aim is to define a set of what Mosses terms `funcons' (\textit{fundamental constructs}); a set of semantic building blocks that can all be proven to terminate \cite{Churchill:2014:RCS:2577080.2577099}.
+Alongside a metalanguage that is able to specify both syntax and semantics for the DSL, the project aims to create a toolchain for verifying the DSL semantics and producing an executable library for the DSL.\\
+
+Using the metalanguage definition of the syntax and semantics for the DSL, the project toolchain will act as a metacompiler \cite{Mandell:1966:MDA:800267.810785}.
+This means it will produce an executable for the DSL via metacompilation and compilation steps.
+The provided semantics will allow decomposition, through structural induction, into the funcons, allowing the termination properties to be proved.
+The funcons and associated program code can then be composed to generate the program that matches the semantics defined for the DSL.\\
+
+% section verification_of_dsl_semantics (end)
+
+\section{The Novel Contribution of this Project} % (fold)
+\label{sec:the_novel_contribution_of_this_project}
+This project aims to make a novel research contribution through the creation of two main components:
+\begin{itemize}
+    \item \textbf{A DSL Metalanguage:} A metalanguage for the specification of the syntax of a DSL, along with its associated semantics. 
+    The syntactic notation will likely be based upon the Extended Backus-Naur Form, a metasyntax notation for expressing languages whose syntax matches a context-free grammar. 
+    The corresponding semantic notations will likely be based on the conventional big-step operational semantics \citep{Schmidt:2003:PLS:1074100.1074733} devised for automatic compiler generation \citep{diehl1996semantics}.
+    \item \textbf{A Metacompiler:} This metacompiler program will take a DSL description in the above metalanguage, and a program in the described DSL, and produce a working executable from this. 
+    This may operate in a single-step or multipass process, depending on what makes for the most simple metacompiler architecture.
+\end{itemize}
+
+Through limiting scope to just recursively defined semantic constructs, and omitting consideration of corecursive constructs, this project will be able to produce a useful metacompiler for a set of language semantics within which arbitrary DSLs can be constructed. 
+
+% section the_novel_contribution_of_this_project (end)
+
+\section{Project Objectives} % (fold)
+\label{sec:project_objectives}
+The main objectives of this project are as follows:
+\begin{itemize}
+    \item Conduct research on methods for the syntactic description of fundamental program syntax and semantics.
+    \item Use the knowledge gained from this research to develop the \textit{Absol}\footnote{Automatic Builder for Semantically Organised Languages: The name of the metacompiler toolchain} metalanguage to describe the syntax and semantics of an arbitrary domain-specific language.
+    \item Define a set of basic \textit{funcons} as fundamental building blocks for programs with purely recursively defined semantics. 
+    These building blocks will have trivially true termination properties.
+    \item Describe methods for semantic decomposition, allowing the program semantics specified using \textit{Absol} to be decomposed to the \textit{funcons}, allowing termination proof for the semantics via structural induction (they are all total functions, and compositions of total functions are also total).
+    Structurally recursive semantic definitions allow us to decompose the semantics to the \textit{funcons}, as long as we can express all DSL semantics in terms of these building blocks. 
+    \item Development of a basic DSL using the metalanguage.
+    \item Development of a minimum working example for the metacompiler using hand-implemented semantics based on the \textit{Absol} metalanguage.
+    \item Development of a working metacompiler that can ingest a description of the DSL's syntax and semantics using \textit{Absol}, as well as a program in the DSL itself, and produce a working executable program.
+    \item Creation of a more-capable and useful DSL with additional capabilities.
+    \item Evaluate the metacompiler in terms of real-world utility and theoretical contribution based on the requirements and the theoretical and practical impact in relation to the literature surveyed.
+\end{itemize}
+
+
+% section project_objectives (end)
+
+% chapter project_introduction (end)

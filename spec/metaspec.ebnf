@@ -40,7 +40,7 @@ floating-point-number = natural-number, [ ".", natural-number ];
 number = natural-number | integer | floating-point-number;
 textual-glyph = utf-8-char - digit;
 eol-symbol = ? EOL ?;
-literal-quote = ? double-quote-symbol ?;
+literal-quote = ? ASCII-double-quote-symbol ?;
 
 (*
     This section defines the terminal symbols of the language itself, including:

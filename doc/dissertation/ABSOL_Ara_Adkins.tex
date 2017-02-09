@@ -1,0 +1,224 @@
+%DocumentClass
+\documentclass[a4paper,11pt]{report}
+
+%Additional Packages
+\usepackage{scrextend} %for variable indentation
+\usepackage{algorithm} %For algorithms
+\usepackage{algpseudocode} %For algorithms
+\usepackage[]{array}
+\usepackage{amsmath} %Extra formula-writing functionality
+\usepackage{amssymb} %More formula-writing functionality
+\usepackage[toc]{appendix}
+\usepackage{bm}
+\usepackage{bold-extra} %Small caps
+\usepackage{caption}
+\usepackage{color} %Colour stuff (mostly for the highlight custom command)
+\usepackage{enumerate} %For lists
+\usepackage{fancyhdr}
+\usepackage{float} %better float control
+\usepackage[utf8]{inputenc} %for font encoding
+\usepackage{framed} %For frames around blocks
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=3cm]{geometry} %Fix page margins
+\usepackage[hidelinks]{hyperref} %For URL formleatting (makes clickable links)
+\usepackage[toc, xindy, acronym, nonumberlist, nopostdot]{glossaries}
+\usepackage{graphicx} %For including images, etc.
+\usepackage{listings} %For including code
+\usepackage{longtable} %for multi-page tables
+\usepackage{mathrsfs} %For maths script fonts
+\usepackage{newclude}
+\usepackage{titling}
+\usepackage{titlesec}
+\usepackage[nottoc]{tocbibind}
+\usepackage[]{natbib} %For the bibliography
+%\usepackage[superscript]{cite}
+\usepackage{pdfpages} %For including PDFs
+\usepackage[]{pdflscape}
+\usepackage{stmaryrd}
+\usepackage{subcaption}
+\usepackage{tabu} %more pretty tables
+\usepackage{tabulary} %for nice tables
+\usepackage{tabularx} %also for nice tables
+\usepackage{ulem}
+\usepackage{xcolor}
+\usepackage{xparse}
+\usepackage{textcomp}
+\usepackage[prefix=sol-]{xcolor-solarized}
+\usepackage[]{marvosym}
+\usepackage{microtype}
+
+\usepackage{relsize}
+
+%CustomCommands
+\newcommand{\highlight}[1]{\colorbox{yellow}{#1}} %Highlights text
+\newcommand{\limplies}{\to} %Creates the logical implication sign
+\newcommand{\liff}{\leftrightarrow} %Creates the double logical implication sign
+\newcommand{\leftabs}{\left\lvert} %Left absolute value bracket
+\newcommand{\rightabs}{\right\rvert} %Right absolute value bracket
+\newcommand{\textbsc}[1]{\textsc{\textbf{#1}}}
+%\renewcommand\thesubsection{(\alph{subsection})} %Make subsections alphabetical
+\newcommand{\id}{\hspace*{12pt}}
+\newcommand{\newpar}{\vspace{12pt}}
+\newcommand{\lam}{$\lambda$}
+\newcommand{\alp}{$\alpha$}
+\newcommand{\bet}{$\beta$}
+\newcommand{\aequiv}{=_\alpha}
+\newcommand{\bequiv}{=_\beta}
+\newcommand{\bconv}{\limplies_\beta}
+\newcommand{\context}{$\Gamma$}
+\newcommand{\rspace}{\;\;\;\;\;\;\;\;}
+\newcommand{\eval}{\Downarrow}
+\newcommand{\goesto}[0]{\MVRightarrow}
+\newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
+
+% New Table Column Types
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+% Syntax: \newdualentry[glossary options][acronym options]{label}{abbrv}{long}{description}
+\DeclareDocumentCommand{\newdualentry}{ O{} O{} m m m m } {
+    \newglossaryentry{gls-#3}{name={#5},text={#5\glsadd{#3}},
+        description={#6},#1
+    }
+    % \makeglossaries
+    \newacronym[first=#5, firstplural=#5s, see={[Glossary:]{gls-#3}},#2]{#3}{#4}{#5 \glsseeformat[Glossary:]{gls-#3}{#5}\glsadd{gls-#3}}
+    % \newacronym[see={[Glossary:]{gls-#3}},#2]{#3}{#4}{#5\glsadd{gls-#3}}
+}
+
+% For quoting \quoteit{quote}{attribution}
+\newcommand{\quoteit}[2]{
+    \begin{longtable}{p{14cm}}
+        \textit{``#1''} \\
+        % \hspace{5mm} --- #2 
+        \begin{tabular}{R{14cm}}
+            --- #2
+        \end{tabular}
+    \end{longtable}
+}
+
+% For definitions \defblock{colsize}{name}{description}
+\newcommand{\defblock}[3]{
+    \begin{longtable}{l p{#1}} 
+        \textbf{#2} & #3
+    \end{longtable}
+}
+
+%Various Definitions
+\setcounter{tocdepth}{2}
+\definecolor{light-gray}{gray}{0.5}
+
+\titleformat{\chapter}
+    {\normalfont\huge}  % format
+    {\thechapter.}      % label
+    {10pt}              % separation
+    {\huge\it}          % before-code
+
+\pagestyle{fancy}
+\lhead{\color{light-gray}Ara Adkins}
+\rhead{\color{light-gray}ABSOL}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setlength{\parindent}{0pt}
+\setlength{\headheight}{14pt}
+
+\hypersetup{
+    colorlinks,
+    linkcolor={blue!30!black},
+    citecolor={blue!30!black},
+    urlcolor={blue!80!black}
+}
+
+\makeatletter
+\renewcommand\@dotsep{200}
+\makeatother
+
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+
+% Listings Styles
+\lstset{
+    % How/what to match
+    sensitive=true,
+    % Border (above and below)
+    frame=lines,
+    % Extra margin on line (align with paragraph)
+    xleftmargin=0.5cm,
+    % Put extra space under caption
+    belowcaptionskip=1\baselineskip,
+    % Colors
+    backgroundcolor=\color{sol-base3},
+    basicstyle=\color{sol-base0}\ttfamily,
+    keywordstyle=\color{sol-cyan},
+    commentstyle=\color{sol-base01},
+    stringstyle=\color{sol-blue},
+    numberstyle=\color{sol-violet},
+    identifierstyle=\color{sol-base00},
+    % Break long lines into multiple lines?
+    breaklines=true,
+    % Show a character for spaces?
+    showstringspaces=false,
+    tabsize=4,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{sol-base1},
+    rulecolor=\color{sol-base01},
+    aboveskip=2em,
+    belowskip=2em,
+    upquote=true
+}
+
+% Title
+% \pretitle{
+% 	\begin{center}
+% }
+% \posttitle{
+%     \end{center}
+% }
+
+\title{ABSOL: Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
+\author{Ara Adkins}
+\date{\today}
+
+% Glossaries
+\makeglossaries
+\include{resources/glossary}
+\glsaddall % add all items to the glossaries
+
+% Marking Criteria
+% Demonstrate ability to learn independently, apply research skills, critically evaluate the work of others.
+% Search Phase: Identification of appropriate previous work, note key ideas, theories, directions and concepts that are revealed. 
+% Review Phase: A structured summary and critique of the reading you have done. Use the project idea to identify ideas and threads of development, and relate ideas that may have not previously been related. REFINE THE HYPOTHESIS
+% Should tell a story that should identify the idea development as the literature and technology search was constructed. 
+% 
+% THINGS TO DO:
+% - Consideration of the key texts based on the projcted ideas, with a CRITICAL EVALUATION of these texts.
+% - Gather disparate sources into a coherent whole with a structured argument.
+% - What are the 'clear conclusions' to be made --- that the project is useful
+% - Covers a lot of ground with a tight focus (a lot of literature in a limited area)
+% - Selective use of references, quotations, illustrations and results --- DO NOT DISRUPT THE WRITING
+% - Professional, lucid and concise writing style with a high level of consistency. 
+% TODO Want examples of things and code examples throughout, where relevant
+
+%Document
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\printglossaries
+
+\include{resources/introduction}
+\include{resources/literature_survey}
+
+% Bibliography
+\bibliographystyle{abbrvnat}
+\bibliography{resources/bibliography}
+
+\begin{appendix}
+
+\end{appendix}
+
+\end{document}

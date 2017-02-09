@@ -44,3 +44,12 @@ cabal.project.local
 *.out
 *.synctex*
 *.toc
+*.acn
+*.acr
+*.alg
+*.bbl
+*.blg
+*.glg
+*.glo
+*.gls
+*.xdy
