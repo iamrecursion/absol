@@ -179,7 +179,8 @@ metaspec-feature =
     "map" |
     "reduce" |
     "state" |
-    "maybe";
+    "maybe" |
+    "random";
 
 (*
     The language described by the metalanguage is defined in terms of rules 
@@ -386,4 +387,5 @@ semantic-special-syntax =
     "retrieve" |
     "map" |
     "reduce" |
-    "apply";
+    "apply" | 
+    "rand"
