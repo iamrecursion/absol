@@ -1,3 +1,7 @@
+
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+
 module Cmdargs
     -- (
     --     -- CLIOptions(..),
@@ -24,18 +28,7 @@ withParserInfo :: Parser a -> String -> ParserInfo a
 withParserInfo options description =
     info (helper <*> options) $ progDesc description
 
--- Options
--- FILENAME : The name of the input metaspec file
--- [-r | --report] : Print a report on the safety of the language, but do not
--- generate any files.
--- [-c | --clean] : Remove any generated files (known from the name generation).
--- [-h | --help] : Print the help text.
--- [-n | --name NAME] : Override the name string contained in the file.
--- [-v | --version VERSION] : Override the version string contained in the file.
--- [-l | --log-verbose] : Set verbose logging mode.
--- [--log-file FILE] : Sets a log file. Otherwise defaults to stderr.
 
--- https://hackage.haskell.org/package/filepath-1.4.1.2/docs/System-FilePath-Posix.html
 
 type SpecFile = FilePath
 type ReportFlag = Bool
