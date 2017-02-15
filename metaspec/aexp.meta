@@ -120,10 +120,10 @@ introduced by the 'using' directive.
 
 <ifthen> ::= 
     "if" <condition> "then" <statement> "else" <statement> --> {
-        bool n : {n = n2}(n1 == true) : 
+        any n : {n = n2}(n1 == true) : 
             {bool n1 <= <condition>[0]}, 
             {any n2 <= <statement>[0]} |
-        bool n : {n = n2}(n1 == false) : 
+        any n : {n = n2}(n1 == false) : 
             {bool n1 <= <condition>[0]}, 
             {any n2 <= <statement>[1]}
     };

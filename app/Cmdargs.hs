@@ -1,16 +1,19 @@
-{-|
-Module      : Cmdargs
-Description : Functionality for parsing the command-line arguments of the ABSOL
-              metacompiler.
-Copyright   : (c) Ara Adkins, 2017
-License     : Closed
-Maintainer  : me@ara.io
-Stability   : experimental
-Portability : GHC
+-------------------------------------------------------------------------------
+-- |
+-- Module      : Cmdargs
+-- Description : Functionality for parsing the command-line arguments of the 
+--               ABSOL metacompiler.
+-- Copyright   : (c) Ara Adkins, 2017
+-- License     : See LICENSE file.
 
-This module provides functionality for parsing the metacompiler command-line 
-arguments, as well as the data-type for storing them. 
--}
+-- Maintainer  : me@ara.io
+-- Stability   : experimental
+-- Portability : GHC
+-- 
+-- This module provides functionality for parsing the metacompiler command-line 
+-- arguments, as well as the data-type for storing them. 
+--
+-------------------------------------------------------------------------------
 module Cmdargs
     (
         CLIOptions(..),
