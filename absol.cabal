@@ -17,9 +17,11 @@ library
   hs-source-dirs:       src/
   exposed-modules:      Absol,
                         Absol.Metagen,
+                        Absol.Metagen.Utilities,
                         Absol.Metalex,
                         Absol.Metaparse,
-                        Absol.Metaverify
+                        Absol.Metaverify,
+                        Absol.Utilities
   build-depends:        base >= 4.7 && < 5
                       , text
                       , filepath
@@ -96,6 +98,8 @@ executable absol
                       , optparse-applicative
   default-language:     Haskell2010
   default-extensions:   OverloadedStrings
+                      , LambdaCase
+                      , MultiWayIf
 
 test-suite absol-test
   type:                 exitcode-stdio-1.0
