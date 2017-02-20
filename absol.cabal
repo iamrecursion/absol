@@ -26,7 +26,7 @@ library
                       , text
                       , filepath
                       , containers
-                      , parsec
+                      , megaparsec
   build-tools:          alex
   default-language:     Haskell2010
   default-extensions:   ApplicativeDo
