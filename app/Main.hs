@@ -16,8 +16,6 @@ main = runMetacompiler =<< execParser (
             "ABSOL :: Automatic Builder for Semantically Oriented Languages"
     )
 
--- TODO Output directory argument.
-
 -- | Contains the main execution context of the metacompiler.
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
