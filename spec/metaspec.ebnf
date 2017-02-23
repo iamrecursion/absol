@@ -255,6 +255,7 @@ semantic-rule =
 
 environment-input-rule =
     semantic-environment-symbol,
+    semantic-type, 
     semantic-environment-input-symbol,
     syntax-access-block, (* key *)
     environment-defines-symbol,
@@ -357,12 +358,14 @@ semantic-type =
     "int64" |
     "uint32" |
     "uint64" |
+    "num" | (*for all numeric types *)
     "text" |
     "matrix" |
     "array" |
     "list" |
     "map" |
     "any" |
+    "none" |
     "maybe";
 
 semantic-binary-operator = 

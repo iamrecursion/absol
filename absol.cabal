@@ -20,6 +20,7 @@ library
                         Absol.Metagen.Utilities,
                         Absol.Metalex,
                         Absol.Metaparse,
+                        Absol.Metaparse.Grammar,
                         Absol.Metaverify,
                         Absol.Utilities
   build-depends:        base >= 4.7 && < 5
@@ -27,7 +28,6 @@ library
                       , filepath
                       , containers
                       , megaparsec
-  build-tools:          alex
   default-language:     Haskell2010
   default-extensions:   ApplicativeDo
                       , BangPatterns
@@ -85,6 +85,7 @@ library
                       , TypeInType
                       , UnboxedTuples
                       , ViewPatterns
+
 executable absol
   hs-source-dirs:       app
   main-is:              Main.hs
@@ -93,11 +94,18 @@ executable absol
   build-depends:        base
                       , absol
                       , optparse-applicative
+                      , text
   default-extensions:   OverloadedStrings
+  default-language:     Haskell2010
+
 test-suite absol-test
   type:                 exitcode-stdio-1.0
   hs-source-dirs:       test
   main-is:              Spec.hs
+  build-depends:        base
+                      , absol
+  default-language:     Haskell2010
+
 source-repository head
   type:                 git
   location:             https://github.com/iamrecursion/absol

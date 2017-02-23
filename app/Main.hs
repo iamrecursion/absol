@@ -6,6 +6,7 @@ import           Cmdargs
 import           System.Exit
 import           System.IO
 import           System.IO.Error
+import qualified Data.Text.IO as TI
 
 -- | The main function for ABSOL.
 main :: IO ()
@@ -42,4 +43,4 @@ acquireMetaspecFile file = withFile file ReadMode
 
 -- | The main processing chain for the metacompiler.
 processMetaspecFile :: CLIOptions -> Handle -> IO ()
-processMetaspecFile _ mFile = putStrLn =<< hGetContents mFile
+processMetaspecFile _ mFile = TI.putStrLn =<< TI.hGetContents mFile

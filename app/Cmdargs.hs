@@ -23,6 +23,7 @@ module Cmdargs
     ) where
 
 import           Options.Applicative
+import           Data.Monoid ((<>))
 
 type CmdLineFlag = Bool
 type File = FilePath
