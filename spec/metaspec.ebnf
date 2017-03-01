@@ -247,20 +247,20 @@ language-rule-semantics =
     semantic-block-end;
 
 semantic-rule = 
-    environment-input-rule,
-    environment-access-rule,
-    special-syntax-rule,
+    environment-input-rule |
+    environment-access-rule |
+    special-syntax-rule |
     semantic-evaluation-rule;
 
 environment-input-rule =
-    semantic-environment-symbol,
     semantic-type, 
+    semantic-environment-symbol,
     semantic-environment-input-symbol,
     syntax-access-block, (* key *)
     environment-defines-symbol,
     syntax-access-list;
 
-syntax-access-block = non-terminal, [ syntax-accessor ];
+syntax-access-block = non-terminal, syntax-accessor;
 
 syntax-accessor = 
     syntax-access-start-symbol,
@@ -295,15 +295,16 @@ semantic-evaluation-rule =
     semantic-eveluation-list;
 
 semantic-eveluation-list = 
-    semantic-block-start,
     semantic-evaluation,
     { semantic-list-delimiter, semantic-evaluation };
 
 semantic-evaluation = 
+    semantic-block-start
     semantic-type, 
     identifier,
     evaluates-to,
-    [ syntax-access-block | special-syntax-rule ];
+    [ syntax-access-block | special-syntax-rule ],
+    semantic-block-end;
 
 semantic-operation-list = 
     semantic-block-start,
@@ -317,12 +318,12 @@ semantic-operation-assignment =
     semantic-operation;
 
 semantic-operation = 
-    prefixunary-op-expression | 
+    prefix-unary-op-expression | 
     postfix-unary-op-expression |
     binary-op-expression;
 
 prefix-unary-op-expression = 
-    prefix-semantic-unary-operator, identifier | prefixunary-op-expression;
+    prefix-semantic-unary-operator, identifier | prefix-unary-op-expression;
 
 postfix-unary-op-expression = 
     identifier | postfix-unary-op-expression, postfix-semantic-unary-operator;
@@ -341,7 +342,7 @@ semantic-restriction-list =
 semantic-restriction = 
     identifier, 
     semantic-restriction-check-operator,
-    identifier | semantic-boolean;
+    identifier | semantic-restriction-value;
 
 (* The symbols here are dependent on the language using imports *)
 semantic-restriction-check-operator = "==" | "!=" | "<" | ">" | "<=" | ">=";
@@ -376,7 +377,13 @@ semantic-binary-operator =
     "|" |
     "||" |
     "&&" |
-    "&";
+    "&" |
+    "==" |
+    "!=" |
+    "<" |
+    ">" |
+    "<=" |
+    ">=";
 
 prefix-semantic-unary-operator = "!" | "-" | "++" | "--";
 
