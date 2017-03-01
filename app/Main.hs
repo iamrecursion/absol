@@ -2,6 +2,7 @@
 module Main where
 
 import           Absol.Utilities (outputToken)
+import qualified Absol.Metaparse as P
 import           Cmdargs
 import           System.Exit
 import           System.IO

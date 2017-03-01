@@ -12,7 +12,7 @@ using : {
 
 truths : {
     {int n <= <integer>}
-    {float n <= <floatint-point>}
+    {float n <= <floating-point>}
 };
 
 language : {
@@ -46,7 +46,7 @@ language : {
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     };
 
-<identifier> ::= <nondigit> {<integer> | }
+<identifier> ::= <nondigit> {<integer> | } // TODO
     
 <statement> ::= <arith-expr> | <assignment> ;
 

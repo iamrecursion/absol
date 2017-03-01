@@ -391,4 +391,4 @@ semantic-special-syntax =
     "map" |
     "reduce" |
     "apply" | 
-    "rand"
+    "rand";

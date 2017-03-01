@@ -1,6 +1,3 @@
-
-{-# LANGUAGE MultiWayIf #-}
-
 -------------------------------------------------------------------------------
 -- |
 -- Module      : Absol.Metaparse.Grammar
@@ -16,199 +13,153 @@
 -- language grammar at the language level.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaparse.Grammar (
+module Absol.Metaparse.Grammar where
 
-    ) where
+-- import           Control.Monad         (void)
+import Data.Text
+-- import           Text.Megaparsec
+-- import           Text.Megaparsec.Char
+-- import           Text.Megaparsec.Expr
+-- import qualified Text.Megaparsec.Lexer as L
+-- import           Text.Megaparsec.Perm
+-- import           Text.Megaparsec.Text  (Parser)
 
-import           Control.Monad         (void)
-import           Text.Megaparsec
-import           Text.Megaparsec.Char
-import           Text.Megaparsec.Expr
-import qualified Text.Megaparsec.Lexer as L
-import           Text.Megaparsec.Perm
-import           Text.Megaparsec.Text  (Parser)
+-- Basic Terminal Symbol Types
+type Terminal = Text
 
--- Integer Double
+type RepeatCountSymbol = Terminal
+type ExceptSymbol = Terminal
+type DisjunctionSymbol = Terminal
+type DefiningSymbol = Terminal
+type RuleTerminationSymbol = Terminal
 
--- A basic grammar experiment
--- aexp = identifier | integer | "-", aexp | aexp, opa, aexp ;
--- bexp = "true" | "false" | "not", bexp | bexp, opb, bexp | aexp, opr, aexp ;
--- opa = "+" | "*" | "-" | "/" ;
--- opb = "and" | "or" ;
--- opr = "<" | ">"
--- comm = identifier, ":=", aexp
---      | "skip"
---      | comm, ";", comm
---      | "(", comm, ")"
---      | "if", bexp, "then", comm, "else", comm
---      | "while", bexp, "do", comm
+type OptionalStartSymbol = Terminal
+type OptionalEndSymbol = Terminal
+type GroupStartSymbol = Terminal
+type GroupEndSymbol = Terminal
+type RepeatStartSymbol = Terminal
+type RepeatEndSymbol = Terminal
 
-data BExpr
-    = BoolConstant Bool
-    | Not BExpr
-    | BoolBinary BoolBinOp BExpr BExpr
-    | RelBinary RelBinOp AExpr AExpr
-    deriving (Show)
+type SpecialSequenceStartSymbol = Terminal
+type SpecialSequenceEndSymbol = Terminal
 
-data AExpr
-    = Identifier String
-    | IntegerConstant Integer
-    | NegateExpr AExpr
-    | ArithBinary ArithBinOp AExpr AExpr
-    deriving (Show)
+type SemanticBehavesAs = Terminal
+type EvaluatesTo = Terminal
+type WhereSymbol = Terminal
+type SemanticEnd = Terminal
+type SemanticAssign = Terminal
 
-data BoolBinOp = And | Or deriving (Show)
+type SemanticEnvironmentSymbol = Terminal
+type SemanticEnvironmentInputSymbol = Terminal
+type EnvironmentAccessSymbol = Terminal
+type EnvironmentDefinesSymbol = Terminal
+type SemanticListDelimiter = Terminal
+type SemanticDisjunction = Terminal
 
-data RelBinOp = LessThan | GreaterThan deriving (Show)
+type SemanticBlockStart = Terminal
+type SemanticBlockEnd = Terminal
+type RestrictionBlockStart = Terminal
+type RestrictionBlockEnd = Terminal
 
-data ArithBinOp = Add | Multiply | Subtract | Divide deriving (Show)
+type SyntaxAccessStartSymbol = Terminal
+type SyntaxAccessEndSymbol = Terminal 
 
-data Comm
-    = Assignment String AExpr
-    | Skip
-    | Seq [Comm]
-    | CondExpr BExpr Comm Comm
-    | WhileExpr BExpr Comm
-    deriving (Show)
+type SpecialSyntaxStart = Terminal
+type SpecialSyntaxEnd = Terminal
 
--- LEXER CODE
+type Keyword = Text
 
--- | This function consumes whitespace and comments in the language
---
--- Whitespace and comments are defined as in the Metaspec grammar.
-sc :: Parser ()
-sc = L.space (void spaceChar) lineComment blockComment
-    where
-        lineComment = L.skipLineComment "//"
-        blockComment = L.skipBlockComment "(*" "*)"
-
--- | Determines the lexeme consumer strategy.
---
--- Space is consumed after lexemes, but not before them.
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
-
--- | Parses the provided terminal symbol.
-terminal :: String -> Parser String
-terminal = L.symbol sc
-
-parentheses :: Parser a -> Parser a
-parentheses = between (terminal "(") (terminal ")")
-
-integer :: Parser Integer
-integer = lexeme L.integer
-
-semi :: Parser String
-semi = terminal ";"
-
-reservedWord :: String -> Parser ()
-reservedWord w = string w *> notFollowedBy alphaNumChar *> sc
-
-reservedWordList :: [String]
-reservedWordList =
-    ["if","then","else","while","do","skip","true","false","not","and","or"]
-
-identifier :: Parser String
-identifier = (lexeme . try) (p >>= check)
-    where
-        p = (:) <$> letterChar <*> many alphaNumChar
-        check x = if
-            | x `elem` reservedWordList -> failExpr x
-            | otherwise -> return x
-        failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
-
--- PARSER CODE
-parseLanguage :: Parser Comm
-parseLanguage = between sc eof comm
-
-comm :: Parser Comm
-comm = parentheses comm <|> commSequence
-
-comm' :: Parser Comm
-comm' = ifStatement <|> whileStatement <|> skipStatement <|> assignStatement
-
-commSequence :: Parser Comm
-commSequence = f <$> sepBy1 comm' semi
-    where
-        f l = if length l == 1 then head l else Seq l
-
-ifStatement :: Parser Comm
-ifStatement = do
-    reservedWord "if"
-    cond <- booleanExpression
-    reservedWord "then"
-    statement1 <- comm
-    reservedWord "else"
-    statement2 <- comm
-    return (CondExpr cond statement1 statement2)
-
-whileStatement :: Parser Comm
-whileStatement = do
-    reservedWord "while"
-    cond <- booleanExpression
-    reservedWord "do"
-    statement <- comm
-    return (WhileExpr cond statement)
-
-assignStatement :: Parser Comm
-assignStatement = do
-    varName <- identifier
-    void (terminal ":=") -- ignore the result of evaluation
-    expression <- arithmeticExpression
-    return (Assignment varName expression)
-
-skipStatement :: Parser Comm
-skipStatement = Skip <$ reservedWord "skip"
-
-booleanExpression :: Parser BExpr
-booleanExpression = makeExprParser boolTerm boolOperators
-
-arithmeticExpression :: Parser AExpr
-arithmeticExpression = makeExprParser arithTerm arithOperators
-
--- Precedence given by order in the operators list
-arithOperators :: [[Operator Parser AExpr]]
-arithOperators =
+-- Keyword Lists
+metaspecFeatureList :: [Text]
+metaspecFeatureList = 
     [
-        [ Prefix (NegateExpr <$ terminal "-")],
-        [
-            InfixL (ArithBinary Multiply <$ terminal "*"),
-            InfixL (ArithBinary Divide <$ terminal "*")
-        ],
-        [
-            InfixL (ArithBinary Add <$ terminal "+"),
-            InfixL (ArithBinary Subtract <$ terminal "-")
-        ]
+        "funcall",
+        "integer",
+        "floating-point",
+        "array",
+        "text",
+        "list",
+        "matrix",
+        "associative-array",
+        "map",
+        "reduce",
+        "state",
+        "maybe",
+        "random"
     ]
 
-boolOperators :: [[Operator Parser BExpr]]
-boolOperators =
+semanticTypeList :: [Text]
+semanticTypeList =
     [
-        [ Prefix (Not <$ reservedWord "not") ],
-        [
-            InfixL (BoolBinary And <$ reservedWord "and"),
-            InfixL (BoolBinary Or <$ reservedWord "or")
-        ]
+        "uinteger",
+        "integer",
+        "int32",
+        "int64",
+        "uint32",
+        "uint64",
+        "num",
+        "text",
+        "matrix",
+        "array",
+        "list",
+        "map",
+        "any",
+        "none",
+        "maybe"
     ]
 
-arithTerm :: Parser AExpr
-arithTerm = parentheses arithmeticExpression
-    <|> Identifier <$> identifier
-    <|> IntegerConstant <$> integer
+semanticSpecialSyntaxList :: [Text]
+semanticSpecialSyntaxList =
+    [
+        "funcall",
+        "array",
+        "store",
+        "retrieve",
+        "map",
+        "reduce",
+        "apply", 
+        "rand"
+    ]
 
-boolTerm :: Parser BExpr
-boolTerm = parentheses booleanExpression
-    <|> (reservedWord "true" *> pure (BoolConstant True))
-    <|> (reservedWord "false" *> pure (BoolConstant False))
-    <|> relationalExpression
+-- Defines the Grammar 
 
-relationalExpression :: Parser BExpr
-relationalExpression = do
-    arg1 <- arithmeticExpression
-    op <- relationOp
-    arg2 <- arithmeticExpression
-    return (RelBinary op arg1 arg2)
+-- | Defines the start symbol for the metaspec grammar.
+newtype Metaspec = Metaspec [MetaspecDef] deriving (Show)
 
-relationOp :: Parser RelBinOp
-relationOp = (terminal ">" *> pure GreaterThan)
-    <|> (terminal "<" *> pure LessThan)
+data MetaspecDef = 
+    MetaspecDef MetaspecDefblock RuleTerminationSymbol deriving (Show)
+
+data MetaspecDefblock
+    = NameDefblock Keyword WhereSymbol Text
+    | VersionDefblock Keyword WhereSymbol Text
+    | UsingDefblock 
+        Keyword 
+        WhereSymbol 
+        SemanticBlockStart 
+        UsingList 
+        SemanticBlockEnd
+    | TruthsDefblock
+        Keyword 
+        WhereSymbol 
+        SemanticBlockStart 
+        SemanticEvaluationList
+        SemanticBlockEnd
+    | LanguageDefblock MetaspecLanguage
+    deriving (Show)
+
+newtype UsingList = UsingList [MetaspecFeature] deriving (Show)
+
+newtype SemanticEvaluationList = 
+    SemanticEvaluationList [SemanticEvaluation]
+    deriving (Show)
+
+type MetaspecFeature = Text
+
+data MetaspecLanguage = MetaspecLanguage deriving (Show)
+
+
+
+
+
+-- TEMP
+newtype SemanticEvaluation = SemanticEvaluation Text deriving (Show)

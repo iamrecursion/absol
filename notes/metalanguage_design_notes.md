@@ -243,3 +243,10 @@ discussions with some PLT people:
 
 ### Recursion
 - A form of declaration for recursive functions. 
+
+## Semantics of Productions
+- Every production with at least one terminal in it must have semantics
+- A semantic indicator for identifiers to work around the one case in the 
+  restriction.
+- Every descent through every production from the start symbol must have 
+  semantics. 
