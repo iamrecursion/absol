@@ -201,14 +201,13 @@ language-rule = non-terminal, defining-symbol, language-rule-body;
 
 language-rule-body = 
     syntax-expression,
-    [ language-rule-semantics ],
     rule-termination-symbol;
 
 (* These NTs use definitions adapted directly from ISO 14977 - EBNF *)
 syntax-expression = 
     syntax-alternative, { disjunction-symbol, syntax-alternative };
 
-syntax-alternative = syntax-term, { syntax-term };
+syntax-alternative = syntax-term, { syntax-term }, [ language-rule-semantics ];
 
 syntax-term = syntax-factor, [ except-symbol, syntax-exception ];
 
