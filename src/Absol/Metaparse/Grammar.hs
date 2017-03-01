@@ -25,49 +25,57 @@ import Data.Text
 -- import           Text.Megaparsec.Text  (Parser)
 
 -- Basic Terminal Symbol Types
-type Terminal = Text
+type MetaspecTerminal = Text
 
-type RepeatCountSymbol = Terminal
-type ExceptSymbol = Terminal
-type DisjunctionSymbol = Terminal
-type DefiningSymbol = Terminal
-type RuleTerminationSymbol = Terminal
+type RepeatCountSymbol = MetaspecTerminal
+type ExceptSymbol = MetaspecTerminal
+type DisjunctionSymbol = MetaspecTerminal
+type DefiningSymbol = MetaspecTerminal
+type RuleTerminationSymbol = MetaspecTerminal
 
-type OptionalStartSymbol = Terminal
-type OptionalEndSymbol = Terminal
-type GroupStartSymbol = Terminal
-type GroupEndSymbol = Terminal
-type RepeatStartSymbol = Terminal
-type RepeatEndSymbol = Terminal
+type OptionalStartSymbol = MetaspecTerminal
+type OptionalEndSymbol = MetaspecTerminal
+type GroupStartSymbol = MetaspecTerminal
+type GroupEndSymbol = MetaspecTerminal
+type RepeatStartSymbol = MetaspecTerminal
+type RepeatEndSymbol = MetaspecTerminal
 
-type SpecialSequenceStartSymbol = Terminal
-type SpecialSequenceEndSymbol = Terminal
+type SpecialSequenceStartSymbol = MetaspecTerminal
+type SpecialSequenceEndSymbol = MetaspecTerminal
 
-type SemanticBehavesAs = Terminal
-type EvaluatesTo = Terminal
-type WhereSymbol = Terminal
-type SemanticEnd = Terminal
-type SemanticAssign = Terminal
+type StartSymbolStart = MetaspecTerminal
+type StartSymbolEnd = MetaspecTerminal
+type NonTerminalStart = MetaspecTerminal
+type NonTerminalEnd = MetaspecTerminal
 
-type SemanticEnvironmentSymbol = Terminal
-type SemanticEnvironmentInputSymbol = Terminal
-type EnvironmentAccessSymbol = Terminal
-type EnvironmentDefinesSymbol = Terminal
-type SemanticListDelimiter = Terminal
-type SemanticDisjunction = Terminal
+type SemanticBehavesAs = MetaspecTerminal
+type EvaluatesTo = MetaspecTerminal
+type WhereSymbol = MetaspecTerminal
+type SemanticEnd = MetaspecTerminal
+type SemanticAssign = MetaspecTerminal
 
-type SemanticBlockStart = Terminal
-type SemanticBlockEnd = Terminal
-type RestrictionBlockStart = Terminal
-type RestrictionBlockEnd = Terminal
+type SemanticEnvironmentSymbol = MetaspecTerminal
+type SemanticEnvironmentInputSymbol = MetaspecTerminal
+type EnvironmentAccessSymbol = MetaspecTerminal
+type EnvironmentDefinesSymbol = MetaspecTerminal
+type SemanticListDelimiter = MetaspecTerminal
+type SemanticDisjunction = MetaspecTerminal
 
-type SyntaxAccessStartSymbol = Terminal
-type SyntaxAccessEndSymbol = Terminal 
+type SemanticBlockStart = MetaspecTerminal
+type SemanticBlockEnd = MetaspecTerminal
+type RestrictionBlockStart = MetaspecTerminal
+type RestrictionBlockEnd = MetaspecTerminal
 
-type SpecialSyntaxStart = Terminal
-type SpecialSyntaxEnd = Terminal
+type SyntaxAccessStartSymbol = MetaspecTerminal
+type SyntaxAccessEndSymbol = MetaspecTerminal 
+
+type SpecialSyntaxStart = MetaspecTerminal
+type SpecialSyntaxEnd = MetaspecTerminal
+
+type LiteralQuote = MetaspecTerminal
 
 type Keyword = Text
+type Identifier = Text
 
 -- Keyword Lists
 metaspecFeatureList :: [Text]
@@ -144,7 +152,12 @@ data MetaspecDefblock
         SemanticBlockStart 
         SemanticEvaluationList
         SemanticBlockEnd
-    | LanguageDefblock MetaspecLanguage
+    | LanguageDefblock 
+        Keyword
+        WhereSymbol
+        SemanticBlockStart
+        LanguageDefinition
+        SemanticBlockEnd
     deriving (Show)
 
 newtype UsingList = UsingList [MetaspecFeature] deriving (Show)
@@ -155,11 +168,44 @@ newtype SemanticEvaluationList =
 
 type MetaspecFeature = Text
 
-data MetaspecLanguage = MetaspecLanguage deriving (Show)
+data LanguageDefinition = LanguageDefinition
+    [LanguageRule]
+    StartRule
+    [LanguageRule]
+    deriving (Show)
 
+data NonTerminal = NonTerminal
+    NonTerminalStart
+    Identifier
+    NonTerminalEnd
+    deriving (Show)
 
+data Terminal = Terminal
+    LiteralQuote
+    Identifier
+    LiteralQuote
+    deriving (Show)
 
+data StartSymbol = StartSymbol
+    StartSymbolStart
+    Identifier
+    StartSymbolEnd
+    deriving (Show)
 
+data StartRule = StartRule
+    StartSymbol
+    DefiningSymbol
+    LanguageRuleBody
+    deriving (Show)
+
+data LanguageRule = LanguageRule
+    NonTerminal
+    DefiningSymbol
+    LanguageRuleBody
+    deriving (Show)
+
+data LanguageRuleBody = LanguageRuleBody
+    deriving (Show)
 
 -- TEMP
 newtype SemanticEvaluation = SemanticEvaluation Text deriving (Show)

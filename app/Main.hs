@@ -44,4 +44,8 @@ acquireMetaspecFile file = withFile file ReadMode
 
 -- | The main processing chain for the metacompiler.
 processMetaspecFile :: CLIOptions -> Handle -> IO ()
-processMetaspecFile _ mFile = TI.putStrLn =<< TI.hGetContents mFile
+-- processMetaspecFile _ mFile = P.parseMetaspecFile =<< TI.hGetContents mFile
+processMetaspecFile _ mFile = do
+    contents <- TI.hGetContents mFile
+    TI.putStrLn contents
+    P.parseMetaspecFile contents
