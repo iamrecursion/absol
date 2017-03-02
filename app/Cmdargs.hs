@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
 -- Module      : Cmdargs
--- Description : Functionality for parsing the command-line arguments of the 
+-- Description : Functionality for parsing the command-line arguments of the
 --               ABSOL metacompiler.
 -- Copyright   : (c) Ara Adkins, 2017
 -- License     : See LICENSE file.
@@ -9,9 +9,9 @@
 -- Maintainer  : me@ara.io
 -- Stability   : experimental
 -- Portability : GHC
--- 
--- This module provides functionality for parsing the metacompiler command-line 
--- arguments, as well as the data-type for storing them. 
+--
+-- This module provides functionality for parsing the metacompiler command-line
+-- arguments, as well as the data-type for storing them.
 --
 -------------------------------------------------------------------------------
 module Cmdargs
@@ -23,6 +23,7 @@ module Cmdargs
     ) where
 
 import           Options.Applicative
+import           Data.Monoid ((<>))
 
 type CmdLineFlag = Bool
 type File = FilePath
@@ -32,17 +33,18 @@ type CmdString = Maybe String
 --
 -- This type is filled with the parsed options at program start.
 data CLIOptions = CLIOptions {
-    filename    :: File,
-    reportFlag  :: CmdLineFlag,
-    cleanFlag   :: CmdLineFlag,
-    langName    :: CmdString,
-    langVersion :: CmdString,
-    verboseFlag :: CmdLineFlag,
-    logFile     :: Maybe File
+    filename        :: File,
+    reportFlag      :: CmdLineFlag,
+    cleanFlag       :: CmdLineFlag,
+    langName        :: CmdString,
+    langVersion     :: CmdString,
+    verboseFlag     :: CmdLineFlag,
+    logFile         :: Maybe File,
+    outputDirectory :: Maybe File
 } deriving (Eq, Show)
 
 -- | A utility function for specifying the program description for the CLI help.
--- 
+--
 -- It is given a description and the program header text respectively.
 withParserInfo :: Parser a -> String -> String -> ParserInfo a
 withParserInfo options description headText =
@@ -59,9 +61,10 @@ parseCLIOptions = CLIOptions
     <*> parseLangVersion
     <*> parseVerboseFlag
     <*> parseLogFile
+    <*> parseOutputDirectory
 
 -- | Parses the input filepath from the CLI arguments.
--- 
+--
 -- This path specifies the metaspec file on which the metacompiler will operate.
 parseFilename :: Parser FilePath
 parseFilename = argument str (
@@ -70,9 +73,9 @@ parseFilename = argument str (
     )
 
 -- | Parses the reporting flag from the CLI flags.
--- 
--- If this flag is set, the program will analyse the input file for semantic 
--- correctness and then exit, without performing any codegen. 
+--
+-- If this flag is set, the program will analyse the input file for semantic
+-- correctness and then exit, without performing any codegen.
 parseReportFlag :: Parser CmdLineFlag
 parseReportFlag = switch (
         short 'r' <>
@@ -81,7 +84,7 @@ parseReportFlag = switch (
     )
 
 -- | Parses the cleanup flag from the CLI arguments.
--- 
+--
 -- If specified, the program will delete all generated files. These files are
 -- determined from the language name and version.
 parseCleanFlag :: Parser CmdLineFlag
@@ -138,4 +141,13 @@ parseLogFile = optional $ option str (
         long "log-file" <>
         help "Log to the provided FILE." <>
         metavar "FILE"
+    )
+
+parseOutputDirectory :: Parser (Maybe File)
+parseOutputDirectory = optional $ option str (
+        long "out-dir" <>
+        short 'o' <>
+        help "Output directory for build artefacts. If this is not specified \
+            \ it will use the current directory." <>
+        metavar "DIR"
     )

@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      : Absol.Metagen
--- Description : The implementation of the ABSOL code generation engine.
+-- Module      : Absol.Utilities
+-- Description : Generic, useful utilities for the ABSOL project.
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
 -- 
@@ -9,13 +9,12 @@
 -- Stability   : experimental
 -- Portability : GHC
 -- 
--- Functionality for generating the target compiler code. 
+-- A set of useful utility types, functions and definitions for the ABSOL 
+-- project.
 --
 -------------------------------------------------------------------------------
-module Absol.Metagen 
-    ( 
-        someFunc
-    ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "Metagen"
+module Absol.Utilities where
+
+outputToken :: String
+outputToken = ">> "

@@ -222,3 +222,31 @@ discussions with some PLT people:
   metacompiler? => `C++`-style generics through implicit templating?
 - How will return types from functions be handled?
 - Can functions be made generic?
+
+### Result Typing of Statements
+- Semantic types are language types
+- The semantic rules must be well-typed with respect to...
+- Sum type of allowable types? 
+- Semantics are syntax directed, which means that this is less of a problem...
+- Potential correctness issue
+
+### Generic Collections
+- Potential type-safety issues
+- Shouldn't impact _semantic_ correctness...
+- Any takes type of n2
+- ANy gets run back up the tree from the terminating base case concrete type?
+- Generic collections but homogeneous 
+
+### Function Calls
+- Two function types toplevel and subroutine. 
+- Special forms for function declarations.
+
+### Recursion
+- A form of declaration for recursive functions. 
+
+## Semantics of Productions
+- Every production with at least one terminal in it must have semantics
+- A semantic indicator for identifiers to work around the one case in the 
+  restriction.
+- Every descent through every production from the start symbol must have 
+  semantics. 

@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      : Absol.Metagen
--- Description : The implementation of the ABSOL code generation engine.
+-- Module      : Absol.Metalex.Wrapper
+-- Description : Provides the wrapper interface around the Alex-based lexer. 
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
 -- 
@@ -9,13 +9,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 -- 
--- Functionality for generating the target compiler code. 
+-- A wrapper around the the lexer of choice, allowing the lexer to be swapped 
+-- with a minimum of effort.
 --
 -------------------------------------------------------------------------------
-module Absol.Metagen 
-    ( 
-        someFunc
+
+module Absol.Metalex.Wrapper (
+
     ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "Metagen"
+import Data.Monoid
