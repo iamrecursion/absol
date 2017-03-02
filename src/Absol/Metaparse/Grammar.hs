@@ -126,14 +126,11 @@ semanticSpecialSyntaxList =
 -- Defines the Grammar 
 
 -- | Defines the start symbol for the metaspec grammar.
-newtype Metaspec = Metaspec [MetaspecDef] deriving (Show)
-
-data MetaspecDef = 
-    MetaspecDef MetaspecDefblock RuleTerminationSymbol deriving (Show)
+newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
 
 data MetaspecDefblock
-    = NameDefblock Keyword WhereSymbol Text
-    | VersionDefblock Keyword WhereSymbol Text
+    = NameDefblock String
+    | VersionDefblock String
     | UsingDefblock 
         Keyword 
         WhereSymbol 

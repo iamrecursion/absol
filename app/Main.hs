@@ -46,5 +46,5 @@ processMetaspecFile :: CLIOptions -> Handle -> IO ()
 -- processMetaspecFile _ mFile = P.parseMetaspecFile =<< TI.hGetContents mFile
 processMetaspecFile _ mFile = do
     contents <- TI.hGetContents mFile
-    TI.putStrLn contents
+    -- TI.putStrLn contents
     P.parseMetaspecFile contents

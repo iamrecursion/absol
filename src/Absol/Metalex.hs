@@ -179,3 +179,9 @@ syntaxAccessStartSymbol = terminal "["
 
 syntaxAccessEndSymbol :: Parser String
 syntaxAccessEndSymbol = terminal "]"
+
+nonSemicolon :: Parser Char
+nonSemicolon = let 
+        semi = ";" :: String
+    in
+        noneOf semi
