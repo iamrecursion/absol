@@ -168,6 +168,9 @@ semanticBlockStart = terminal "{"
 semanticBlockEnd :: Parser String
 semanticBlockEnd = terminal "}"
 
+semanticBlock :: Parser a -> Parser a
+semanticBlock = between semanticBlockStart semanticBlockEnd
+
 restrictionBlockStart :: Parser String
 restrictionBlockStart = terminal "("
 

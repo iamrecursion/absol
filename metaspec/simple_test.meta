@@ -3,12 +3,12 @@ name : simple_test;
 
 version : 0.0.1a;
 
-// using : {
-//     floating-point, 
-//     integer,
-//     nondigit,
-//     digit
-// };
+using : {
+    floating-point, 
+    integer,
+    nondigit,
+    digit
+};
 
 // truths : {
 //     {int n <= <integer>}

@@ -132,11 +132,7 @@ data MetaspecDefblock
     = NameDefblock String
     | VersionDefblock String
     | UsingDefblock 
-        Keyword 
-        WhereSymbol 
-        SemanticBlockStart 
-        UsingList 
-        SemanticBlockEnd
+        [MetaspecFeature] 
     | TruthsDefblock
         Keyword 
         WhereSymbol 
@@ -151,9 +147,7 @@ data MetaspecDefblock
         SemanticBlockEnd
     deriving (Show)
 
-newtype UsingList = UsingList [MetaspecFeature] deriving (Show) -- sep by ','
-
-type MetaspecFeature = Text
+type MetaspecFeature = String
 
 data LanguageDefinition = LanguageDefinition
     [LanguageRule]
