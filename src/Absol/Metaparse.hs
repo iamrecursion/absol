@@ -19,14 +19,16 @@ module Absol.Metaparse
         parseMetaspecFile
     ) where
 
-import Data.Text 
-import Absol.Metaparse.Grammar
-import Absol.Metalex
+import           Absol.Metalex
+import           Absol.Metaparse.Grammar
+import           Data.Text 
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Perm
 import           Text.Megaparsec.Text  (Parser)
+
+-- TODO Add contextually sensitive parsing for keywords
 
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
@@ -35,4 +37,9 @@ parseMetaspec :: Parser Metaspec
 parseMetaspec = between spaceConsumer eof metaspec
 
 metaspec :: Parser Metaspec
-metaspec = undefined
+metaspec = do
+    defs <- some metaspecDef
+    return $ Metaspec defs
+
+metaspecDef :: Parser MetaspecDef
+metaspecDef = undefined

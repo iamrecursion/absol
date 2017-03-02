@@ -323,10 +323,10 @@ semantic-operation =
     binary-op-expression;
 
 prefix-unary-op-expression = 
-    prefix-semantic-unary-operator, identifier | prefix-unary-op-expression;
+    prefix-semantic-unary-operator, ( identifier | prefix-unary-op-expression );
 
 postfix-unary-op-expression = 
-    identifier | postfix-unary-op-expression, postfix-semantic-unary-operator;
+    (identifier | postfix-unary-op-expression), postfix-semantic-unary-operator;
 
 binary-op-expression = 
     identifier | binary-op-expression, 

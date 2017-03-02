@@ -193,12 +193,12 @@ newtype SyntaxExpression = SyntaxExpression
 
 data SyntaxAlternative = SyntaxAlternative 
     [SyntaxTerm] 
-    Maybe LanguageRuleSemantics
+    (Maybe LanguageRuleSemantics)
     deriving (Show)
 
 data SyntaxTerm = SyntaxTerm
     SyntaxFactor 
-    Maybe SyntaxException
+    (Maybe SyntaxException)
     deriving (Show)
 
 data SyntaxException = SyntaxException
@@ -207,7 +207,7 @@ data SyntaxException = SyntaxException
     deriving (Show)
 
 data SyntaxFactor = SyntaxFactor
-    Maybe RepeatSyntax
+    (Maybe RepeatSyntax)
     SyntaxPrimary
     deriving (Show)
 
@@ -225,8 +225,20 @@ data SyntaxPrimary
         SyntaxExpression
         SpecialSequenceEndSymbol
     | SyntaxEmpty
-    | Terminal LiteralQuote Identifier LiteralQuote
-    | NonTerminal NonTerminalStart Identifier NonTerminalEnd
+    | TerminalProxy Terminal
+    | NonTerminalProxy NonTerminal
+    deriving (Show)
+
+data Terminal = Terminal
+    LiteralQuote
+    Identifier
+    LiteralQuote
+    deriving (Show)
+
+data NonTerminal = NonTerminal
+    NonTerminalStart
+    Identifier
+    NonTerminalEnd
     deriving (Show)
 
 data LanguageRuleSemantics = LanguageRuleSemantics
@@ -244,15 +256,8 @@ data SemanticRule
         SyntaxAccessBlock
         EnvironmentDefinesSymbol
         SyntaxAccessList
-    | EnvironmentAccessRule
-        SemanticEnvironmentSymbol
-        EnvironmentAccessSymbol
-        [SyntaxAccessBlock]
-    | SpecialSyntaxRule
-        SemanticSpecialSyntax
-        SpecialSyntaxStart
-        Maybe [AccessBlockOrRule]
-        SpecialSyntaxEnd
+    | EnvironmentAccessRuleProxy EnvironmentAccessRule
+    | SpecialSyntaxRuleProxy SpecialSyntaxRule
     | SemanticEvaluationRule
         SemanticType
         SemanticIdentifier
@@ -266,16 +271,29 @@ data SemanticRule
 type SemanticIdentifier = Identifier
 type SemanticSpecialSyntax = Text
 
+data SpecialSyntaxRule = SpecialSyntaxRule
+    SemanticSpecialSyntax
+    SpecialSyntaxStart
+    (Maybe [AccessBlockOrRule])
+    SpecialSyntaxEnd
+    deriving (Show)
+
+data EnvironmentAccessRule = EnvironmentAccessRule
+    SemanticEnvironmentSymbol
+    EnvironmentAccessSymbol
+    [SyntaxAccessBlock]
+    deriving (Show)
+
 newtype AccessBlockOr a = AccessBlockOr
-    Either SyntaxAccessBlock a
+    (Either SyntaxAccessBlock a)
     deriving (Show)
 
 newtype AccessBlockOrRule = AccessBlockOrRule 
-    AccessBlockOr EnvironmentAccessRule
+    (AccessBlockOr EnvironmentAccessRule)
     deriving (Show)
 
 newtype AccessBlockOrSpecial = AccessBlockOrSpecial
-    AccessBlockOr SpecialSyntaxRule
+    (AccessBlockOr SpecialSyntaxRule)
     deriving (Show)
 
 data SyntaxAccessBlock = SyntaxAccessBlock
@@ -293,7 +311,7 @@ data SyntaxAccessor = SyntaxAccessor
 newtype SyntaxAccessList = SyntaxAccessList [SyntaxAccessBlock] deriving (Show)
 
 -- Separated by ','
-data SemanticEvaluationList = SemanticEvaluationList [SemanticEvaluation]
+newtype SemanticEvaluationList = SemanticEvaluationList [SemanticEvaluation]
     deriving (Show)
 
 data SemanticEvaluation = SemanticEvaluation
@@ -318,16 +336,25 @@ data SemanticOperationAssignment = SemanticOperationAssignment
     deriving (Show)
 
 data SemanticOperation
-    = PrefixUnaryOpExpression 
-        PrefixSemanticUnaryOperator 
-        Either Identifier PrefixUnaryOpExpression
-    | PostfixUnaryOpExpression 
-        Either Identifier PostfixUnaryOpExpression
-        PostfixSemanticUnaryOperator
-    | BinaryOpExpression 
-        Either Identifier BinaryOpExpression
-        SemanticBinaryOperator
-        Either Identifier BinaryOpExpression
+    = PrefixUnaryExprProxy PrefixUnaryOpExpression
+    | PostfixUnaryExprProxy PostfixUnaryOpExpression
+    | BinaryOpExpressionProxy BinaryOpExpression
+    deriving (Show)
+
+data PrefixUnaryOpExpression
+    = PrefixUnaryFinalExpr PrefixSemanticUnaryOperator Identifier
+    | PrefixUnaryNTExpr PrefixSemanticUnaryOperator PrefixUnaryOpExpression
+    deriving (Show)
+
+data PostfixUnaryOpExpression
+    = PostfixUnaryFinalExpr Identifier PostfixSemanticUnaryOperator
+    | PostfixUnaryNTExpr PostfixUnaryOpExpression PostfixSemanticUnaryOperator
+    deriving (Show)
+
+data BinaryOpExpression = BinaryOpExpression
+    (Either Identifier BinaryOpExpression)
+    SemanticBinaryOperator
+    (Either Identifier BinaryOpExpression)
     deriving (Show)
 
 data SemanticRestrictionList = SemanticRestrictionList
@@ -339,13 +366,14 @@ data SemanticRestrictionList = SemanticRestrictionList
 data SemanticRestriction = SemanticRestriction
     Identifier
     SemanticRestrictionCheckOperator
-    Either Identifier SemanticRestrictionValue
+    (Either Identifier SemanticRestrictionValue)
     deriving (Show)
 
 data SemanticRestrictionValue 
     = SemanticText Text
     | SemanticNumber Integer
     | SemanticBoolean Bool
+    deriving (Show)
 
 data SemanticRestrictionCheckOperator 
     = SemEquals
