@@ -1,4 +1,3 @@
-
 module Main where
 
 import           Absol.Utilities (outputToken)
