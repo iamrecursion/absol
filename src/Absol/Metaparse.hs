@@ -70,10 +70,8 @@ versionDefblock = do
 
 usingDefblock :: Parser MetaspecDefblock
 usingDefblock = do
-    let 
-        separator = semanticListDelimiter <* spaceConsumer
     keywordWhere "using"
-    items <- semanticBlock $ metaspecFeature `sepBy` separator
+    items <- semanticBlock $ metaspecFeature `sepBy` multilineListSep
     return (UsingDefblock items)
 
 metaspecFeature :: Parser MetaspecFeature
@@ -82,7 +80,21 @@ metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)
         allowedSeps = "_-" :: String
 
 truthsDefblock :: Parser MetaspecDefblock
-truthsDefblock = undefined
+-- truthsDefblock = undefined
+truthsDefblock = do
+    keywordWhere "truths"
+    items <- semanticBlock semanticEvaluationList
+    return (TruthsDefblock items)
 
 languageDefblock :: Parser MetaspecDefblock
 languageDefblock = undefined
+
+semanticEvaluationList :: Parser SemanticEvaluationList
+semanticEvaluationList = semanticEvaluation `sepBy` multilineListSep
+
+semanticEvaluation :: Parser SemanticEvaluation
+semanticEvaluation = do
+    semanticBlock semanticEvaluationBody
+
+semanticEvaluationBody :: Parser SemanticEvaluation
+semanticEvaluationBody = undefined

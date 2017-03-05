@@ -46,7 +46,10 @@ naturalNumber :: Parser Integer
 naturalNumber = lexeme L.integer
 
 keyword :: String -> Parser ()
-keyword word = string word *> notFollowedBy alphaNumChar *> spaceConsumer
+keyword word = string word *> notFollowedBy illegals *> spaceConsumer
+    where
+        illegals = alphaNumChar
+        allowed = "-_" :: String
 
 -- | Determines if an identifier is a reserved word.
 -- 
@@ -191,3 +194,6 @@ nonSemicolon = let
         semi = ";" :: String
     in
         noneOf semi
+
+multilineListSep :: Parser String
+multilineListSep =  semanticListDelimiter <* spaceConsumer

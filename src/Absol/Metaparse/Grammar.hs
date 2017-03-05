@@ -131,14 +131,8 @@ newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
 data MetaspecDefblock
     = NameDefblock String
     | VersionDefblock String
-    | UsingDefblock 
-        [MetaspecFeature] 
-    | TruthsDefblock
-        Keyword 
-        WhereSymbol 
-        SemanticBlockStart 
-        SemanticEvaluationList
-        SemanticBlockEnd
+    | UsingDefblock [MetaspecFeature] 
+    | TruthsDefblock SemanticEvaluationList
     | LanguageDefblock 
         Keyword
         WhereSymbol
@@ -302,8 +296,7 @@ data SyntaxAccessor = SyntaxAccessor
 newtype SyntaxAccessList = SyntaxAccessList [SyntaxAccessBlock] deriving (Show)
 
 -- Separated by ','
-newtype SemanticEvaluationList = SemanticEvaluationList [SemanticEvaluation]
-    deriving (Show)
+type SemanticEvaluationList = [SemanticEvaluation]
 
 data SemanticEvaluation = SemanticEvaluation
     SemanticBlockStart
