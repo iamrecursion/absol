@@ -70,11 +70,11 @@ versionDefblock = do
 
 usingDefblock :: Parser MetaspecDefblock
 usingDefblock = do
-    let
+    let 
+        separator = semanticListDelimiter <* spaceConsumer
     keywordWhere "using"
-    keys <- semanticBlock (metaspecFeature `sepBy` semanticListDelimiter)
-    -- TODO check keys
-    return (UsingDefblock keys)
+    items <- semanticBlock $ metaspecFeature `sepBy` separator
+    return (UsingDefblock items)
 
 metaspecFeature :: Parser MetaspecFeature
 metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)

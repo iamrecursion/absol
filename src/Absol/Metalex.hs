@@ -169,7 +169,10 @@ semanticBlockEnd :: Parser String
 semanticBlockEnd = terminal "}"
 
 semanticBlock :: Parser a -> Parser a
-semanticBlock = between semanticBlockStart semanticBlockEnd
+semanticBlock = between start end
+    where
+        start = spaceConsumer *> semanticBlockStart
+        end = spaceConsumer *> semanticBlockEnd
 
 restrictionBlockStart :: Parser String
 restrictionBlockStart = terminal "("

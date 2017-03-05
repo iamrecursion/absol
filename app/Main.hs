@@ -18,6 +18,8 @@ main = runMetacompiler =<< execParser (
     )
 
 -- | Contains the main execution context of the metacompiler.
+-- 
+-- TODO Fix the processing, should error on error
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
     putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file

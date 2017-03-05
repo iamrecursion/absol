@@ -4,7 +4,7 @@ name : simple_test;
 version : 0.0.1a;
 
 using : {
-    floating-point, 
+    floating-point,
     integer,
     nondigit,
     digit
