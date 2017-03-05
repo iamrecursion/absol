@@ -126,11 +126,26 @@ startSymbolStart = terminal "<<"
 startSymbolEnd :: Parser String
 startSymbolEnd = terminal ">>"
 
+startSymbol :: Parser a -> Parser a
+startSymbol = between startSymbolStart startSymbolEnd
+
 nonTerminalStart :: Parser String
 nonTerminalStart = terminal "<"
 
 nonTerminalEnd :: Parser String
 nonTerminalEnd = terminal ">"
+
+metaspecTerminalStart :: Parser String
+metaspecTerminalStart = terminal "\""
+
+metaspecTerminalEnd :: Parser String
+metaspecTerminalEnd = terminal "\""
+
+metaspecTerminal :: Parser a -> Parser a
+metaspecTerminal = between metaspecTerminalStart metaspecTerminalEnd
+
+nonTerminal :: Parser a -> Parser a
+nonTerminal = between nonTerminalStart nonTerminalEnd
 
 semanticBehavesAs :: Parser String
 semanticBehavesAs = terminal "-->"
@@ -195,5 +210,18 @@ nonSemicolon = let
     in
         noneOf semi
 
+nonSpace :: Parser Char
+nonSpace = let
+        space = " " :: String
+    in
+        noneOf space
+
 multilineListSep :: Parser String
-multilineListSep =  semanticListDelimiter <* spaceConsumer
+multilineListSep =  try parse
+    where
+        parse = spaceConsumer *> semanticListDelimiter <* spaceConsumer
+
+multilineAlternative :: Parser String
+multilineAlternative = try parse
+    where
+        parse = spaceConsumer *> semanticListDelimiter <* spaceConsumer

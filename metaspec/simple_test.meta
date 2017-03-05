@@ -1,9 +1,10 @@
 
+// Need to update grammar to reflect the above
 name : simple_test;
 
 version : 0.0.1a;
 
-using : {
+ using : {
     floating-point,
     integer,
     nondigit,
@@ -11,16 +12,16 @@ using : {
 };
 
 // truths : {
-//     {int n <= <integer>}
+//     {int n <= <integer>},
 //     {float n <= <floating-point>}
 // };
 
-// language : {
+language : {
 
-// <<simple_test>> ::= <statement> ;
+<<simple_test>> ::= <statement> ;
 
-// // Semantics only required for expressions containing terminals
-// <number> ::= <integer> | <floating-point> ; // from imports, implicit semantics
+// Semantics only required for expressions containing terminals
+<number> ::= <integer> | <floating-point> ; // from imports, implicit semantics
 
 // <arith-expr> ::= <number> | <arith-op> ;
 
@@ -62,4 +63,4 @@ using : {
 // // <integer> ::= <natural> | "-" <natural> ;
 // // <floating-point> ::= [ "+" | "-" ] <natural> [ "." <natural> ] ;
 
-// };
+};

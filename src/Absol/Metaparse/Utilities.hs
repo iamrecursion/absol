@@ -17,13 +17,13 @@
 module Absol.Metaparse.Utilities
     (   
         keywordWhere,
-        checkKeys
+        checkKeys,
+        trimString
     ) where
 
 import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Control.Monad (void)
-import           Data.Text 
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Expr
@@ -37,3 +37,6 @@ keywordWhere kwd = do
 
 checkKeys :: [MetaspecFeature] -> Parser ()
 checkKeys = undefined
+
+trimString :: String -> String
+trimString = unwords . words

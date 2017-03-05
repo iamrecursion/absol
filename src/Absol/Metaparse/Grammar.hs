@@ -68,8 +68,8 @@ type SpecialSyntaxEnd = MetaspecTerminal
 type LiteralQuote = MetaspecTerminal
 type SemanticType = Text
 
-type Keyword = Text
-type Identifier = Text
+type Keyword = String
+type Identifier = String
 
 -- Keyword Lists
 metaspecFeatureList :: [Text]
@@ -133,43 +133,23 @@ data MetaspecDefblock
     | VersionDefblock String
     | UsingDefblock [MetaspecFeature] 
     | TruthsDefblock SemanticEvaluationList
-    | LanguageDefblock 
-        Keyword
-        WhereSymbol
-        SemanticBlockStart
-        LanguageDefinition
-        SemanticBlockEnd
+    | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
 type MetaspecFeature = String
 
-data LanguageDefinition = LanguageDefinition
-    [LanguageRule]
-    StartRule
-    [LanguageRule]
-    deriving (Show)
-
-data StartSymbol = StartSymbol
-    StartSymbolStart
-    Identifier
-    StartSymbolEnd
-    deriving (Show)
-
 data StartRule = StartRule
-    StartSymbol
-    DefiningSymbol
+    Identifier
     LanguageRuleBody
     deriving (Show)
 
 data LanguageRule = LanguageRule
-    NonTerminal
-    DefiningSymbol
+    Identifier
     LanguageRuleBody
     deriving (Show)
 
-data LanguageRuleBody = LanguageRuleBody
+newtype LanguageRuleBody = LanguageRuleBody
     SyntaxExpression
-    RuleTerminationSymbol
     deriving (Show)
 
 newtype SyntaxExpression = SyntaxExpression
@@ -214,17 +194,9 @@ data SyntaxPrimary
     | NonTerminalProxy NonTerminal
     deriving (Show)
 
-data Terminal = Terminal
-    LiteralQuote
-    Identifier
-    LiteralQuote
-    deriving (Show)
+type Terminal = Identifier
 
-data NonTerminal = NonTerminal
-    NonTerminalStart
-    Identifier
-    NonTerminalEnd
-    deriving (Show)
+type NonTerminal = Identifier
 
 data LanguageRuleSemantics = LanguageRuleSemantics
     SemanticBehavesAs
