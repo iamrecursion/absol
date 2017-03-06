@@ -49,7 +49,7 @@ keyword :: String -> Parser ()
 keyword word = string word *> notFollowedBy illegals *> spaceConsumer
     where
         illegals = alphaNumChar
-        allowed = "-_" :: String
+        -- allowed = "-_" :: String
 
 -- | Determines if an identifier is a reserved word.
 -- 
@@ -212,16 +212,16 @@ nonSemicolon = let
 
 nonSpace :: Parser Char
 nonSpace = let
-        space = " " :: String
+        mySpace = " " :: String
     in
-        noneOf space
+        noneOf mySpace
 
 multilineListSep :: Parser String
-multilineListSep =  try parse
+multilineListSep =  try parseExpr
     where
-        parse = spaceConsumer *> semanticListDelimiter <* spaceConsumer
+        parseExpr = spaceConsumer *> semanticListDelimiter <* spaceConsumer
 
 multilineAlternative :: Parser String
-multilineAlternative = try parse
+multilineAlternative = try parseExpr
     where
-        parse = spaceConsumer *> semanticListDelimiter <* spaceConsumer
+        parseExpr = spaceConsumer *> semanticListDelimiter <* spaceConsumer

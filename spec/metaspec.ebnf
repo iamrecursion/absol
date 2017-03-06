@@ -233,7 +233,7 @@ syntax-grouped = group-start-symbol, syntax-expression, group-end-symbol;
 
 syntax-special =
     special-sequence-start-symbol,
-    syntax-expression,
+    text,
     special-sequence-end-symbol;
 
 syntax-empty = ;

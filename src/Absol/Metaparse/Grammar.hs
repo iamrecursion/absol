@@ -60,7 +60,7 @@ type RestrictionBlockStart = MetaspecTerminal
 type RestrictionBlockEnd = MetaspecTerminal
 
 type SyntaxAccessStartSymbol = MetaspecTerminal
-type SyntaxAccessEndSymbol = MetaspecTerminal 
+type SyntaxAccessEndSymbol = MetaspecTerminal
 
 type SpecialSyntaxStart = MetaspecTerminal
 type SpecialSyntaxEnd = MetaspecTerminal
@@ -73,7 +73,7 @@ type Identifier = String
 
 -- Keyword Lists
 metaspecFeatureList :: [Text]
-metaspecFeatureList = 
+metaspecFeatureList =
     [
         "funcall",
         "integer",
@@ -119,11 +119,11 @@ semanticSpecialSyntaxList =
         "retrieve",
         "map",
         "reduce",
-        "apply", 
+        "apply",
         "rand"
     ]
 
--- Defines the Grammar 
+-- Defines the Grammar
 
 -- | Defines the start symbol for the metaspec grammar.
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
@@ -131,7 +131,7 @@ newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
 data MetaspecDefblock
     = NameDefblock String
     | VersionDefblock String
-    | UsingDefblock [MetaspecFeature] 
+    | UsingDefblock [MetaspecFeature]
     | TruthsDefblock SemanticEvaluationList
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
@@ -156,42 +156,33 @@ newtype SyntaxExpression = SyntaxExpression
     [SyntaxAlternative] -- Separated by '|'
     deriving (Show)
 
-data SyntaxAlternative = SyntaxAlternative 
-    [SyntaxTerm] 
+data SyntaxAlternative = SyntaxAlternative
+    [SyntaxTerm]
     (Maybe LanguageRuleSemantics)
     deriving (Show)
 
 data SyntaxTerm = SyntaxTerm
-    SyntaxFactor 
+    SyntaxFactor
     (Maybe SyntaxException)
     deriving (Show)
 
-data SyntaxException = SyntaxException
-    ExceptSymbol 
-    SyntaxFactor
-    deriving (Show)
+newtype SyntaxException = SyntaxException SyntaxFactor deriving (Show)
 
 data SyntaxFactor = SyntaxFactor
     (Maybe RepeatSyntax)
     SyntaxPrimary
     deriving (Show)
 
-data RepeatSyntax = RepeatSyntax
-    Integer
-    RepeatCountSymbol
-    deriving (Show)
+newtype RepeatSyntax = RepeatSyntax Integer deriving (Show)
 
 data SyntaxPrimary
-    = SyntaxOptional OptionalStartSymbol SyntaxExpression OptionalEndSymbol
-    | SyntaxRepeated RepeatStartSymbol SyntaxExpression RepeatEndSymbol
-    | SyntaxGrouped GroupStartSymbol SyntaxExpression GroupEndSymbol
-    | SyntaxSpecial 
-        SpecialSequenceStartSymbol 
-        SyntaxExpression
-        SpecialSequenceEndSymbol
-    | SyntaxEmpty
+    = SyntaxOptional SyntaxExpression
+    | SyntaxRepeated SyntaxExpression
+    | SyntaxGrouped SyntaxExpression
+    | SyntaxSpecial String
     | TerminalProxy Terminal
     | NonTerminalProxy NonTerminal
+    | SyntaxEmpty
     deriving (Show)
 
 type Terminal = Identifier
@@ -245,7 +236,7 @@ newtype AccessBlockOr a = AccessBlockOr
     (Either SyntaxAccessBlock a)
     deriving (Show)
 
-newtype AccessBlockOrRule = AccessBlockOrRule 
+newtype AccessBlockOrRule = AccessBlockOrRule
     (AccessBlockOr EnvironmentAccessRule)
     deriving (Show)
 
@@ -254,7 +245,7 @@ newtype AccessBlockOrSpecial = AccessBlockOrSpecial
     deriving (Show)
 
 data SyntaxAccessBlock = SyntaxAccessBlock
-    NonTerminal 
+    NonTerminal
     SyntaxAccessor
     deriving (Show)
 
@@ -325,13 +316,13 @@ data SemanticRestriction = SemanticRestriction
     (Either Identifier SemanticRestrictionValue)
     deriving (Show)
 
-data SemanticRestrictionValue 
+data SemanticRestrictionValue
     = SemanticText Text
     | SemanticNumber Integer
     | SemanticBoolean Bool
     deriving (Show)
 
-data SemanticRestrictionCheckOperator 
+data SemanticRestrictionCheckOperator
     = SemEquals
     | SemNEquals
     | SemLT
