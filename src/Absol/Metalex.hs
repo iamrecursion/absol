@@ -58,7 +58,7 @@ keyword word = string word *> notFollowedBy illegals *> spaceConsumer
 identifier :: Parser String
 identifier = (lexeme . try) (p >>= check)
     where
-        p = (:) <$> letterChar <*> many alphaNumChar
+        p = (:) <$> letterChar <*> many identifierChar
         check x = if
             | t `elem` G.metaspecFeatureList -> failExpr x
             | t `elem` G.semanticTypeList -> failExpr x
@@ -67,6 +67,24 @@ identifier = (lexeme . try) (p >>= check)
             where
                 t = pack x
         failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
+
+-- TODO update metaspec grammar to reflect this
+identifierChar :: Parser Char
+identifierChar = alphaNumChar <|> oneOf seps
+    where
+        seps = "_-" :: String
+
+-- TODO check if allowed
+terminalString :: Parser String
+terminalString = many terminalChar
+
+terminalChar :: Parser Char
+terminalChar = noneOf disallowed
+    where
+        disallowed = "\"\n\r" :: String
+
+nonTerminalName :: Parser String
+nonTerminalName = (:) <$> letterChar <*> many identifierChar
 
 repeatCountSymbol :: Parser String
 repeatCountSymbol = terminal "*"
@@ -126,8 +144,8 @@ startSymbolStart = terminal "<<"
 startSymbolEnd :: Parser String
 startSymbolEnd = terminal ">>"
 
-startSymbol :: Parser a -> Parser a
-startSymbol = between startSymbolStart startSymbolEnd
+startSymbolDelim :: Parser a -> Parser a
+startSymbolDelim = between startSymbolStart startSymbolEnd
 
 nonTerminalStart :: Parser String
 nonTerminalStart = terminal "<"
@@ -224,4 +242,4 @@ multilineListSep =  try parseExpr
 multilineAlternative :: Parser String
 multilineAlternative = try parseExpr
     where
-        parseExpr = spaceConsumer *> semanticListDelimiter <* spaceConsumer
+        parseExpr = spaceConsumer *> semanticDisjunction <* spaceConsumer

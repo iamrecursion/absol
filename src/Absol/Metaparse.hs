@@ -37,6 +37,9 @@ import           Text.Megaparsec.Text  (Parser)
 -- TODO refactor to flatten the AST for simpler traversal
 -- TODO stateful parsing of types (checked) identifiers and expressions
 -- TODO work out how to deal with types that haven't been imported
+-- TODO ensure that each non-terminal is only DEFINED once
+-- TODO cleanup grammar around identifiers and allowed characters
+-- TODO ensure checks on terminals work
 
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
@@ -56,7 +59,7 @@ metaspecDefblock = do
         <|> versionDefblock 
         <|> usingDefblock
         -- <|> truthsDefblock
-        -- <|> languageDefblock
+        <|> languageDefblock
     void ruleTerminationSymbol
     return block
 
@@ -97,10 +100,9 @@ languageDefblock = do
 
 languageDefinition :: Parser MetaspecDefblock
 languageDefinition = do
-    productions1 <- languageRule `sepBy` spaceConsumer
     start <- startRule <* spaceConsumer
-    productions2 <- languageRule `sepBy` spaceConsumer
-    return (LanguageDefblock start (productions1 ++ productions2))
+    productions <- languageRule `sepBy` spaceConsumer
+    return (LanguageDefblock start productions)
 
 languageRule :: Parser LanguageRule
 languageRule = do
@@ -111,10 +113,15 @@ languageRule = do
 
 startRule :: Parser StartRule
 startRule = do
-    startSym <- startSymbol identifier <* spaceConsumer
+    startSym <- startSymbol
     void definingSymbol
     ruleBody <- languageRuleBody 
     return (StartRule startSym ruleBody)
+
+startSymbol :: Parser StartSymbol
+startSymbol = do
+    ident <- startSymbolDelim nonTerminalName <* spaceConsumer
+    return (StartSymbol ident)
 
 languageRuleBody :: Parser LanguageRuleBody
 languageRuleBody = do
@@ -130,7 +137,7 @@ syntaxExpression = do
 syntaxAlternative :: Parser SyntaxAlternative
 syntaxAlternative = do
     terms <- syntaxTerm `sepBy1` space
-    semantics <- languageRuleSemantics
+    semantics <- option Nothing languageRuleSemantics
     return (SyntaxAlternative terms semantics)
 
 syntaxTerm :: Parser SyntaxTerm
@@ -164,7 +171,7 @@ syntaxPrimary = syntaxOptional
     <|> syntaxSpecial
     <|> terminalProxy
     <|> nonTerminalProxy
-    <|> syntaxEmpty
+    -- <|> syntaxEmpty
 
 syntaxOptional :: Parser SyntaxPrimary
 syntaxOptional = do
@@ -177,7 +184,7 @@ syntaxRepeated :: Parser SyntaxPrimary
 syntaxRepeated = do
     void repeatStartSymbol
     expr <- syntaxExpression
-    void optionalEndSymbol
+    void repeatEndSymbol
     return (SyntaxRepeated expr)
 
 syntaxGrouped :: Parser SyntaxPrimary
@@ -206,18 +213,27 @@ nonTerminalProxy = do
 
 syntaxEmpty :: Parser SyntaxPrimary
 syntaxEmpty = do
-    void $ terminal ""
+    void $ string ""
     return SyntaxEmpty
 
 parseTerminal :: Parser Terminal
-parseTerminal = metaspecTerminalDelim identifier <* spaceConsumer
+parseTerminal = do
+    ident <- metaspecTerminalDelim terminalString <* spaceConsumer
+    return (Terminal ident) -- TODO this isn't an identifier (think about it)
 
 nonTerminal :: Parser NonTerminal
-nonTerminal = nonTerminalDelim identifier <* spaceConsumer
+nonTerminal = do
+    ident <- nonTerminalDelim nonTerminalName <* spaceConsumer
+    return (NonTerminal ident)
 
--- TODO make this parse !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 languageRuleSemantics :: Parser (Maybe LanguageRuleSemantics)
-languageRuleSemantics = return Nothing
+languageRuleSemantics = do
+    void semanticBehavesAs
+    rules <- semanticBlock $ semanticRule `sepBy1` multilineAlternative
+    return (Just $ LanguageRuleSemantics rules)
+
+semanticRule :: Parser SemanticRule
+semanticRule = undefined
 
 semanticEvaluationList :: Parser SemanticEvaluationList
 semanticEvaluationList = semanticEvaluation `sepBy1` multilineListSep

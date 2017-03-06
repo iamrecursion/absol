@@ -139,12 +139,14 @@ data MetaspecDefblock
 type MetaspecFeature = String
 
 data StartRule = StartRule
-    Identifier
+    StartSymbol
     LanguageRuleBody
     deriving (Show)
 
+newtype StartSymbol = StartSymbol Identifier deriving (Show)
+
 data LanguageRule = LanguageRule
-    Identifier
+    NonTerminal
     LanguageRuleBody
     deriving (Show)
 
@@ -185,15 +187,12 @@ data SyntaxPrimary
     | SyntaxEmpty
     deriving (Show)
 
-type Terminal = Identifier
+newtype Terminal = Terminal Identifier deriving (Show)
 
-type NonTerminal = Identifier
+newtype NonTerminal = NonTerminal Identifier deriving (Show)
 
-data LanguageRuleSemantics = LanguageRuleSemantics
-    SemanticBehavesAs
-    SemanticBlockStart
+newtype LanguageRuleSemantics = LanguageRuleSemantics
     [SemanticRule] -- sep by '|'
-    SemanticBlockEnd
     deriving (Show)
 
 data SemanticRule
