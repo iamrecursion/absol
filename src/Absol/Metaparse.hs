@@ -104,7 +104,7 @@ languageDefinition = do
 
 languageRule :: Parser LanguageRule
 languageRule = do
-    prodName <- nonTerminal identifier <* spaceConsumer
+    prodName <- nonTerminal
     void definingSymbol
     ruleBody <- languageRuleBody
     return (LanguageRule prodName ruleBody)
@@ -116,7 +116,6 @@ startRule = do
     ruleBody <- languageRuleBody 
     return (StartRule startSym ruleBody)
 
--- TODO consume whitespace to the end
 languageRuleBody :: Parser LanguageRuleBody
 languageRuleBody = do
     syntaxExpr <- syntaxExpression
@@ -196,13 +195,25 @@ syntaxSpecial = do
     return (SyntaxSpecial $ trimString specialExpr)
 
 terminalProxy :: Parser SyntaxPrimary
-terminalProxy = undefined
+terminalProxy = do
+    thisTerminal <- parseTerminal
+    return (TerminalProxy thisTerminal)
 
 nonTerminalProxy :: Parser SyntaxPrimary
-nonTerminalProxy = undefined
+nonTerminalProxy = do
+    thisNT <- nonTerminal
+    return (NonTerminalProxy thisNT)
 
 syntaxEmpty :: Parser SyntaxPrimary
-syntaxEmpty = undefined
+syntaxEmpty = do
+    void $ terminal ""
+    return SyntaxEmpty
+
+parseTerminal :: Parser Terminal
+parseTerminal = metaspecTerminalDelim identifier <* spaceConsumer
+
+nonTerminal :: Parser NonTerminal
+nonTerminal = nonTerminalDelim identifier <* spaceConsumer
 
 -- TODO make this parse !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 languageRuleSemantics :: Parser (Maybe LanguageRuleSemantics)

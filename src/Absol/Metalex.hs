@@ -135,17 +135,17 @@ nonTerminalStart = terminal "<"
 nonTerminalEnd :: Parser String
 nonTerminalEnd = terminal ">"
 
+nonTerminalDelim :: Parser a -> Parser a
+nonTerminalDelim = between nonTerminalStart nonTerminalEnd
+
 metaspecTerminalStart :: Parser String
 metaspecTerminalStart = terminal "\""
 
 metaspecTerminalEnd :: Parser String
 metaspecTerminalEnd = terminal "\""
 
-metaspecTerminal :: Parser a -> Parser a
-metaspecTerminal = between metaspecTerminalStart metaspecTerminalEnd
-
-nonTerminal :: Parser a -> Parser a
-nonTerminal = between nonTerminalStart nonTerminalEnd
+metaspecTerminalDelim :: Parser a -> Parser a
+metaspecTerminalDelim = between metaspecTerminalStart metaspecTerminalEnd
 
 semanticBehavesAs :: Parser String
 semanticBehavesAs = terminal "-->"
