@@ -66,7 +66,6 @@ type SpecialSyntaxStart = MetaspecTerminal
 type SpecialSyntaxEnd = MetaspecTerminal
 
 type LiteralQuote = MetaspecTerminal
-type SemanticType = Text
 
 type Keyword = String
 type Identifier = String
@@ -195,34 +194,27 @@ newtype LanguageRuleSemantics = LanguageRuleSemantics
     [SemanticRule] -- sep by '|'
     deriving (Show)
 
+newtype SemanticType = SemanticType String deriving (Show)
+
 data SemanticRule
-    = EnvironmentInputRule
-        SemanticType
-        SemanticEnvironmentSymbol
-        SemanticEnvironmentInputSymbol
-        SyntaxAccessBlock
-        EnvironmentDefinesSymbol
-        SyntaxAccessList
+    = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
     | SpecialSyntaxRuleProxy SpecialSyntaxRule
     | SemanticEvaluationRule
         SemanticType
         SemanticIdentifier
-        WhereSymbol
         SemanticOperationList
         SemanticRestrictionList
-        WhereSymbol
         SemanticEvaluationList
     deriving (Show)
 
 type SemanticIdentifier = Identifier
-type SemanticSpecialSyntax = Text
+
+newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
 
 data SpecialSyntaxRule = SpecialSyntaxRule
     SemanticSpecialSyntax
-    SpecialSyntaxStart
-    (Maybe [AccessBlockOrRule])
-    SpecialSyntaxEnd
+    [AccessBlockOrRule]
     deriving (Show)
 
 data EnvironmentAccessRule = EnvironmentAccessRule

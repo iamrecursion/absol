@@ -40,6 +40,7 @@ import           Text.Megaparsec.Text  (Parser)
 -- TODO ensure that each non-terminal is only DEFINED once
 -- TODO cleanup grammar around identifiers and allowed characters
 -- TODO ensure checks on terminals work
+-- TODO check allowed types at parse time. 
 
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
@@ -233,10 +234,79 @@ languageRuleSemantics = do
     return (Just $ LanguageRuleSemantics rules)
 
 semanticRule :: Parser SemanticRule
-semanticRule = undefined
+semanticRule = environmentInputRule
+    <|> environmentAccessRuleProxy
+    <|> specialSyntaxRuleProxy
+    <|> semanticEvaluationRule
+
+environmentInputRule :: Parser SemanticRule
+environmentInputRule = do
+    exprType <- semanticType
+    void semanticEnvironmentSymbol
+    void semanticEnvironmentInputSymbol
+    syntaxBlock <- syntaxAccessBlock
+    void environmentDefinesSymbol
+    syntaxList <- syntaxAccessList
+    return (EnvironmentInputRule exprType syntaxBlock syntaxList)
+
+environmentAccessRuleProxy :: Parser SemanticRule
+environmentAccessRuleProxy = do
+    ear <- environmentAccessRule
+    return (EnvironmentAccessRuleProxy ear)
+
+specialSyntaxRuleProxy :: Parser SemanticRule
+specialSyntaxRuleProxy = do
+    ssr <- specialSyntaxRule
+    return (SpecialSyntaxRuleProxy ssr)
+
+semanticEvaluationRule :: Parser SemanticRule
+semanticEvaluationRule = do
+    exprType <- semanticType
+    semIdentifier <- identifier
+    void whereSymbol
+    semOpList <- semanticOperationList
+    semRestrictList <- semanticRestrictionList
+    void whereSymbol
+    semEvalList <- semanticEvaluationList
+    return (SemanticEvaluationRule 
+        exprType 
+        semIdentifier 
+        semOpList
+        semRestrictList
+        semEvalList
+        )
+
+specialSyntaxRule :: Parser SpecialSyntaxRule
+specialSyntaxRule = do
+    specialOp <- semanticSpecialSyntax
+    let 
+        parseBlock = specialSyntaxBlock accessBlockOrRule
+    semanticBlocks <- parseBlock `sepBy` semanticListDelimiter
+    return (SpecialSyntaxRule specialOp semanticBlocks)
+
+environmentAccessRule :: Parser EnvironmentAccessRule
+environmentAccessRule = undefined
+
+syntaxAccessList :: Parser SyntaxAccessList
+syntaxAccessList = undefined
+
+semanticOperationList :: Parser SemanticOperationList
+semanticOperationList = undefined
+
+semanticSpecialSyntax :: Parser SemanticSpecialSyntax
+semanticSpecialSyntax = undefined
+
+semanticRestrictionList :: Parser SemanticRestrictionList
+semanticRestrictionList = undefined
+
+accessBlockOrRule :: Parser AccessBlockOrRule
+accessBlockOrRule = undefined
 
 semanticEvaluationList :: Parser SemanticEvaluationList
 semanticEvaluationList = semanticEvaluation `sepBy1` multilineListSep
+
+syntaxAccessBlock :: Parser SyntaxAccessBlock
+syntaxAccessBlock = undefined
 
 semanticEvaluation :: Parser SemanticEvaluation
 semanticEvaluation = semanticBlock semanticEvaluationBody
@@ -245,4 +315,6 @@ semanticEvaluationBody :: Parser SemanticEvaluation
 semanticEvaluationBody = undefined
 
 semanticType :: Parser SemanticType
-semanticType = undefined
+semanticType = do
+    str <- semanticTypeString
+    return (SemanticType str)

@@ -83,6 +83,9 @@ terminalChar = noneOf disallowed
     where
         disallowed = "\"\n\r" :: String
 
+semanticTypeString :: Parser String
+semanticTypeString = many identifierChar
+
 nonTerminalName :: Parser String
 nonTerminalName = (:) <$> letterChar <*> many identifierChar
 
@@ -222,6 +225,15 @@ syntaxAccessStartSymbol = terminal "["
 syntaxAccessEndSymbol :: Parser String
 syntaxAccessEndSymbol = terminal "]"
 
+specialSyntaxStart :: Parser String
+specialSyntaxStart = terminal "("
+
+specialSyntaxEnd :: Parser String
+specialSyntaxEnd = terminal ")"
+
+specialSyntaxBlock :: Parser a -> Parser a
+specialSyntaxBlock = between specialSyntaxStart specialSyntaxEnd
+
 nonSemicolon :: Parser Char
 nonSemicolon = let 
         semi = ";" :: String
@@ -243,3 +255,4 @@ multilineAlternative :: Parser String
 multilineAlternative = try parseExpr
     where
         parseExpr = spaceConsumer *> semanticDisjunction <* spaceConsumer
+
