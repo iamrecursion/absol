@@ -225,6 +225,9 @@ syntaxAccessStartSymbol = terminal "["
 syntaxAccessEndSymbol :: Parser String
 syntaxAccessEndSymbol = terminal "]"
 
+syntaxAccess :: Parser a -> Parser a
+syntaxAccess = between syntaxAccessStartSymbol syntaxAccessEndSymbol
+
 specialSyntaxStart :: Parser String
 specialSyntaxStart = terminal "("
 

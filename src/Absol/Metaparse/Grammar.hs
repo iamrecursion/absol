@@ -217,37 +217,25 @@ data SpecialSyntaxRule = SpecialSyntaxRule
     [AccessBlockOrRule]
     deriving (Show)
 
-data EnvironmentAccessRule = EnvironmentAccessRule
-    SemanticEnvironmentSymbol
-    EnvironmentAccessSymbol
+newtype EnvironmentAccessRule = EnvironmentAccessRule
     [SyntaxAccessBlock]
     deriving (Show)
 
-newtype AccessBlockOr a = AccessBlockOr
-    (Either SyntaxAccessBlock a)
-    deriving (Show)
+type AccessBlockOr a = Either SyntaxAccessBlock a
 
-newtype AccessBlockOrRule = AccessBlockOrRule
-    (AccessBlockOr EnvironmentAccessRule)
-    deriving (Show)
+type AccessBlockOrRule = AccessBlockOr EnvironmentAccessRule
 
-newtype AccessBlockOrSpecial = AccessBlockOrSpecial
-    (AccessBlockOr SpecialSyntaxRule)
-    deriving (Show)
+type AccessBlockOrSpecial = AccessBlockOr SpecialSyntaxRule
 
 data SyntaxAccessBlock = SyntaxAccessBlock
     NonTerminal
     SyntaxAccessor
     deriving (Show)
 
-data SyntaxAccessor = SyntaxAccessor
-    SyntaxAccessStartSymbol
-    Integer -- unsigned
-    SyntaxAccessEndSymbol
-    deriving (Show)
+newtype SyntaxAccessor = SyntaxAccessor Integer deriving (Show)
 
 -- Separated by ','
-newtype SyntaxAccessList = SyntaxAccessList [SyntaxAccessBlock] deriving (Show)
+type SyntaxAccessList = [SyntaxAccessBlock]
 
 -- Separated by ','
 type SemanticEvaluationList = [SemanticEvaluation]

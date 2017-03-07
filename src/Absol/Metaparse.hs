@@ -285,10 +285,34 @@ specialSyntaxRule = do
     return (SpecialSyntaxRule specialOp semanticBlocks)
 
 environmentAccessRule :: Parser EnvironmentAccessRule
-environmentAccessRule = undefined
+environmentAccessRule = do
+    void semanticEnvironmentSymbol
+    void environmentAccessSymbol
+    accessBlocks <- syntaxAccessBlock `sepBy` semanticListDelimiter
+    return (EnvironmentAccessRule accessBlocks)
+
+accessBlockOrRule :: Parser AccessBlockOrRule
+accessBlockOrRule = eitherP syntaxAccessBlock environmentAccessRule
+
+accessBlockOrSpecial :: Parser AccessBlockOrSpecial
+accessBlockOrSpecial = eitherP syntaxAccessBlock specialSyntaxRule
+
+syntaxAccessBlock :: Parser SyntaxAccessBlock
+syntaxAccessBlock = do
+    nt <- nonTerminal
+    address <- syntaxAccessor
+    return (SyntaxAccessBlock nt address)
+
+syntaxAccessor :: Parser SyntaxAccessor
+syntaxAccessor = do
+    address <- syntaxAccess naturalNumber
+    return (SyntaxAccessor address)
 
 syntaxAccessList :: Parser SyntaxAccessList
-syntaxAccessList = undefined
+syntaxAccessList = syntaxAccessBlock `sepBy` semanticListDelimiter
+
+semanticEvaluationList :: Parser SemanticEvaluationList
+semanticEvaluationList = semanticEvaluation `sepBy1` semanticListDelimiter
 
 semanticOperationList :: Parser SemanticOperationList
 semanticOperationList = undefined
@@ -298,15 +322,6 @@ semanticSpecialSyntax = undefined
 
 semanticRestrictionList :: Parser SemanticRestrictionList
 semanticRestrictionList = undefined
-
-accessBlockOrRule :: Parser AccessBlockOrRule
-accessBlockOrRule = undefined
-
-semanticEvaluationList :: Parser SemanticEvaluationList
-semanticEvaluationList = semanticEvaluation `sepBy1` multilineListSep
-
-syntaxAccessBlock :: Parser SyntaxAccessBlock
-syntaxAccessBlock = undefined
 
 semanticEvaluation :: Parser SemanticEvaluation
 semanticEvaluation = semanticBlock semanticEvaluationBody
