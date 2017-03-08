@@ -45,6 +45,9 @@ terminal = L.symbol spaceConsumer
 naturalNumber :: Parser Integer
 naturalNumber = lexeme L.integer
 
+integer :: Parser Integer
+integer = L.signed spaceConsumer naturalNumber
+
 keyword :: String -> Parser ()
 keyword word = string word *> notFollowedBy illegals *> spaceConsumer
     where
@@ -219,6 +222,9 @@ restrictionBlockStart = terminal "("
 restrictionBlockEnd :: Parser String
 restrictionBlockEnd = terminal ")"
 
+restrictionBlock :: Parser a -> Parser a
+restrictionBlock = between restrictionBlockStart restrictionBlockEnd
+
 syntaxAccessStartSymbol :: Parser String
 syntaxAccessStartSymbol = terminal "["
 
@@ -249,6 +255,12 @@ nonSpace = let
     in
         noneOf mySpace
 
+nonEmptyChar :: Parser Char
+nonEmptyChar = let
+        emptyStr = "" :: String
+    in
+        noneOf emptyStr
+
 multilineListSep :: Parser String
 multilineListSep =  try parseExpr
     where
@@ -259,3 +271,5 @@ multilineAlternative = try parseExpr
     where
         parseExpr = spaceConsumer *> semanticDisjunction <* spaceConsumer
 
+operator :: String -> Parser String
+operator n = (lexeme . try) (string n <* notFollowedBy punctuationChar)

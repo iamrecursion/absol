@@ -4,7 +4,7 @@ name : simple_test;
 
 version : 0.0.1a;
 
- using : {
+using : {
     floating-point,
     integer,
     nondigit,
@@ -21,14 +21,14 @@ language : {
 <<simple_test>> ::= <statement> ;
 
 // Semantics only required for expressions containing terminals
-// <number> ::= <integer> | <floating-point> ; // from imports, implicit semantics
+<number> ::= <integer> | <floating-point> ; // from imports, implicit semantics
 
 <test-rule> ::= <integer> [ <integer> ] ;
 <test-rule> ::= <integer> { <integer> } ;
 <test-rule> ::= <integer> ( <integer> ) ;
 <test-rule> ::= <integer> ( <integer> | <floating-point> "+" <floating-point> ) ;
 
-<arith-expr> ::= <number> | <arith-op> ;
+// <arith-expr> ::= <number> | <arith-op> ;
 
 // <arith-op> ::=
 //     <arith-expr> "+" <arith-expr> --> {

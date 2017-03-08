@@ -241,23 +241,17 @@ type SyntaxAccessList = [SyntaxAccessBlock]
 type SemanticEvaluationList = [SemanticEvaluation]
 
 data SemanticEvaluation = SemanticEvaluation
-    SemanticBlockStart
     SemanticType
     Identifier
-    EvaluatesTo
     AccessBlockOrSpecial
-    SemanticBlockEnd
     deriving (Show)
 
-data SemanticOperationList = SemanticOperationList
-    SemanticBlockStart
+newtype SemanticOperationList = SemanticOperationList
     [SemanticOperationAssignment] -- Sep by ','
-    SemanticBlockEnd
     deriving (Show)
 
 data SemanticOperationAssignment = SemanticOperationAssignment
     Identifier
-    SemanticAssign
     SemanticOperation
     deriving (Show)
 
@@ -283,10 +277,8 @@ data BinaryOpExpression = BinaryOpExpression
     (Either Identifier BinaryOpExpression)
     deriving (Show)
 
-data SemanticRestrictionList = SemanticRestrictionList
-    RestrictionBlockStart
+newtype SemanticRestrictionList = SemanticRestrictionList
     [SemanticRestriction] -- Sep by ','
-    RestrictionBlockEnd
     deriving (Show)
 
 data SemanticRestriction = SemanticRestriction
@@ -296,7 +288,7 @@ data SemanticRestriction = SemanticRestriction
     deriving (Show)
 
 data SemanticRestrictionValue
-    = SemanticText Text
+    = SemanticText String
     | SemanticNumber Integer
     | SemanticBoolean Bool
     deriving (Show)
