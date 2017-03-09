@@ -124,7 +124,6 @@ semanticSpecialSyntaxList =
 
 -- Defines the Grammar
 
--- | Defines the start symbol for the metaspec grammar.
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
 
 data MetaspecDefblock
@@ -154,7 +153,7 @@ newtype LanguageRuleBody = LanguageRuleBody
     deriving (Show)
 
 newtype SyntaxExpression = SyntaxExpression
-    [SyntaxAlternative] -- Separated by '|'
+    [SyntaxAlternative]
     deriving (Show)
 
 data SyntaxAlternative = SyntaxAlternative
@@ -191,7 +190,7 @@ newtype Terminal = Terminal Identifier deriving (Show)
 newtype NonTerminal = NonTerminal Identifier deriving (Show)
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
-    [SemanticRule] -- sep by '|'
+    [SemanticRule]
     deriving (Show)
 
 newtype SemanticType = SemanticType String deriving (Show)
@@ -236,10 +235,8 @@ data SyntaxAccessBlock = SyntaxAccessBlock
 
 newtype SyntaxAccessor = SyntaxAccessor Integer deriving (Show)
 
--- Separated by ','
 type SyntaxAccessList = [SyntaxAccessBlock]
 
--- Separated by ','
 type SemanticEvaluationList = [SemanticEvaluation]
 
 type SemanticTruthsList = [SemanticTruth]
@@ -266,7 +263,7 @@ data SemanticOperationAssignment = SemanticOperationAssignment
     deriving (Show)
 
 -- TODO update real grammar to reflect this
-data SemanticOperation 
+data SemanticOperation
     = Variable Identifier
     | Constant SemanticValue
     | Parentheses SemanticOperation
@@ -306,15 +303,15 @@ data SemanticBinaryOperator
     deriving (Show)
 
 newtype SemanticRestrictionList = SemanticRestrictionList
-    [SemanticRestriction] -- Sep by ','
+    [SemanticRestriction]
     deriving (Show)
 
 data SemanticRestriction
     = SemVariable Identifier
     | SemConstant SemanticValue
-    | SemInfixExpr 
-        SemanticRestrictionOperator 
-        SemanticRestriction 
+    | SemInfixExpr
+        SemanticRestrictionOperator
+        SemanticRestriction
         SemanticRestriction
     deriving (Show)
 

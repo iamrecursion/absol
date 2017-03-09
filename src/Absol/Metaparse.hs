@@ -24,13 +24,10 @@ import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Control.Monad (void)
-import           Data.Text
+import           Data.Text (Text(..))
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Text  (Parser)
-
-import System.IO.Unsafe
-import Debug.Trace
 
 -- TODO Add contextually sensitive parsing for keywords
 -- TODO change grammar ordering
@@ -47,7 +44,6 @@ import Debug.Trace
 -- TODO stateful parsing
 -- TODO list the special syntaxes, constructors, ops and informal semantics
 -- TODO more sophisticated restriction functionality
--- TODO comments
 -- TODO make special syntax a proper part of the grammar (for each one)
 -- TODO modules for special syntax Metaparse.Special.x (all exposed in
 -- Metaparse.Special)
@@ -62,27 +58,24 @@ import Debug.Trace
 -- semantics
 -- TODO Rethink the semantic grammar a bit (multiple env accesses as eval rules)
 
+-- | Parses a metaspec file.
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
 
 parseMetaspec :: Parser Metaspec
 parseMetaspec = between spaceConsumer eof metaspec
 
--- TODO Statefully fail if missing any top-level defs
 metaspec :: Parser Metaspec
-metaspec = do
-    defs <- some metaspecDefblock
-    return $ Metaspec defs
-
-metaspecDefblock :: Parser MetaspecDefblock
-metaspecDefblock = do
-    block <- nameDefblock
-        <|> versionDefblock
-        <|> usingDefblock
-        <|> truthsDefblock
-        <|> languageDefblock
-    void ruleTerminationSymbol
-    return block
+metaspec = Metaspec <$> traverse (<* ruleTerminationSymbol) blocks
+    where
+        blocks =
+            [
+                nameDefblock, 
+                versionDefblock, 
+                usingDefblock, 
+                truthsDefblock, 
+                languageDefblock
+            ]
 
 nameDefblock :: Parser MetaspecDefblock
 nameDefblock = do
@@ -274,7 +267,6 @@ specialSyntaxRule = do
 environmentAccessRule :: Parser EnvironmentAccessRule
 environmentAccessRule = do
     semType <- option Nothing maybeSemanticType
-    traceShow semType $ return ()
     void semanticEnvironmentSymbol
     void environmentAccessSymbol
     accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
