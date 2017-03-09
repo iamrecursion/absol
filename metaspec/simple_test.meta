@@ -11,10 +11,10 @@ using : {
     digit
 };
 
-// truths : {
-//     {int n <= <integer>},
-//     {float n <= <floating-point>}
-// };
+truths : {
+    {int n <= <integer>},
+    {float n <= <floating-point>}
+};
 
 language : {
 
@@ -28,7 +28,7 @@ language : {
 <test-rule> ::= <integer> ( <integer> ) ;
 <test-rule> ::= <integer> ( <integer> | <floating-point> "+" <floating-point> ) ;
 
-// <arith-expr> ::= <number> | <arith-op> ;
+<arith-expr> ::= <number> | <arith-op> ;
 
 // <arith-op> ::=
 //     <arith-expr> "+" <arith-expr> --> {

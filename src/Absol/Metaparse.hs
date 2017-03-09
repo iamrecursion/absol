@@ -100,7 +100,7 @@ metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)
 truthsDefblock :: Parser MetaspecDefblock
 truthsDefblock = do
     keywordWhere "truths"
-    items <- semanticBlock semanticEvaluationList
+    items <- semanticBlock semanticTruthsList
     return (TruthsDefblock items)
 
 languageDefblock :: Parser MetaspecDefblock
@@ -308,6 +308,20 @@ syntaxAccessor = SyntaxAccessor <$> syntaxAccess naturalNumber
 
 syntaxAccessList :: Parser SyntaxAccessList
 syntaxAccessList = syntaxAccessBlock `sepBy` multilineListSep
+
+semanticTruthsList :: Parser SemanticTruthsList
+semanticTruthsList = semanticTruthBlock `sepBy` multilineListSep
+
+semanticTruthBlock :: Parser SemanticTruth
+semanticTruthBlock = semanticBlock semanticTruth
+
+semanticTruth :: Parser SemanticTruth
+semanticTruth = do
+    semType <- semanticType
+    semId <- identifier
+    void evaluatesTo
+    nt <- nonTerminal
+    return (SemanticTruth semType semId nt)
 
 semanticEvaluationList :: Parser SemanticEvaluationList
 semanticEvaluationList = semanticEvaluation `sepBy1` multilineListSep

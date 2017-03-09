@@ -87,7 +87,7 @@ terminalChar = noneOf disallowed
         disallowed = "\"\n\r" :: String
 
 semanticTypeString :: Parser String
-semanticTypeString = many identifierChar
+semanticTypeString = many identifierChar <* spaceConsumer
 
 nonTerminalName :: Parser String
 nonTerminalName = (:) <$> letterChar <*> many identifierChar

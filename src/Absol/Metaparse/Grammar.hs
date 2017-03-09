@@ -131,7 +131,7 @@ data MetaspecDefblock
     = NameDefblock String
     | VersionDefblock String
     | UsingDefblock [MetaspecFeature]
-    | TruthsDefblock SemanticEvaluationList
+    | TruthsDefblock SemanticTruthsList
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
@@ -240,10 +240,18 @@ type SyntaxAccessList = [SyntaxAccessBlock]
 -- Separated by ','
 type SemanticEvaluationList = [SemanticEvaluation]
 
+type SemanticTruthsList = [SemanticTruth]
+
 data SemanticEvaluation = SemanticEvaluation
     SemanticType
     Identifier
     AccessBlockOrSpecial
+    deriving (Show)
+
+data SemanticTruth = SemanticTruth
+    SemanticType
+    Identifier
+    NonTerminal
     deriving (Show)
 
 newtype SemanticOperationList = SemanticOperationList
