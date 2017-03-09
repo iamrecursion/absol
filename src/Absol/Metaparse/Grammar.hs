@@ -213,11 +213,13 @@ type SemanticIdentifier = Identifier
 newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
 
 data SpecialSyntaxRule = SpecialSyntaxRule
+    (Maybe SemanticType)
     SemanticSpecialSyntax
     [AccessBlockOrRule]
     deriving (Show)
 
-newtype EnvironmentAccessRule = EnvironmentAccessRule
+data EnvironmentAccessRule = EnvironmentAccessRule
+    (Maybe SemanticType)
     [SyntaxAccessBlock]
     deriving (Show)
 
@@ -290,6 +292,7 @@ data SemanticBinaryOperator
     | Minus
     | Times
     | Divide
+    | Exponent
     | BitOr
     | Or
     | And

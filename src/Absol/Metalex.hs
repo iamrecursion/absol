@@ -87,7 +87,13 @@ terminalChar = noneOf disallowed
         disallowed = "\"\n\r" :: String
 
 semanticTypeString :: Parser String
-semanticTypeString = many identifierChar <* spaceConsumer
+semanticTypeString = try (p >>= check) 
+    where
+        p = many identifierChar <* spaceConsumer
+        check x = if
+            | x == "e" -> failExpr x
+            | otherwise -> return x
+        failExpr x = fail $ show x ++ " is not a valid type."
 
 nonTerminalName :: Parser String
 nonTerminalName = (:) <$> letterChar <*> many identifierChar

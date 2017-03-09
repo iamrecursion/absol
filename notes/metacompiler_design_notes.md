@@ -42,9 +42,23 @@ Features that the algorithm needs to have:
 - Needs to check that it is total
 - Descent through every path to show they all terminate
 - Needs to check that semantics validate on the restricted form
-- Needs to check that all cases are covered where restrictions are present.
+- Needs to check that all cases are covered where restrictions are present (this
+  may include a catchall case), cases evaluated in order
 
 ### Basic Idea
 Needs to perform a graph traversal, marking each node that has been shown to 
 terminate. This allows for short circuiting later evaluations if a given node 
 has already been shown to terminate.  
+
+
+## Compiler TODOs
+These were things done as part of the compiler design, including the parser and
+verification engine. They will provide things to write and reason about in the
+dissertation:
+
+- Initially unordered toplevel defs and productions changed to ordering:
+	+ This sacrifices flexibility for the ability to do single-pass stateful
+	parses. 
+	+ This allows the parser to perform a series of verifications on the spec
+	that are required for correctness (and not related to the semantic) 
+	verification engine.

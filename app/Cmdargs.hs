@@ -136,13 +136,17 @@ parseVerboseFlag = switch (
 --
 -- If this is set, the program will log to the specified file instead of stdout/
 -- stderr.
-parseLogFile :: Parser (Maybe FilePath)
+parseLogFile :: Parser (Maybe File)
 parseLogFile = optional $ option str (
         long "log-file" <>
         help "Log to the provided FILE." <>
         metavar "FILE"
     )
 
+-- | Parses the output directory for build artefacts.
+-- 
+-- If this is set, all build artefacts will be written to the provided 
+-- directory.
 parseOutputDirectory :: Parser (Maybe File)
 parseOutputDirectory = optional $ option str (
         long "out-dir" <>

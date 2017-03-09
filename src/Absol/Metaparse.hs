@@ -29,6 +29,9 @@ import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 import           Text.Megaparsec.Text  (Parser)
 
+import System.IO.Unsafe
+import Debug.Trace
+
 -- TODO Add contextually sensitive parsing for keywords
 -- TODO change grammar ordering
 -- TODO check that using keywords are in the list of allowed ones
@@ -51,6 +54,13 @@ import           Text.Megaparsec.Text  (Parser)
 -- TODO check that no rule refers to a NT that doesn't exist
 -- TODO Rethink the operation of the semantic Evaluation and restriction blocks
 -- wrt extention types.
+-- TODO Helpers for imports "Unrecognised type foo, perhaps you meant to import
+-- bar" for the using block.
+-- TODO refactor either out of grammar where possible
+-- TODO arg to validate syntax only
+-- TODO need to be able to nest environment accesses and stores anywhere in 
+-- semantics
+-- TODO Rethink the semantic grammar a bit (multiple env accesses as eval rules)
 
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
@@ -153,7 +163,7 @@ syntaxAlternative = do
 syntaxTerm :: Parser SyntaxTerm
 syntaxTerm = do
     factor <- syntaxFactor
-    exception <- option Nothing syntaxException
+    exception <- option Nothing $ try syntaxException
     return (SyntaxTerm factor exception)
 
 syntaxException :: Parser (Maybe SyntaxException)
@@ -237,10 +247,10 @@ languageRuleSemantics = do
     return (Just $ LanguageRuleSemantics rules)
 
 semanticRule :: Parser SemanticRule
-semanticRule = environmentInputRule
-    <|> environmentAccessRuleProxy
+semanticRule = try semanticEvaluationRule 
+    <|> try environmentInputRule
+    <|> try environmentAccessRuleProxy
     <|> specialSyntaxRuleProxy
-    <|> semanticEvaluationRule
 
 environmentInputRule :: Parser SemanticRule
 environmentInputRule = do
@@ -252,12 +262,23 @@ environmentInputRule = do
     syntaxList <- syntaxAccessList
     return (EnvironmentInputRule exprType syntaxBlock syntaxList)
 
-environmentAccessRuleProxy :: Parser SemanticRule
-environmentAccessRuleProxy =
-    EnvironmentAccessRuleProxy <$> environmentAccessRule
+specialSyntaxRule :: Parser SpecialSyntaxRule
+specialSyntaxRule = do
+    specialType <- option Nothing maybeSemanticType
+    specialOp <- semanticSpecialSyntax
+    let
+        parseBlock = specialSyntaxBlock accessBlockOrRule
+    semanticBlocks <- specialSyntaxBlock $ accessBlockOrRule `sepBy` multilineListSep
+    return (SpecialSyntaxRule specialType specialOp semanticBlocks)
 
-specialSyntaxRuleProxy :: Parser SemanticRule
-specialSyntaxRuleProxy = SpecialSyntaxRuleProxy <$> specialSyntaxRule
+environmentAccessRule :: Parser EnvironmentAccessRule
+environmentAccessRule = do
+    semType <- option Nothing maybeSemanticType
+    traceShow semType $ return ()
+    void semanticEnvironmentSymbol
+    void environmentAccessSymbol
+    accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
+    return (EnvironmentAccessRule semType accessBlocks)
 
 semanticEvaluationRule :: Parser SemanticRule
 semanticEvaluationRule = do
@@ -276,20 +297,12 @@ semanticEvaluationRule = do
         semEvalList
         )
 
-specialSyntaxRule :: Parser SpecialSyntaxRule
-specialSyntaxRule = do
-    specialOp <- semanticSpecialSyntax
-    let
-        parseBlock = specialSyntaxBlock accessBlockOrRule
-    semanticBlocks <- parseBlock `sepBy` semanticListDelimiter
-    return (SpecialSyntaxRule specialOp semanticBlocks)
+environmentAccessRuleProxy :: Parser SemanticRule
+environmentAccessRuleProxy =
+    EnvironmentAccessRuleProxy <$> environmentAccessRule
 
-environmentAccessRule :: Parser EnvironmentAccessRule
-environmentAccessRule = do
-    void semanticEnvironmentSymbol
-    void environmentAccessSymbol
-    accessBlocks <- syntaxAccessBlock `sepBy` semanticListDelimiter
-    return (EnvironmentAccessRule accessBlocks)
+specialSyntaxRuleProxy :: Parser SemanticRule
+specialSyntaxRuleProxy = SpecialSyntaxRuleProxy <$> specialSyntaxRule
 
 accessBlockOrRule :: Parser AccessBlockOrRule
 accessBlockOrRule = eitherP syntaxAccessBlock environmentAccessRule
@@ -339,7 +352,7 @@ semanticEvaluationBody = do
 
 semanticOperationList :: Parser SemanticOperationList
 semanticOperationList = do
-    let parseExpr = semanticOperationAssignment `sepBy` multilineListSep
+    let parseExpr = semanticOperationAssignment `sepBy1` multilineListSep
     operations <- semanticBlock parseExpr
     return (SemanticOperationList operations)
 
@@ -350,11 +363,11 @@ semanticOperationAssignment = do
     semOp <- semanticOperation
     return (SemanticOperationAssignment semId semOp)
 
-semanticExpression :: Parser SemanticOperation
-semanticExpression = makeExprParser semanticOperation semanticOperatorTable
-
 semanticOperation :: Parser SemanticOperation
-semanticOperation = parentheses semanticExpression
+semanticOperation = makeExprParser semanticExpression semanticOperatorTable
+
+semanticExpression :: Parser SemanticOperation
+semanticExpression = parentheses semanticOperation
     <|> Variable <$> identifier
     <|> Constant <$> semanticValue
 
@@ -370,6 +383,9 @@ semanticOperatorTable =
         [
             Postfix (PostfixExpr PostDecrement <$ operator "--"),
             Postfix (PostfixExpr PostIncrement <$ operator "++")
+        ],
+        [
+            InfixL (InfixExpr Exponent <$ operator "^")
         ],
         [
             InfixL (InfixExpr Times <$ operator "*"),
@@ -443,10 +459,13 @@ semanticText = do
 semanticNumber :: Parser SemanticValue
 semanticNumber = SemanticNumber <$> integer
 
+-- TODO can do this better
 semanticBoolean :: Parser SemanticValue
-semanticBoolean = do
-    boolStr <- (terminal "true") <|> (terminal "false")
-    return (SemanticBoolean $ read boolStr)
+semanticBoolean = (terminal "true" *> pure (SemanticBoolean True)) 
+    <|> (terminal "false" *> pure (SemanticBoolean False))
 
 semanticType :: Parser SemanticType
-semanticType = SemanticType <$> semanticTypeString
+semanticType = SemanticType <$> semanticTypeString <* spaceConsumer
+
+maybeSemanticType :: Parser (Maybe SemanticType)
+maybeSemanticType = Just <$> semanticType
