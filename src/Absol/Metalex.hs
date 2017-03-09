@@ -273,3 +273,12 @@ multilineAlternative = try parseExpr
 
 operator :: String -> Parser String
 operator n = (lexeme . try) (string n <* notFollowedBy punctuationChar)
+
+openParenthesis :: Parser String
+openParenthesis = terminal "("
+
+closeParenthesis :: Parser String
+closeParenthesis = terminal ")"
+
+parentheses :: Parser a -> Parser a
+parentheses = between openParenthesis closeParenthesis

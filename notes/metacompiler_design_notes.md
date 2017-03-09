@@ -35,3 +35,16 @@ Left-recursive grammars may pose a problem. How to handle this:
 Typed at the level of semantics, parsing can associate the typing information.
 This can then be type-checked by pattern matching on the types contained in the
 node meta-information. 
+
+## Semantic Checker Algo
+Features that the algorithm needs to have:
+
+- Needs to check that it is total
+- Descent through every path to show they all terminate
+- Needs to check that semantics validate on the restricted form
+- Needs to check that all cases are covered where restrictions are present.
+
+### Basic Idea
+Needs to perform a graph traversal, marking each node that has been shown to 
+terminate. This allows for short circuiting later evaluations if a given node 
+has already been shown to terminate.  

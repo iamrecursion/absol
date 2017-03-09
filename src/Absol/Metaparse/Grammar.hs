@@ -255,51 +255,14 @@ data SemanticOperationAssignment = SemanticOperationAssignment
     SemanticOperation
     deriving (Show)
 
-data SemanticOperation
-    = PrefixUnaryExprProxy PrefixUnaryOpExpression
-    | PostfixUnaryExprProxy PostfixUnaryOpExpression
-    | BinaryOpExpressionProxy BinaryOpExpression
-    deriving (Show)
-
-data PrefixUnaryOpExpression
-    = PrefixUnaryFinalExpr PrefixSemanticUnaryOperator Identifier
-    | PrefixUnaryNTExpr PrefixSemanticUnaryOperator PrefixUnaryOpExpression
-    deriving (Show)
-
-data PostfixUnaryOpExpression
-    = PostfixUnaryFinalExpr Identifier PostfixSemanticUnaryOperator
-    | PostfixUnaryNTExpr PostfixUnaryOpExpression PostfixSemanticUnaryOperator
-    deriving (Show)
-
-data BinaryOpExpression = BinaryOpExpression
-    (Either Identifier BinaryOpExpression)
-    SemanticBinaryOperator
-    (Either Identifier BinaryOpExpression)
-    deriving (Show)
-
-newtype SemanticRestrictionList = SemanticRestrictionList
-    [SemanticRestriction] -- Sep by ','
-    deriving (Show)
-
-data SemanticRestriction = SemanticRestriction
-    Identifier
-    SemanticRestrictionCheckOperator
-    (Either Identifier SemanticRestrictionValue)
-    deriving (Show)
-
-data SemanticRestrictionValue
-    = SemanticText String
-    | SemanticNumber Integer
-    | SemanticBoolean Bool
-    deriving (Show)
-
-data SemanticRestrictionCheckOperator
-    = SemEquals
-    | SemNEquals
-    | SemLT
-    | SemGT
-    | SemLEQ
-    | SemGEQ
+-- TODO update real grammar to reflect this
+data SemanticOperation 
+    = Variable Identifier
+    | Constant SemanticValue
+    | Parentheses SemanticOperation
+    | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
+    | PostfixExpr PostfixSemanticUnaryOperator SemanticOperation
+    | InfixExpr SemanticBinaryOperator SemanticOperation SemanticOperation
     deriving (Show)
 
 data PrefixSemanticUnaryOperator
@@ -319,7 +282,7 @@ data SemanticBinaryOperator
     | Minus
     | Times
     | Divide
-    | BitOR
+    | BitOr
     | Or
     | And
     | BitAnd
@@ -329,4 +292,32 @@ data SemanticBinaryOperator
     | GreaterThan
     | LEQ
     | GEQ
+    deriving (Show)
+
+newtype SemanticRestrictionList = SemanticRestrictionList
+    [SemanticRestriction] -- Sep by ','
+    deriving (Show)
+
+data SemanticRestriction
+    = SemVariable Identifier
+    | SemConstant SemanticValue
+    | SemInfixExpr 
+        SemanticRestrictionOperator 
+        SemanticRestriction 
+        SemanticRestriction
+    deriving (Show)
+
+data SemanticValue
+    = SemanticText String
+    | SemanticNumber Integer
+    | SemanticBoolean Bool
+    deriving (Show)
+
+data SemanticRestrictionOperator
+    = SemEquals
+    | SemNEquals
+    | SemLT
+    | SemGT
+    | SemLEQ
+    | SemGEQ
     deriving (Show)

@@ -317,6 +317,7 @@ semantic-operation-assignment =
     semantic-assign,
     semantic-operation;
 
+// Revise this section in response to live code changes
 semantic-operation = 
     prefix-unary-op-expression | 
     postfix-unary-op-expression |

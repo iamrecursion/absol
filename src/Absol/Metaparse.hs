@@ -9,13 +9,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This module contains the combinator parsers for parsing metaspec files. It 
--- provides robust error reporting functionality and efficient parser 
+-- This module contains the combinator parsers for parsing metaspec files. It
+-- provides robust error reporting functionality and efficient parser
 -- construction.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaparse 
-    -- ( 
+module Absol.Metaparse
+    -- (
     --     parseMetaspecFile
     -- ) where
         where
@@ -24,11 +24,9 @@ import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Control.Monad (void)
-import           Data.Text 
+import           Data.Text
 import           Text.Megaparsec
--- import           Text.Megaparsec.Char
 import           Text.Megaparsec.Expr
--- import           Text.Megaparsec.Perm
 import           Text.Megaparsec.Text  (Parser)
 
 -- TODO Add contextually sensitive parsing for keywords
@@ -40,13 +38,19 @@ import           Text.Megaparsec.Text  (Parser)
 -- TODO ensure that each non-terminal is only DEFINED once
 -- TODO cleanup grammar around identifiers and allowed characters
 -- TODO ensure checks on terminals work
--- TODO check allowed types at parse time. 
+-- TODO check allowed types at parse time.
 -- TODO separate standard, semantic, NT and T identifiers, each with different
--- parsers and checks. 
+-- parsers and checks.
 -- TODO stateful parsing
 -- TODO list the special syntaxes, constructors, ops and informal semantics
 -- TODO more sophisticated restriction functionality
 -- TODO comments
+-- TODO make special syntax a proper part of the grammar (for each one)
+-- TODO modules for special syntax Metaparse.Special.x (all exposed in
+-- Metaparse.Special)
+-- TODO check that no rule refers to a NT that doesn't exist
+-- TODO Rethink the operation of the semantic Evaluation and restriction blocks
+-- wrt extention types.
 
 parseMetaspecFile :: Text -> IO ()
 parseMetaspecFile = parseTest parseMetaspec
@@ -62,10 +66,10 @@ metaspec = do
 
 metaspecDefblock :: Parser MetaspecDefblock
 metaspecDefblock = do
-    block <- nameDefblock 
-        <|> versionDefblock 
+    block <- nameDefblock
+        <|> versionDefblock
         <|> usingDefblock
-        -- <|> truthsDefblock
+        <|> truthsDefblock
         <|> languageDefblock
     void ruleTerminationSymbol
     return block
@@ -82,7 +86,6 @@ versionDefblock = do
     version <- some nonSemicolon
     return (VersionDefblock $ trimString version)
 
--- TODO error if these aren't in the list
 usingDefblock :: Parser MetaspecDefblock
 usingDefblock = do
     keywordWhere "using"
@@ -122,7 +125,7 @@ startRule :: Parser StartRule
 startRule = do
     startSym <- startSymbol
     void definingSymbol
-    ruleBody <- languageRuleBody 
+    ruleBody <- languageRuleBody
     return (StartRule startSym ruleBody)
 
 startSymbol :: Parser StartSymbol
@@ -178,7 +181,6 @@ syntaxPrimary = syntaxOptional
     <|> syntaxSpecial
     <|> terminalProxy
     <|> nonTerminalProxy
-    -- <|> syntaxEmpty
 
 syntaxOptional :: Parser SyntaxPrimary
 syntaxOptional = do
@@ -218,16 +220,10 @@ nonTerminalProxy = do
     thisNT <- nonTerminal
     return (NonTerminalProxy thisNT)
 
--- TODO use lookahead to let this parse FIX THIS
-syntaxEmpty :: Parser SyntaxPrimary
-syntaxEmpty = do
-    void $ terminal "foo"
-    return SyntaxEmpty
-
 parseTerminal :: Parser Terminal
 parseTerminal = do
     ident <- metaspecTerminalDelim terminalString <* spaceConsumer
-    return (Terminal ident) -- TODO this isn't an identifier (think about it)
+    return (Terminal ident)
 
 nonTerminal :: Parser NonTerminal
 nonTerminal = do
@@ -257,7 +253,7 @@ environmentInputRule = do
     return (EnvironmentInputRule exprType syntaxBlock syntaxList)
 
 environmentAccessRuleProxy :: Parser SemanticRule
-environmentAccessRuleProxy = 
+environmentAccessRuleProxy =
     EnvironmentAccessRuleProxy <$> environmentAccessRule
 
 specialSyntaxRuleProxy :: Parser SemanticRule
@@ -272,9 +268,9 @@ semanticEvaluationRule = do
     semRestrictList <- semanticRestrictionList
     void whereSymbol
     semEvalList <- semanticEvaluationList
-    return (SemanticEvaluationRule 
-        exprType 
-        semIdentifier 
+    return (SemanticEvaluationRule
+        exprType
+        semIdentifier
         semOpList
         semRestrictList
         semEvalList
@@ -283,7 +279,7 @@ semanticEvaluationRule = do
 specialSyntaxRule :: Parser SpecialSyntaxRule
 specialSyntaxRule = do
     specialOp <- semanticSpecialSyntax
-    let 
+    let
         parseBlock = specialSyntaxBlock accessBlockOrRule
     semanticBlocks <- parseBlock `sepBy` semanticListDelimiter
     return (SpecialSyntaxRule specialOp semanticBlocks)
@@ -340,49 +336,69 @@ semanticOperationAssignment = do
     semOp <- semanticOperation
     return (SemanticOperationAssignment semId semOp)
 
+semanticExpression :: Parser SemanticOperation
+semanticExpression = makeExprParser semanticOperation semanticOperatorTable
+
 semanticOperation :: Parser SemanticOperation
-semanticOperation = prefixUnaryExprProxy
-    <|> postfixUnaryExprProxy
-    <|> binaryOpExpressionProxy
+semanticOperation = parentheses semanticExpression
+    <|> Variable <$> identifier
+    <|> Constant <$> semanticValue
 
-prefixUnaryExprProxy :: Parser SemanticOperation
-prefixUnaryExprProxy = do
-    prox <- prefixUnaryOpExpression
-    return (PrefixUnaryExprProxy prox)
-
-postfixUnaryExprProxy :: Parser SemanticOperation
-postfixUnaryExprProxy = do
-    prox <- postfixUnaryOpExpression
-    return (PostfixUnaryExprProxy prox)
-
-binaryOpExpressionProxy :: Parser SemanticOperation
-binaryOpExpressionProxy = do
-    prox <- binaryOpExpression
-    return (BinaryOpExpressionProxy prox)
-
-prefixUnaryOpExpression :: Parser PrefixUnaryOpExpression
-prefixUnaryOpExpression = prefixUnaryFinalExpr <|> prefixUnaryNTExpr
-
-prefixUnaryFinalExpr :: Parser PrefixUnaryOpExpression
-prefixUnaryFinalExpr = undefined
-
-prefixUnaryNTExpr :: Parser PrefixUnaryOpExpression
-prefixUnaryNTExpr = undefined
-
-postfixUnaryOpExpression :: Parser PostfixUnaryOpExpression
-postfixUnaryOpExpression = postfixUnaryFinalExpr <|> postfixUnaryNTExpr
-
-postfixUnaryFinalExpr :: Parser PostfixUnaryOpExpression
-postfixUnaryFinalExpr = undefined
-
-postfixUnaryNTExpr :: Parser PostfixUnaryOpExpression
-postfixUnaryNTExpr = undefined
-
-binaryOpExpression :: Parser BinaryOpExpression
-binaryOpExpression = undefined
+semanticOperatorTable :: [[Operator Parser SemanticOperation]]
+semanticOperatorTable =
+    [
+        [
+            Prefix (PrefixExpr Not <$ operator "!"),
+            Prefix (PrefixExpr Negate <$ operator "-"),
+            Prefix (PrefixExpr PreDecrement <$ operator "--"),
+            Prefix (PrefixExpr PreIncrement <$ operator "++")
+        ],
+        [
+            Postfix (PostfixExpr PostDecrement <$ operator "--"),
+            Postfix (PostfixExpr PostIncrement <$ operator "++")
+        ],
+        [
+            InfixL (InfixExpr Times <$ operator "*"),
+            InfixL (InfixExpr Divide <$ operator "/")
+        ],
+        [
+            InfixL (InfixExpr Plus <$ operator "+"),
+            InfixL (InfixExpr Minus <$ operator "-")
+        ],
+        [
+            InfixL (InfixExpr BitOr <$ operator "|"),
+            InfixL (InfixExpr BitAnd <$ operator "&")
+        ],
+        [
+            InfixL (InfixExpr And <$ operator "&&"),
+            InfixL (InfixExpr Or <$ operator "||")
+        ],
+        [
+            InfixN (InfixExpr EqualTo <$ operator "=="),
+            InfixN (InfixExpr NotEqualTo <$ operator "!="),
+            InfixN (InfixExpr LessThan <$ operator "<"),
+            InfixN (InfixExpr GreaterThan <$ operator ">"),
+            InfixN (InfixExpr LEQ <$ operator "<="),
+            InfixN (InfixExpr GEQ <$ operator ">=")
+        ]
+    ]
 
 semanticSpecialSyntax :: Parser SemanticSpecialSyntax
-semanticSpecialSyntax = undefined
+semanticSpecialSyntax = SemanticSpecialSyntax <$> semanticTypeString
+
+-- TODO use expression parser here
+semanticRestrictionOperator :: [[Operator Parser SemanticRestriction]]
+semanticRestrictionOperator =
+    [
+        [
+            InfixN (SemInfixExpr SemEquals <$ operator "=="),
+            InfixN (SemInfixExpr SemNEquals <$ operator "!="),
+            InfixN (SemInfixExpr SemLT <$ operator "<"),
+            InfixN (SemInfixExpr SemGT <$ operator ">"),
+            InfixN (SemInfixExpr SemLEQ <$ operator "<="),
+            InfixN (SemInfixExpr SemGEQ <$ operator ">=")
+        ]
+    ]
 
 semanticRestrictionList :: Parser SemanticRestrictionList
 semanticRestrictionList = do
@@ -391,32 +407,29 @@ semanticRestrictionList = do
     return (SemanticRestrictionList blocks)
 
 semanticRestriction :: Parser SemanticRestriction
-semanticRestriction = do
-    semId <- identifier
-    op <- semanticRestrictionCheckOperator
-    val <- eitherP identifier semanticRestrictionValue
-    return (SemanticRestriction semId op val)
+semanticRestriction =
+    makeExprParser semanticRestrictionExpr semanticRestrictionOperator
 
--- TODO use expression parser here
-semanticRestrictionCheckOperator :: Parser SemanticRestrictionCheckOperator
-semanticRestrictionCheckOperator = undefined
+semanticRestrictionExpr :: Parser SemanticRestriction
+semanticRestrictionExpr = SemVariable <$> identifier
+    <|> SemConstant <$> semanticValue
 
 -- TODO make this more sophisticated (should match on constructors of all types)
-semanticRestrictionValue :: Parser SemanticRestrictionValue
-semanticRestrictionValue = semanticText 
+semanticValue :: Parser SemanticValue
+semanticValue = semanticText
     <|> semanticNumber
     <|> semanticBoolean
 
-semanticText :: Parser SemanticRestrictionValue
+semanticText :: Parser SemanticValue
 semanticText = do
     let parseExpr = many nonEmptyChar
     textVal <- metaspecTerminalDelim parseExpr
     return (SemanticText textVal)
 
-semanticNumber :: Parser SemanticRestrictionValue
+semanticNumber :: Parser SemanticValue
 semanticNumber = SemanticNumber <$> integer
 
-semanticBoolean :: Parser SemanticRestrictionValue
+semanticBoolean :: Parser SemanticValue
 semanticBoolean = do
     boolStr <- (terminal "true") <|> (terminal "false")
     return (SemanticBoolean $ read boolStr)

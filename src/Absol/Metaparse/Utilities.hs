@@ -19,7 +19,8 @@ module Absol.Metaparse.Utilities
         keywordWhere,
         checkKeys,
         trimString,
-        parseString
+        parseString,
+        syntaxEmpty
     ) where
 
 import           Absol.Metalex
@@ -44,3 +45,13 @@ trimString = unwords . words
 
 parseString :: Parser String
 parseString = some anyChar
+
+syntaxEmpty :: Parser SyntaxPrimary
+syntaxEmpty = do
+    let parseExpr = terminal ")" 
+            <|> terminal "]" 
+            <|> terminal "}"
+            <|> terminal "|"
+            <|> terminal ";"
+    void $ lookAhead $ try parseExpr
+    return SyntaxEmpty
