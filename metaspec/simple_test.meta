@@ -22,11 +22,6 @@ language : {
 // Semantics only required for expressions containing terminals
 <number> ::= <integer> | <floating-point> ; // from imports, implicit semantics
 
-<test-rule> ::= <integer> [ <integer> ] ;
-<test-rule> ::= <integer> { <integer> } ;
-<test-rule> ::= <integer> ( <integer> ) ;
-<test-rule> ::= <integer> ( <integer> | <floating-point> "+" <floating-point> ) ;
-
 <arith-expr> ::= <number> | <arith-op> ;
 
 <arith-op> ::=
@@ -53,7 +48,7 @@ language : {
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     };
 
-<identifier> ::= <nondigit> { <integer> | <nondigit> }; // TODO
+<identifier> ::= <nondigit> { <integer> | <nondigit> };
 
 <statement> ::= <arith-expr> | <assignment> ;
 

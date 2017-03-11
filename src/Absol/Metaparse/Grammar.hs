@@ -18,7 +18,7 @@ module Absol.Metaparse.Grammar where
 import           Data.Text
 
 -- Basic Terminal Symbol Types
-type MetaspecTerminal = Text
+type MetaspecTerminal = String
 
 type RepeatCountSymbol = MetaspecTerminal
 type ExceptSymbol = MetaspecTerminal
@@ -44,7 +44,7 @@ type NonTerminalEnd = MetaspecTerminal
 type SemanticBehavesAs = MetaspecTerminal
 type EvaluatesTo = MetaspecTerminal
 type WhereSymbol = MetaspecTerminal
-type SemanticEnd = MetaspecTerminal
+type SemanticAnd = MetaspecTerminal
 type SemanticAssign = MetaspecTerminal
 
 type SemanticEnvironmentSymbol = MetaspecTerminal
@@ -66,6 +66,9 @@ type SpecialSyntaxStart = MetaspecTerminal
 type SpecialSyntaxEnd = MetaspecTerminal
 
 type LiteralQuote = MetaspecTerminal
+
+type OpenParenthesis = MetaspecTerminal
+type CloseParenthesis = MetaspecTerminal
 
 type Keyword = String
 type Identifier = String
@@ -123,7 +126,6 @@ semanticSpecialSyntaxList =
     ]
 
 -- Defines the Grammar
-
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
 
 data MetaspecDefblock

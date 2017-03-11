@@ -44,6 +44,7 @@ Features that the algorithm needs to have:
 - Needs to check that semantics validate on the restricted form
 - Needs to check that all cases are covered where restrictions are present (this
   may include a catchall case), cases evaluated in order
+- Check that all non-terminals referred to in each rule have been defined.
 
 ### Basic Idea
 Needs to perform a graph traversal, marking each node that has been shown to 
