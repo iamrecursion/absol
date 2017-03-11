@@ -186,10 +186,10 @@ metaspec-feature =
     The language described by the metalanguage is defined in terms of rules 
     that combine syntax definitions and semantics.
 
-    The start symbol must be defined somewhere, and can be the only production 
-    of the language.
+    The start symbol must be defined first, followed by the productions of the
+    language.
 *)
-language-definition = { language-rule }, start-rule, { language-rule };
+language-definition = start-rule, { language-rule };
 
 non-terminal = non-terminal-start, text, non-terminal-end;
 terminal = literal-quote, text, literal-quote;
@@ -233,7 +233,7 @@ syntax-grouped = group-start-symbol, syntax-expression, group-end-symbol;
 
 syntax-special =
     special-sequence-start-symbol,
-    syntax-expression,
+    text,
     special-sequence-end-symbol;
 
 syntax-empty = ;
@@ -317,6 +317,7 @@ semantic-operation-assignment =
     semantic-assign,
     semantic-operation;
 
+// Revise this section in response to live code changes
 semantic-operation = 
     prefix-unary-op-expression | 
     postfix-unary-op-expression |

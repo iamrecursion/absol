@@ -18,6 +18,8 @@ main = runMetacompiler =<< execParser (
     )
 
 -- | Contains the main execution context of the metacompiler.
+-- 
+-- TODO Fix the processing, should error on error
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
     putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file
@@ -46,5 +48,5 @@ processMetaspecFile :: CLIOptions -> Handle -> IO ()
 -- processMetaspecFile _ mFile = P.parseMetaspecFile =<< TI.hGetContents mFile
 processMetaspecFile _ mFile = do
     contents <- TI.hGetContents mFile
-    TI.putStrLn contents
+    -- TI.putStrLn contents
     P.parseMetaspecFile contents

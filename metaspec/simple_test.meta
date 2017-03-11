@@ -1,17 +1,17 @@
-
+// Need to update grammar to reflect the above
 name : simple_test;
 
 version : 0.0.1a;
 
 using : {
-    floating-point, 
+    floating-point,
     integer,
     nondigit,
     digit
 };
 
 truths : {
-    {int n <= <integer>}
+    {int n <= <integer>},
     {float n <= <floating-point>}
 };
 
@@ -24,36 +24,49 @@ language : {
 
 <arith-expr> ::= <number> | <arith-op> ;
 
-<arith-op> ::= 
+<arith-op> ::=
     <arith-expr> "+" <arith-expr> --> {
-        num n : {n = n1 + n2}() : 
+        num n : {n = n1 + n2}() :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     } |
     <arith-expr> "-" <arith-expr> --> {
-        num n : {n = n1 - n2}() : 
+        num n : {n = n1 - n2}() :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     } |
     <arith-expr> "*" <arith-expr> --> {
-        num n : {n = n1 * n2}() : 
+        num n : {n = n1 * n2}() :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     } |
     <arith-expr> "/" <arith-expr> --> {
-        num n : {n = n1 / n2}() : 
+        num n : {n = n1 / n2}() :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     } |
     <arith-expr> "^" <arith-expr> --> {
-        num n : {n = n1 ^ n2}() : 
+        num n : {n = n1 ^ n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]} |
+        num n : {n = n1 * n1}(n2 == 2) :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     };
 
-<identifier> ::= <nondigit> {<integer> | } // TODO
-    
+<identifier> ::= <nondigit> { <integer> | <nondigit> };
+
 <statement> ::= <arith-expr> | <assignment> ;
 
 // Defaults to returning the assigned value unless suppressed with 'none'
-// May need new syntax support
 <assignment> ::= <identifier> "=" <arith-expr> --> {
     none e <-- <identifier>[0] : <arith-expr>[0]
+};
+
+<access-test> ::= "call" "(" <identifier> ")" --> {
+    int e.<identifier>[0].<identifier>[1]
+};
+
+<special-test> ::= "func" "(" <identifier> ")" ";" --> {
+    any funcall(
+        e.<identifier>[0].<statement>[0],
+        <param-list>[0],
+        e.<identifier>[0].<param-decl-list>[0]
+        )
 };
 
 (* These defined for reference only. *)

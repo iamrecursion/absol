@@ -21,6 +21,7 @@ library
                         Absol.Metalex,
                         Absol.Metaparse,
                         Absol.Metaparse.Grammar,
+                        Absol.Metaparse.Utilities,
                         Absol.Metaverify,
                         Absol.Utilities
   build-depends:        base >= 4.7 && < 5
