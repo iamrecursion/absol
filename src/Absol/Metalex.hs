@@ -14,13 +14,13 @@
 -------------------------------------------------------------------------------
 module Absol.Metalex where
 
-import           Absol.Metaparse.Grammar as G
+import           Absol.Metaparse.Grammar
+import           Absol.Metaparse.Parser
 import           Control.Monad           (void, when)
 import           Data.List               (isInfixOf)
 import           Data.Text               (pack)
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer   as L
-import           Text.Megaparsec.Text    (Parser)
 
 -- | Strips comments and whitespace from the input.
 -- 
@@ -65,8 +65,8 @@ identifier = (lexeme . try) (p >>= check)
     where
         p = (:) <$> letterChar <*> many identifierChar
         check x = if
-            | x `elem` G.semanticTypeList -> failExpr x
-            | x `elem` G.semanticSpecialSyntaxList -> failExpr x
+            | x `elem` semanticTypeList -> failExpr x
+            | x `elem` semanticSpecialSyntaxList -> failExpr x
             | otherwise -> return x
         failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
 

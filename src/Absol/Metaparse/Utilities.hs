@@ -25,12 +25,9 @@ module Absol.Metaparse.Utilities
 
 import           Absol.Metalex
 import           Absol.Metaparse.Grammar
+import           Absol.Metaparse.Parser
 import           Control.Monad (void)
 import           Text.Megaparsec
--- import           Text.Megaparsec.Char
--- import           Text.Megaparsec.Expr
--- import           Text.Megaparsec.Perm
-import           Text.Megaparsec.Text  (Parser)
 
 keywordWhere :: String -> Parser ()
 keywordWhere kwd = do

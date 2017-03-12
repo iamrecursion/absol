@@ -23,11 +23,11 @@ module Absol.Metaparse
 import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
+import           Absol.Metaparse.Parser
 import           Control.Monad (void)
 import           Data.Text (Text)
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
-import           Text.Megaparsec.Text  (Parser)
 
 -------------------------------------------------------------------------------
 

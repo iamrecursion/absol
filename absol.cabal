@@ -22,6 +22,7 @@ library
                         Absol.Metaparse,
                         Absol.Metaparse.Grammar,
                         Absol.Metaparse.Utilities,
+                        Absol.Metaparse.Parser,
                         Absol.Metaverify,
                         Absol.Utilities
   build-depends:        base >= 4.7 && < 5
@@ -29,6 +30,7 @@ library
                       , filepath
                       , containers
                       , megaparsec
+                      , mtl
   default-language:     Haskell2010
   default-extensions:   ApplicativeDo
                       , BangPatterns

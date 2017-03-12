@@ -126,10 +126,10 @@ semanticSpecialSyntaxList =
 type Keyword = String
 type Identifier = String
 
-newtype NonTerminalIdentifier = NonTerminalIdentifier String deriving (Show)
-newtype TerminalString = TerminalString String deriving (Show)
-newtype SemanticIdentifier = SemanticIdentifier String deriving (Show)
-newtype SemanticType = SemanticType String deriving (Show)
+newtype NonTerminalIdentifier = NonTerminalIdentifier String deriving (Show, Eq)
+newtype TerminalString = TerminalString String deriving (Show, Eq)
+newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq)
+newtype SemanticType = SemanticType String deriving (Show, Eq)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
