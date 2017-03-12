@@ -70,11 +70,8 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
-type Keyword = String
-type Identifier = String
-
 -- Keyword Lists
-metaspecFeatureList :: [Text]
+metaspecFeatureList :: [String]
 metaspecFeatureList =
     [
         "funcall",
@@ -92,7 +89,7 @@ metaspecFeatureList =
         "random"
     ]
 
-semanticTypeList :: [Text]
+semanticTypeList :: [String]
 semanticTypeList =
     [
         "uinteger",
@@ -112,7 +109,7 @@ semanticTypeList =
         "maybe"
     ]
 
-semanticSpecialSyntaxList :: [Text]
+semanticSpecialSyntaxList :: [String]
 semanticSpecialSyntaxList =
     [
         "funcall",
@@ -124,6 +121,15 @@ semanticSpecialSyntaxList =
         "apply",
         "rand"
     ]
+
+-- Identifier Types
+type Keyword = String
+type Identifier = String
+
+newtype NonTerminalIdentifier = NonTerminalIdentifier String deriving (Show)
+newtype TerminalString = TerminalString String deriving (Show)
+newtype SemanticIdentifier = SemanticIdentifier String deriving (Show)
+newtype SemanticType = SemanticType String deriving (Show)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
@@ -143,7 +149,7 @@ data StartRule = StartRule
     LanguageRuleBody
     deriving (Show)
 
-newtype StartSymbol = StartSymbol Identifier deriving (Show)
+newtype StartSymbol = StartSymbol NonTerminalIdentifier deriving (Show)
 
 data LanguageRule = LanguageRule
     NonTerminal
@@ -187,15 +193,13 @@ data SyntaxPrimary
     | SyntaxEmpty
     deriving (Show)
 
-newtype Terminal = Terminal Identifier deriving (Show)
+newtype Terminal = Terminal TerminalString deriving (Show)
 
-newtype NonTerminal = NonTerminal Identifier deriving (Show)
+newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Show)
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
     [SemanticRule]
     deriving (Show)
-
-newtype SemanticType = SemanticType String deriving (Show)
 
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
@@ -208,8 +212,6 @@ data SemanticRule
         SemanticRestrictionList
         SemanticEvaluationList
     deriving (Show)
-
-type SemanticIdentifier = Identifier
 
 newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
 
@@ -245,13 +247,13 @@ type SemanticTruthsList = [SemanticTruth]
 
 data SemanticEvaluation = SemanticEvaluation
     SemanticType
-    Identifier
+    SemanticIdentifier
     AccessBlockOrSpecial
     deriving (Show)
 
 data SemanticTruth = SemanticTruth
     SemanticType
-    Identifier
+    SemanticIdentifier
     NonTerminal
     deriving (Show)
 
@@ -260,13 +262,13 @@ newtype SemanticOperationList = SemanticOperationList
     deriving (Show)
 
 data SemanticOperationAssignment = SemanticOperationAssignment
-    Identifier
+    SemanticIdentifier
     SemanticOperation
     deriving (Show)
 
 -- TODO update real grammar to reflect this
 data SemanticOperation
-    = Variable Identifier
+    = Variable SemanticIdentifier
     | Constant SemanticValue
     | Parentheses SemanticOperation
     | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
@@ -309,7 +311,7 @@ newtype SemanticRestrictionList = SemanticRestrictionList
     deriving (Show)
 
 data SemanticRestriction
-    = SemVariable Identifier
+    = SemVariable SemanticIdentifier
     | SemConstant SemanticValue
     | SemInfixExpr
         SemanticRestrictionOperator

@@ -15,8 +15,9 @@
 module Absol.Metalex where
 
 import           Absol.Metaparse.Grammar as G
-import           Control.Monad           (void)
-import           Data.Text
+import           Control.Monad           (void, when)
+import           Data.List               (isInfixOf)
+import           Data.Text               (pack)
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer   as L
 import           Text.Megaparsec.Text    (Parser)
@@ -64,13 +65,13 @@ identifier = (lexeme . try) (p >>= check)
     where
         p = (:) <$> letterChar <*> many identifierChar
         check x = if
-            | t `elem` G.metaspecFeatureList -> failExpr x
-            | t `elem` G.semanticTypeList -> failExpr x
-            | t `elem` G.semanticSpecialSyntaxList -> failExpr x
+            | x `elem` G.semanticTypeList -> failExpr x
+            | x `elem` G.semanticSpecialSyntaxList -> failExpr x
             | otherwise -> return x
-            where
-                t = pack x
         failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
+
+semanticIdentifier :: Parser SemanticIdentifier
+semanticIdentifier = SemanticIdentifier <$> identifier
 
 -- TODO update metaspec grammar to reflect this
 -- | Parses any character allowed in an identifier.
@@ -80,14 +81,18 @@ identifierChar = alphaNumChar <|> oneOf seps
         seps = "_-" :: String
 
 -- | Parses a string allowed as a terminal.
-terminalString :: Parser String
-terminalString = many terminalChar
+-- 
+-- Terminals may contain any characters except literal newline characters.
+terminalString :: Parser TerminalString
+terminalString = do
+    str <- stringLiteral
+    let check x = ("\n" `isInfixOf` x) || ("\r" `isInfixOf` x)
+    when (check str) (fail "Literals may not contain newlines (\"\\n\\r\").")
+    return (TerminalString str)
 
--- | Parses characters allowed in terminals.
-terminalChar :: Parser Char
-terminalChar = noneOf disallowed
-    where
-        disallowed = "\"\n\r" :: String
+-- | Parses a string literal.
+stringLiteral :: Parser String
+stringLiteral = char '"' >> manyTill L.charLiteral (char '"') <* spaceConsumer
 
 -- | Parses semantic types.
 -- 
@@ -102,8 +107,21 @@ semanticTypeString = try (p >>= check)
         failExpr x = fail $ show x ++ " is not a valid type."
 
 -- | Parses a non-terminal name.
-nonTerminalName :: Parser String
-nonTerminalName = (:) <$> letterChar <*> many identifierChar
+nonTerminalIdentifier :: Parser NonTerminalIdentifier
+nonTerminalIdentifier =
+    NonTerminalIdentifier <$> ( (:) <$> letterChar <*> many identifierChar )
+
+-- | Parses the start symbol for a non-terminal.
+nonTerminalStart :: Parser NonTerminalStart
+nonTerminalStart = terminal "<"
+
+-- | Parses the end symbol for a non-terminal.
+nonTerminalEnd :: Parser NonTerminalEnd
+nonTerminalEnd = terminal ">"
+
+-- | Parses the delimiters for a non-terminal symbol.
+nonTerminalDelim :: Parser a -> Parser a
+nonTerminalDelim = between nonTerminalStart nonTerminalEnd
 
 -- | Parses the repeat count symbol.
 repeatCountSymbol :: Parser RepeatCountSymbol
@@ -185,26 +203,6 @@ startSymbolEnd = terminal ">>"
 -- | Parses the delimiters for the grammar start symbol.
 startSymbolDelim :: Parser a -> Parser a
 startSymbolDelim = between startSymbolStart startSymbolEnd
-
--- | Parses the start symbol for a non-terminal.
-nonTerminalStart :: Parser NonTerminalStart
-nonTerminalStart = terminal "<"
-
--- | Parses the end symbol for a non-terminal.
-nonTerminalEnd :: Parser NonTerminalEnd
-nonTerminalEnd = terminal ">"
-
--- | Parses the delimiters for a non-terminal symbol.
-nonTerminalDelim :: Parser a -> Parser a
-nonTerminalDelim = between nonTerminalStart nonTerminalEnd
-
--- | Parses the star symbol for a terminal.
-metaspecTerminalQuote :: Parser LiteralQuote
-metaspecTerminalQuote = terminal "\""
-
--- | Parses the delimiters for a terminal symbol of the language.
-metaspecTerminalDelim :: Parser a -> Parser a
-metaspecTerminalDelim = between metaspecTerminalQuote metaspecTerminalQuote
 
 -- | Parses the semantic behaviour symbol.
 semanticBehavesAs :: Parser SemanticBehavesAs

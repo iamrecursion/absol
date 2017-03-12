@@ -31,19 +31,6 @@ import           Text.Megaparsec.Text  (Parser)
 
 -------------------------------------------------------------------------------
 
--- TODO Refactor the grammar for identifiers:
---      + Separate identifier types (and allowed characters) for each of 
---      standard, semantic, non-terminals and terminals.
---      + Separate parsers for each, and separate types (can't parse one as the
---      other).
---      + Non terminals are [a-zA-Z0-9\-_].
---      + Terminals are everything but newlines (quotes are allowed, need to 
---      handle this). Cannot include keywords.
---      + Semantic Identifiers are similar to non-terminals. Cannot include 
---      keywords.
---      + Standard identifiers are similar to non-terminals.
---      + Separate parser for type names.
-
 -- TODO Stateful parsing:
 --      + Add state to the parser so it can track the using types.
 --      + Track the defined non-terminals.
@@ -181,7 +168,7 @@ startRule = do
 -- | Parses the language start symbol. 
 startSymbol :: Parser StartSymbol
 startSymbol = do
-    ident <- startSymbolDelim nonTerminalName <* spaceConsumer
+    ident <- startSymbolDelim nonTerminalIdentifier
     return (StartSymbol ident)
 
 -- | Parses the body of a production.
@@ -285,11 +272,11 @@ nonTerminalProxy = NonTerminalProxy <$> nonTerminal
 
 -- | Parses a terminal symbol for the language.
 parseTerminal :: Parser Terminal
-parseTerminal = Terminal <$> metaspecTerminalDelim terminalString
+parseTerminal = Terminal <$> terminalString
 
 -- | Parses a non-terminal symbol for the language.
 nonTerminal :: Parser NonTerminal
-nonTerminal = NonTerminal <$> nonTerminalDelim nonTerminalName
+nonTerminal = NonTerminal <$> nonTerminalDelim nonTerminalIdentifier
 
 -- | Parses the optional language rule semantics.
 languageRuleSemantics :: Parser (Maybe LanguageRuleSemantics)
@@ -354,7 +341,7 @@ environmentAccessRule = do
 semanticEvaluationRule :: Parser SemanticRule
 semanticEvaluationRule = do
     exprType <- semanticType
-    semIdentifier <- identifier
+    semIdentifier <- semanticIdentifier
     void whereSymbol
     semOpList <- semanticOperationList
     semRestrictList <- semanticRestrictionList
@@ -420,7 +407,7 @@ semanticTruthBlock = semanticBlock semanticTruth
 semanticTruth :: Parser SemanticTruth
 semanticTruth = do
     semType <- semanticType
-    semId <- identifier
+    semId <- semanticIdentifier
     void evaluatesTo
     nt <- nonTerminal
     return (SemanticTruth semType semId nt)
@@ -439,7 +426,7 @@ semanticEvaluation = semanticBlock semanticEvaluationBody
 semanticEvaluationBody :: Parser SemanticEvaluation
 semanticEvaluationBody = do
     semType <- semanticType
-    semID <- identifier
+    semID <- semanticIdentifier
     void evaluatesTo
     block <- accessBlockOrSpecial
     return (SemanticEvaluation semType semID block)
@@ -457,7 +444,7 @@ semanticOperationList = do
 -- | Parses the evaluation operation of the semantics and its binding.
 semanticOperationAssignment :: Parser SemanticOperationAssignment
 semanticOperationAssignment = do
-    semId <- identifier
+    semId <- semanticIdentifier
     void semanticAssign
     semOp <- semanticOperation
     return (SemanticOperationAssignment semId semOp)
@@ -469,7 +456,7 @@ semanticOperation = makeExprParser semanticExpression semanticOperatorTable
 -- | Parses the allowed semantic combination expressions.
 semanticExpression :: Parser SemanticOperation
 semanticExpression = parentheses semanticOperation
-    <|> Variable <$> identifier
+    <|> Variable <$> semanticIdentifier
     <|> Constant <$> semanticValue
 
 -- | The operator table for the semantic operations.
@@ -539,7 +526,7 @@ semanticRestriction =
 
 -- | Parses semantic restriction expressions.
 semanticRestrictionExpr :: Parser SemanticRestriction
-semanticRestrictionExpr = SemVariable <$> identifier
+semanticRestrictionExpr = SemVariable <$> semanticIdentifier
     <|> SemConstant <$> semanticValue
 
 -- | Defines the operator table for the semantic restrictions.
@@ -572,7 +559,7 @@ semanticValue = semanticText
 semanticText :: Parser SemanticValue
 semanticText = do
     let parseExpr = many nonEmptyChar
-    textVal <- metaspecTerminalDelim parseExpr
+    textVal <- stringLiteral
     return (SemanticText textVal)
 
 -- | Parses a numerical constant.
