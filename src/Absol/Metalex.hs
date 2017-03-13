@@ -18,7 +18,6 @@ import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Parser
 import           Control.Monad           (void, when)
 import           Data.List               (isInfixOf)
-import           Data.Text               (pack)
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer   as L
 
@@ -26,32 +25,38 @@ import qualified Text.Megaparsec.Lexer   as L
 -- 
 -- The definitions for whitespace and comments are specified in the metaspec 
 -- grammar.
-spaceConsumer :: Parser ()
+spaceConsumer :: ParserST ()
 spaceConsumer = L.space (void spaceChar) lineComment blockComment
     where
         lineComment = L.skipLineComment "//"
         blockComment = L.skipBlockComment "(*" "*)"
 
+spaceConsumer' :: ParserST ()
+spaceConsumer' = L.space (void spaceChar) lineComment blockComment
+    where
+        lineComment = L.skipLineComment "//"
+        blockComment = L.skipBlockComment "(*" "*)"        
+
 -- | This function provides a wrapper for lexeme parsers.
 -- 
 -- It specifies how to consume whitespace after each lexeme. 
-lexeme :: Parser a -> Parser a
+lexeme :: ParserST a -> ParserST a
 lexeme = L.lexeme spaceConsumer
 
 -- | Parses the provided terminal symbol of the language.
-terminal :: String -> Parser String
+terminal :: String -> ParserST String
 terminal = L.symbol spaceConsumer
 
 -- | Parses an unsigned numeric natural number literal. 
-naturalNumber :: Parser Integer
+naturalNumber :: ParserST Integer
 naturalNumber = lexeme L.integer
 
 -- | Parses a signed integer literal.
-integer :: Parser Integer
+integer :: ParserST Integer
 integer = L.signed spaceConsumer naturalNumber
 
 -- | Parses a language keyword.
-keyword :: String -> Parser ()
+keyword :: String -> ParserST ()
 keyword word = string word *> notFollowedBy illegals *> spaceConsumer
     where
         illegals = alphaNumChar
@@ -60,7 +65,7 @@ keyword word = string word *> notFollowedBy illegals *> spaceConsumer
 -- 
 -- TODO Need to have this take inputs instead, as these change based on parse
 -- state. This is fine for now though.
-identifier :: Parser String
+identifier :: ParserST String
 identifier = (lexeme . try) (p >>= check)
     where
         p = (:) <$> letterChar <*> many identifierChar
@@ -70,12 +75,12 @@ identifier = (lexeme . try) (p >>= check)
             | otherwise -> return x
         failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
 
-semanticIdentifier :: Parser SemanticIdentifier
+semanticIdentifier :: ParserST SemanticIdentifier
 semanticIdentifier = SemanticIdentifier <$> identifier
 
 -- TODO update metaspec grammar to reflect this
 -- | Parses any character allowed in an identifier.
-identifierChar :: Parser Char
+identifierChar :: ParserST Char
 identifierChar = alphaNumChar <|> oneOf seps
     where
         seps = "_-" :: String
@@ -83,7 +88,7 @@ identifierChar = alphaNumChar <|> oneOf seps
 -- | Parses a string allowed as a terminal.
 -- 
 -- Terminals may contain any characters except literal newline characters.
-terminalString :: Parser TerminalString
+terminalString :: ParserST TerminalString
 terminalString = do
     str <- stringLiteral
     let check x = ("\n" `isInfixOf` x) || ("\r" `isInfixOf` x)
@@ -91,13 +96,13 @@ terminalString = do
     return (TerminalString str)
 
 -- | Parses a string literal.
-stringLiteral :: Parser String
+stringLiteral :: ParserST String
 stringLiteral = char '"' >> manyTill L.charLiteral (char '"') <* spaceConsumer
 
 -- | Parses semantic types.
 -- 
 -- Disallows recognising the environment symbol 'e' as a type.
-semanticTypeString :: Parser String
+semanticTypeString :: ParserST String
 semanticTypeString = try (p >>= check) 
     where
         p = many identifierChar <* spaceConsumer
@@ -107,227 +112,227 @@ semanticTypeString = try (p >>= check)
         failExpr x = fail $ show x ++ " is not a valid type."
 
 -- | Parses a non-terminal name.
-nonTerminalIdentifier :: Parser NonTerminalIdentifier
+nonTerminalIdentifier :: ParserST NonTerminalIdentifier
 nonTerminalIdentifier =
     NonTerminalIdentifier <$> ( (:) <$> letterChar <*> many identifierChar )
 
 -- | Parses the start symbol for a non-terminal.
-nonTerminalStart :: Parser NonTerminalStart
+nonTerminalStart :: ParserST NonTerminalStart
 nonTerminalStart = terminal "<"
 
 -- | Parses the end symbol for a non-terminal.
-nonTerminalEnd :: Parser NonTerminalEnd
+nonTerminalEnd :: ParserST NonTerminalEnd
 nonTerminalEnd = terminal ">"
 
 -- | Parses the delimiters for a non-terminal symbol.
-nonTerminalDelim :: Parser a -> Parser a
+nonTerminalDelim :: ParserST a -> ParserST a
 nonTerminalDelim = between nonTerminalStart nonTerminalEnd
 
 -- | Parses the repeat count symbol.
-repeatCountSymbol :: Parser RepeatCountSymbol
+repeatCountSymbol :: ParserST RepeatCountSymbol
 repeatCountSymbol = terminal "*"
 
 -- | Parses the grammar except symbol.
-exceptSymbol :: Parser ExceptSymbol
+exceptSymbol :: ParserST ExceptSymbol
 exceptSymbol = terminal "-"
 
 -- | Parses the grammar disjunction symbol.
-disjunctionSymbol :: Parser DisjunctionSymbol
+disjunctionSymbol :: ParserST DisjunctionSymbol
 disjunctionSymbol = terminal "|"
 
 -- | Parses the grammar defining symbol.
-definingSymbol :: Parser DefiningSymbol
+definingSymbol :: ParserST DefiningSymbol
 definingSymbol = terminal "::="
 
 -- | Parses the global rule termination symbol.
-ruleTerminationSymbol :: Parser RuleTerminationSymbol
+ruleTerminationSymbol :: ParserST RuleTerminationSymbol
 ruleTerminationSymbol = terminal ";"
 
 -- | Parses the start symbol for an optional syntactic block.
-optionalStartSymbol :: Parser OptionalStartSymbol
+optionalStartSymbol :: ParserST OptionalStartSymbol
 optionalStartSymbol = terminal "["
 
 -- | Parses the end symbol for an optional syntactic block.
-optionalEndSymbol :: Parser OptionalEndSymbol
+optionalEndSymbol :: ParserST OptionalEndSymbol
 optionalEndSymbol = terminal "]"
 
 -- | Parses an optional syntactic block.
-grammarOptional :: Parser a -> Parser a
+grammarOptional :: ParserST a -> ParserST a
 grammarOptional = between optionalStartSymbol optionalEndSymbol
 
 -- | Parses the start symbol for a syntactic group.
-groupStartSymbol :: Parser GroupStartSymbol
+groupStartSymbol :: ParserST GroupStartSymbol
 groupStartSymbol = terminal "("
 
 -- | Parses the end symbol for a syntactic group.
-groupEndSymbol :: Parser GroupEndSymbol
+groupEndSymbol :: ParserST GroupEndSymbol
 groupEndSymbol = terminal ")"
 
 -- | Parses a syntactic group.
-grammarGroup :: Parser a -> Parser a
+grammarGroup :: ParserST a -> ParserST a
 grammarGroup = between groupStartSymbol groupEndSymbol
 
 -- | Parses the start symbol for a repeated syntactic block.
-repeatStartSymbol :: Parser RepeatStartSymbol
+repeatStartSymbol :: ParserST RepeatStartSymbol
 repeatStartSymbol = terminal "{"
 
 -- | Parses the end symbol for a repeated syntactic block.
-repeatEndSymbol :: Parser RepeatEndSymbol
+repeatEndSymbol :: ParserST RepeatEndSymbol
 repeatEndSymbol = terminal "}"
 
 -- | Parses a repeated syntactic block.
-grammarRepeat :: Parser a -> Parser a
+grammarRepeat :: ParserST a -> ParserST a
 grammarRepeat = between repeatStartSymbol repeatEndSymbol
 
 -- | Parses the start symbol for a special sequence block.
-specialSequenceStartSymbol :: Parser SpecialSequenceStartSymbol
+specialSequenceStartSymbol :: ParserST SpecialSequenceStartSymbol
 specialSequenceStartSymbol = terminal "<?"
 
 -- | Parses the end symbol for a special sequence block.
-specialSequenceEndSymbol :: Parser SpecialSequenceEndSymbol
+specialSequenceEndSymbol :: ParserST SpecialSequenceEndSymbol
 specialSequenceEndSymbol = terminal "?>"
 
 -- | Parses a special sequence block.
-grammarSpecialSequence :: Parser a -> Parser a
+grammarSpecialSequence :: ParserST a -> ParserST a
 grammarSpecialSequence = 
     between specialSequenceStartSymbol specialSequenceEndSymbol
 
 -- | Parses the start delimiter of the grammar start symbol.
-startSymbolStart :: Parser StartSymbolStart
+startSymbolStart :: ParserST StartSymbolStart
 startSymbolStart = terminal "<<"
 
 -- | Parses the end delimiter of the grammar start symbol.
-startSymbolEnd :: Parser StartSymbolEnd
+startSymbolEnd :: ParserST StartSymbolEnd
 startSymbolEnd = terminal ">>"
 
 -- | Parses the delimiters for the grammar start symbol.
-startSymbolDelim :: Parser a -> Parser a
+startSymbolDelim :: ParserST a -> ParserST a
 startSymbolDelim = between startSymbolStart startSymbolEnd
 
 -- | Parses the semantic behaviour symbol.
-semanticBehavesAs :: Parser SemanticBehavesAs
+semanticBehavesAs :: ParserST SemanticBehavesAs
 semanticBehavesAs = terminal "-->"
 
 -- | Parses the evaluates-to symbol.
-evaluatesTo :: Parser EvaluatesTo
+evaluatesTo :: ParserST EvaluatesTo
 evaluatesTo = terminal "<="
 
 -- | Parses the semantic where symbol.
-whereSymbol :: Parser WhereSymbol
+whereSymbol :: ParserST WhereSymbol
 whereSymbol = terminal ":"
 
 -- | Parses the semantic conjunction symbol.
-semanticAnd :: Parser SemanticAnd
+semanticAnd :: ParserST SemanticAnd
 semanticAnd = terminal ","
 
 -- | Parses the semantic assignment symbol.
-semanticAssign :: Parser SemanticAssign
+semanticAssign :: ParserST SemanticAssign
 semanticAssign = terminal "="
 
 -- | Parses the semantic environment symbol.
-semanticEnvironmentSymbol :: Parser SemanticEnvironmentSymbol
+semanticEnvironmentSymbol :: ParserST SemanticEnvironmentSymbol
 semanticEnvironmentSymbol = terminal "e"
 
 -- | Parses the semantic environment input symbol.
-semanticEnvironmentInputSymbol :: Parser SemanticEnvironmentInputSymbol
+semanticEnvironmentInputSymbol :: ParserST SemanticEnvironmentInputSymbol
 semanticEnvironmentInputSymbol = terminal "<--"
 
 -- | Parses the semantic environment access symbol.
-environmentAccessSymbol :: Parser EnvironmentAccessSymbol
+environmentAccessSymbol :: ParserST EnvironmentAccessSymbol
 environmentAccessSymbol = terminal "."
 
 -- | Parses the environment defines symbol.
-environmentDefinesSymbol :: Parser EnvironmentDefinesSymbol
+environmentDefinesSymbol :: ParserST EnvironmentDefinesSymbol
 environmentDefinesSymbol = terminal ":"
 
 -- | Parses the semantic list delimiter.
-semanticListDelimiter :: Parser SemanticListDelimiter
+semanticListDelimiter :: ParserST SemanticListDelimiter
 semanticListDelimiter = terminal ","
 
 -- | Parses the semantic disjunction symbol.
-semanticDisjunction :: Parser SemanticDisjunction
+semanticDisjunction :: ParserST SemanticDisjunction
 semanticDisjunction = terminal "|"
 
 -- | Parses the semantic block start symbol.
-semanticBlockStart :: Parser SemanticBlockStart
+semanticBlockStart :: ParserST SemanticBlockStart
 semanticBlockStart = terminal "{"
 
 -- | Parses the semantic block end symbol.
-semanticBlockEnd :: Parser SemanticBlockEnd
+semanticBlockEnd :: ParserST SemanticBlockEnd
 semanticBlockEnd = terminal "}"
 
 -- | Parses a semantic block.
-semanticBlock :: Parser a -> Parser a
+semanticBlock :: ParserST a -> ParserST a
 semanticBlock = between start end
     where
         start = spaceConsumer *> semanticBlockStart
         end = spaceConsumer *> semanticBlockEnd
 
 -- | Parses the restriction block start symbol.
-restrictionBlockStart :: Parser RestrictionBlockStart
+restrictionBlockStart :: ParserST RestrictionBlockStart
 restrictionBlockStart = terminal "("
 
 -- | Parses the restriction block end symbol.
-restrictionBlockEnd :: Parser RestrictionBlockEnd
+restrictionBlockEnd :: ParserST RestrictionBlockEnd
 restrictionBlockEnd = terminal ")"
 
 -- | Parses a semantic restriction block.
-restrictionBlock :: Parser a -> Parser a
+restrictionBlock :: ParserST a -> ParserST a
 restrictionBlock = between restrictionBlockStart restrictionBlockEnd
 
 -- | Parses the syntax access index start symbol.
-syntaxAccessStartSymbol :: Parser SyntaxAccessStartSymbol
+syntaxAccessStartSymbol :: ParserST SyntaxAccessStartSymbol
 syntaxAccessStartSymbol = terminal "["
 
 -- | Parses the syntax access index end symbol.
-syntaxAccessEndSymbol :: Parser SyntaxAccessEndSymbol
+syntaxAccessEndSymbol :: ParserST SyntaxAccessEndSymbol
 syntaxAccessEndSymbol = terminal "]"
 
 -- | Parses a syntax access index block.
-syntaxAccess :: Parser a -> Parser a
+syntaxAccess :: ParserST a -> ParserST a
 syntaxAccess = between syntaxAccessStartSymbol syntaxAccessEndSymbol
 
 -- | Parses the special syntax block start symbol.
-specialSyntaxStart :: Parser SpecialSyntaxStart
+specialSyntaxStart :: ParserST SpecialSyntaxStart
 specialSyntaxStart = terminal "("
 
 -- | Parses the special syntax block end symbol.
-specialSyntaxEnd :: Parser SpecialSyntaxEnd
+specialSyntaxEnd :: ParserST SpecialSyntaxEnd
 specialSyntaxEnd = terminal ")"
 
 -- | Parses a special syntax block.
-specialSyntaxBlock :: Parser a -> Parser a
+specialSyntaxBlock :: ParserST a -> ParserST a
 specialSyntaxBlock = between specialSyntaxStart specialSyntaxEnd
 
 -- | Parses a non-semicolon character.
-nonSemicolon :: Parser Char
+nonSemicolon :: ParserST Char
 nonSemicolon = let 
         semi = ";" :: String
     in
         noneOf semi
 
 -- | Parses a non-space character (ASCII).
-nonSpace :: Parser Char
+nonSpace :: ParserST Char
 nonSpace = let
         mySpace = " " :: String
     in
         noneOf mySpace
 
 -- | Parses any non-empty character.
-nonEmptyChar :: Parser Char
+nonEmptyChar :: ParserST Char
 nonEmptyChar = let
         emptyStr = "" :: String
     in
         noneOf emptyStr
 
 -- | Parses a list separator ',' over multiple lines.
-multilineListSep :: Parser String
+multilineListSep :: ParserST String
 multilineListSep =  try parseExpr
     where
         parseExpr = spaceConsumer *> semanticListDelimiter <* spaceConsumer
 
 -- | Parses the semantic alternative '|' over multiple lines.
-multilineAlternative :: Parser String
+multilineAlternative :: ParserST String
 multilineAlternative = try parseExpr
     where
         parseExpr = spaceConsumer *> semanticDisjunction <* spaceConsumer
@@ -336,17 +341,17 @@ multilineAlternative = try parseExpr
 -- 
 -- This supports a more sophisticated mechanism than 'terminal', allowing for an
 -- operator to be a prefix of another operator without issue.
-operator :: String -> Parser String
+operator :: String -> ParserST String
 operator n = (lexeme . try) (string n <* notFollowedBy punctuationChar)
 
 -- | Parses a single, standard, open parenthesis. 
-openParenthesis :: Parser OpenParenthesis
+openParenthesis :: ParserST OpenParenthesis
 openParenthesis = terminal "("
 
 -- | Parses a single, standard, close parenthesis.
-closeParenthesis :: Parser CloseParenthesis
+closeParenthesis :: ParserST CloseParenthesis
 closeParenthesis = terminal ")"
 
 -- | Parses a block surrounded by parentheses.
-parentheses :: Parser a -> Parser a
+parentheses :: ParserST a -> ParserST a
 parentheses = between openParenthesis closeParenthesis

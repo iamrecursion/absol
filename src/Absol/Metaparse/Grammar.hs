@@ -15,8 +15,6 @@
 -------------------------------------------------------------------------------
 module Absol.Metaparse.Grammar where
 
-import           Data.Text
-
 -- Basic Terminal Symbol Types
 type MetaspecTerminal = String
 

@@ -32,7 +32,6 @@ import           Text.Megaparsec.Expr
 -------------------------------------------------------------------------------
 
 -- TODO Stateful parsing:
---      + Add state to the parser so it can track the using types.
 --      + Track the defined non-terminals.
 --      + Ensure that no non-terminal is defined more than once. 
 --      + Error if a type is used without being imported or doesn't exist.
@@ -50,6 +49,10 @@ import           Text.Megaparsec.Expr
 --      + Modules for the special syntax Metaspec.Special.x (all exposed via
 --      Metaspec.Special)
 --      + Make each special syntax a part of the grammar (properly).
+--      + Have a typeclass for language features, with functions providing:
+--          > Help text
+--          > Imported function names
+--          > Imported types
 
 -- TODO Rethink Semantic Restrictions:
 --      + Nest environment accesses and stores in more places in the semantics.
@@ -68,17 +71,17 @@ import           Text.Megaparsec.Expr
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned. 
 parseMetaspecFile :: Text -> IO ()
-parseMetaspecFile = parseTest parseMetaspec
+parseMetaspecFile = parseTest (runStateT parseMetaspec initParserState)
 
 -- | Parses the top-level metaspec language definition.
-parseMetaspec :: Parser Metaspec
+parseMetaspec :: ParserST Metaspec
 parseMetaspec = between spaceConsumer eof metaspec
 
 -- | Parses the top level metaspec definition blocks. 
 -- 
 -- The top-level definitions are parsed in the specified order, ensuring that
 -- contextual information is provided in order. 
-metaspec :: Parser Metaspec
+metaspec :: ParserST Metaspec
 metaspec = Metaspec <$> traverse (<* ruleTerminationSymbol) blocks
     where
         blocks =
@@ -93,7 +96,7 @@ metaspec = Metaspec <$> traverse (<* ruleTerminationSymbol) blocks
 -- | Parses the language name definition block.
 -- 
 -- It strips whitespace from the start and end of the provided name in the file.
-nameDefblock :: Parser MetaspecDefblock
+nameDefblock :: ParserST MetaspecDefblock
 nameDefblock = do
     keywordWhere "name"
     name <- some nonSemicolon
@@ -102,14 +105,14 @@ nameDefblock = do
 -- | Parses the language version definition block.
 -- 
 -- It strips whitespace from the start and end of the provided version string. 
-versionDefblock :: Parser MetaspecDefblock
+versionDefblock :: ParserST MetaspecDefblock
 versionDefblock = do
     keywordWhere "version"
     version <- some nonSemicolon
     return (VersionDefblock $ trimString version)
 
 -- | Parses the using definition block for language features.
-usingDefblock :: Parser MetaspecDefblock
+usingDefblock :: ParserST MetaspecDefblock
 usingDefblock = do
     keywordWhere "using"
     items <- semanticBlock $ metaspecFeature `sepBy` multilineListSep
@@ -118,7 +121,7 @@ usingDefblock = do
 -- | Parses the list of language features.
 -- 
 -- The list is delimited by ','.
-metaspecFeature :: Parser MetaspecFeature
+metaspecFeature :: ParserST MetaspecFeature
 metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)
     where
         allowedSeps = "_-" :: String
@@ -127,14 +130,14 @@ metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)
 -- 
 -- These are used as termination cases by the termination proof engine for the
 -- language. The list of truths is delimited by ','.
-truthsDefblock :: Parser MetaspecDefblock
+truthsDefblock :: ParserST MetaspecDefblock
 truthsDefblock = do
     keywordWhere "truths"
     items <- semanticBlock semanticTruthsList
     return (TruthsDefblock items)
 
 -- | Parses the language definition block.
-languageDefblock :: Parser MetaspecDefblock
+languageDefblock :: ParserST MetaspecDefblock
 languageDefblock = do
     keywordWhere "language"
     semanticBlock languageDefinition
@@ -143,14 +146,14 @@ languageDefblock = do
 -- 
 -- The language start rule must be defined once in the file, and must be defined
 -- before any other language productions in this block.
-languageDefinition :: Parser MetaspecDefblock
+languageDefinition :: ParserST MetaspecDefblock
 languageDefinition = do
     start <- startRule
     productions <- languageRule `sepBy` spaceConsumer
     return (LanguageDefblock start productions)
 
 -- | Parses language productions.
-languageRule :: Parser LanguageRule
+languageRule :: ParserST LanguageRule
 languageRule = do
     prodName <- nonTerminal
     void definingSymbol
@@ -158,7 +161,7 @@ languageRule = do
     return (LanguageRule prodName ruleBody)
 
 -- | Parses the language start rule.
-startRule :: Parser StartRule
+startRule :: ParserST StartRule
 startRule = do
     startSym <- startSymbol
     void definingSymbol
@@ -166,7 +169,7 @@ startRule = do
     return (StartRule startSym ruleBody)
 
 -- | Parses the language start symbol. 
-startSymbol :: Parser StartSymbol
+startSymbol :: ParserST StartSymbol
 startSymbol = do
     ident <- startSymbolDelim nonTerminalIdentifier
     return (StartSymbol ident)
@@ -174,7 +177,7 @@ startSymbol = do
 -- | Parses the body of a production.
 -- 
 -- The body of a production is the portion after the defining symbol.
-languageRuleBody :: Parser LanguageRuleBody
+languageRuleBody :: ParserST LanguageRuleBody
 languageRuleBody = do
     syntaxExpr <- syntaxExpression
     void ruleTerminationSymbol
@@ -184,13 +187,13 @@ languageRuleBody = do
 -- 
 -- Syntax expressions consist of the top-level alternatives for a given
 -- production.
-syntaxExpression :: Parser SyntaxExpression
+syntaxExpression :: ParserST SyntaxExpression
 syntaxExpression = do
     alternatives <- syntaxAlternative `sepBy1` multilineAlternative
     return (SyntaxExpression alternatives)
 
 -- | Parses each top-level alternative.
-syntaxAlternative :: Parser SyntaxAlternative
+syntaxAlternative :: ParserST SyntaxAlternative
 syntaxAlternative = do
     terms <- syntaxTerm `sepBy1` space
     semantics <- option Nothing languageRuleSemantics
@@ -201,14 +204,14 @@ syntaxAlternative = do
 -- Syntactic terms may contain exception syntax. An exception is another syntax
 -- definition that is subtracted from the set of allowed syntax defined by the
 -- first production.
-syntaxTerm :: Parser SyntaxTerm
+syntaxTerm :: ParserST SyntaxTerm
 syntaxTerm = do
     factor <- syntaxFactor
     exception <- option Nothing $ try syntaxException
     return (SyntaxTerm factor exception)
 
 -- | Parses the syntax exception itself.
-syntaxException :: Parser (Maybe SyntaxException)
+syntaxException :: ParserST (Maybe SyntaxException)
 syntaxException = do
     void exceptSymbol
     term <- syntaxFactor
@@ -217,21 +220,21 @@ syntaxException = do
 -- | Parses syntactic factors.
 -- 
 -- These may optionally define a number of repetitions of the group.
-syntaxFactor :: Parser SyntaxFactor
+syntaxFactor :: ParserST SyntaxFactor
 syntaxFactor = do
     repeatChar <- option Nothing repeatSyntax
     prim <- syntaxPrimary
     return (SyntaxFactor repeatChar prim)
 
 -- | Parses the optional repetition syntax. 
-repeatSyntax :: Parser (Maybe RepeatSyntax)
+repeatSyntax :: ParserST (Maybe RepeatSyntax)
 repeatSyntax = do
     repeatCount <- naturalNumber
     void repeatCountSymbol
     return (Just $ RepeatSyntax repeatCount)
 
 -- | Parses the syntactic primary expressions.
-syntaxPrimary :: Parser SyntaxPrimary
+syntaxPrimary :: ParserST SyntaxPrimary
 syntaxPrimary = syntaxOptional
     <|> syntaxRepeated
     <|> syntaxGrouped
@@ -240,22 +243,22 @@ syntaxPrimary = syntaxOptional
     <|> nonTerminalProxy
 
 -- | Parses an optional piece of syntax.
-syntaxOptional :: Parser SyntaxPrimary
+syntaxOptional :: ParserST SyntaxPrimary
 syntaxOptional = SyntaxOptional <$> grammarOptional syntaxExpression
 
 -- | Parses a repeated syntax block.
-syntaxRepeated :: Parser SyntaxPrimary
+syntaxRepeated :: ParserST SyntaxPrimary
 syntaxRepeated = SyntaxRepeated <$> grammarRepeat syntaxExpression
 
 -- | Parses a syntax group.
-syntaxGrouped :: Parser SyntaxPrimary
+syntaxGrouped :: ParserST SyntaxPrimary
 syntaxGrouped = SyntaxGrouped <$> grammarGroup syntaxExpression
 
 -- | Parses a special syntax block.
 -- 
 -- Special syntax is used for language extensions and is currently not handled
 -- by the metacompiler.
-syntaxSpecial :: Parser SyntaxPrimary
+syntaxSpecial :: ParserST SyntaxPrimary
 syntaxSpecial = do
     void specialSequenceStartSymbol
     specialExpr <- parseString
@@ -263,23 +266,23 @@ syntaxSpecial = do
     return (SyntaxSpecial $ trimString specialExpr)
 
 -- | Parses a proxy for a terminal symbol of the language.
-terminalProxy :: Parser SyntaxPrimary
+terminalProxy :: ParserST SyntaxPrimary
 terminalProxy = TerminalProxy <$> parseTerminal
 
 -- | Parses a proxy for the non-terminal symbol of the language.
-nonTerminalProxy :: Parser SyntaxPrimary
+nonTerminalProxy :: ParserST SyntaxPrimary
 nonTerminalProxy = NonTerminalProxy <$> nonTerminal
 
 -- | Parses a terminal symbol for the language.
-parseTerminal :: Parser Terminal
+parseTerminal :: ParserST Terminal
 parseTerminal = Terminal <$> terminalString
 
 -- | Parses a non-terminal symbol for the language.
-nonTerminal :: Parser NonTerminal
+nonTerminal :: ParserST NonTerminal
 nonTerminal = NonTerminal <$> nonTerminalDelim nonTerminalIdentifier
 
 -- | Parses the optional language rule semantics.
-languageRuleSemantics :: Parser (Maybe LanguageRuleSemantics)
+languageRuleSemantics :: ParserST (Maybe LanguageRuleSemantics)
 languageRuleSemantics = do
     void semanticBehavesAs
     rules <- semanticBlock $ semanticRule `sepBy1` multilineAlternative
@@ -290,7 +293,7 @@ languageRuleSemantics = do
 -- As the rules diverge only after consuming some portion of syntax, this parser
 -- utilises the ability for infinite-lookahead backtracking to parse these 
 -- productions.
-semanticRule :: Parser SemanticRule
+semanticRule :: ParserST SemanticRule
 semanticRule = try semanticEvaluationRule 
     <|> try environmentInputRule
     <|> try environmentAccessRuleProxy
@@ -300,7 +303,7 @@ semanticRule = try semanticEvaluationRule
 --
 -- Such rules deal with storing information (from the syntax) into the language
 -- environment.
-environmentInputRule :: Parser SemanticRule
+environmentInputRule :: ParserST SemanticRule
 environmentInputRule = do
     exprType <- semanticType
     void semanticEnvironmentSymbol
@@ -314,7 +317,7 @@ environmentInputRule = do
 -- 
 -- Such rules utilise one (or more) of the provided special functions to assist
 -- in defining the semantics of the production.
-specialSyntaxRule :: Parser SpecialSyntaxRule
+specialSyntaxRule :: ParserST SpecialSyntaxRule
 specialSyntaxRule = do
     specialType <- option Nothing maybeSemanticType
     specialOp <- semanticSpecialSyntax
@@ -326,7 +329,7 @@ specialSyntaxRule = do
 -- 
 -- These rules are used to retrieve information that has been previously stored
 -- in the semantic environment.
-environmentAccessRule :: Parser EnvironmentAccessRule
+environmentAccessRule :: ParserST EnvironmentAccessRule
 environmentAccessRule = do
     semType <- option Nothing maybeSemanticType
     void semanticEnvironmentSymbol
@@ -338,7 +341,7 @@ environmentAccessRule = do
 -- 
 -- These are the rules that are checked directly by the proof mechanism, and
 -- they are restricted to being defined in a certain form.
-semanticEvaluationRule :: Parser SemanticRule
+semanticEvaluationRule :: ParserST SemanticRule
 semanticEvaluationRule = do
     exprType <- semanticType
     semIdentifier <- semanticIdentifier
@@ -356,55 +359,55 @@ semanticEvaluationRule = do
         )
 
 -- | Parses a proxy type for environment access rules.
-environmentAccessRuleProxy :: Parser SemanticRule
+environmentAccessRuleProxy :: ParserST SemanticRule
 environmentAccessRuleProxy =
     EnvironmentAccessRuleProxy <$> environmentAccessRule
 
 -- | Parses a proxy type for special syntax rules.
-specialSyntaxRuleProxy :: Parser SemanticRule
+specialSyntaxRuleProxy :: ParserST SemanticRule
 specialSyntaxRuleProxy = SpecialSyntaxRuleProxy <$> specialSyntaxRule
 
 -- | Parses a syntax access block or environment access rule.
-accessBlockOrRule :: Parser AccessBlockOrRule
+accessBlockOrRule :: ParserST AccessBlockOrRule
 accessBlockOrRule = eitherP syntaxAccessBlock environmentAccessRule
 
 -- | Parses a syntax access block or special syntax rule.
-accessBlockOrSpecial :: Parser AccessBlockOrSpecial
+accessBlockOrSpecial :: ParserST AccessBlockOrSpecial
 accessBlockOrSpecial = eitherP syntaxAccessBlock specialSyntaxRule
 
 -- | Parses a syntax access blocks.
 -- 
 -- Such blocks are used within the semantics to refer to portions of syntax that
 -- are defined in the grammar production.
-syntaxAccessBlock :: Parser SyntaxAccessBlock
+syntaxAccessBlock :: ParserST SyntaxAccessBlock
 syntaxAccessBlock = do
     nt <- nonTerminal
     address <- syntaxAccessor
     return (SyntaxAccessBlock nt address)
 
 -- | Parses the syntax accessor address.
-syntaxAccessor :: Parser SyntaxAccessor
+syntaxAccessor :: ParserST SyntaxAccessor
 syntaxAccessor = SyntaxAccessor <$> syntaxAccess naturalNumber
 
 -- | Parses a list of syntax access blocks.
-syntaxAccessList :: Parser SyntaxAccessList
+syntaxAccessList :: ParserST SyntaxAccessList
 syntaxAccessList = syntaxAccessBlock `sepBy` multilineListSep
 
 -- | Parses a list of semantic truths.
 -- 
 -- Semantic truths are used to define the termination cases for the language 
 -- semantics.
-semanticTruthsList :: Parser SemanticTruthsList
+semanticTruthsList :: ParserST SemanticTruthsList
 semanticTruthsList = semanticTruthBlock `sepBy` multilineListSep
 
 -- | Parses a semantic truth block.
-semanticTruthBlock :: Parser SemanticTruth
+semanticTruthBlock :: ParserST SemanticTruth
 semanticTruthBlock = semanticBlock semanticTruth
 
 -- | Parses a semantic truth.
 -- 
 -- Each of these expressions is assumed to terminate by the proof engine.
-semanticTruth :: Parser SemanticTruth
+semanticTruth :: ParserST SemanticTruth
 semanticTruth = do
     semType <- semanticType
     semId <- semanticIdentifier
@@ -413,17 +416,17 @@ semanticTruth = do
     return (SemanticTruth semType semId nt)
 
 -- | Parses a list of semantic evaluations.
-semanticEvaluationList :: Parser SemanticEvaluationList
+semanticEvaluationList :: ParserST SemanticEvaluationList
 semanticEvaluationList = semanticEvaluation `sepBy1` multilineListSep
 
 -- | Parses a semantic evaluation.
-semanticEvaluation :: Parser SemanticEvaluation
+semanticEvaluation :: ParserST SemanticEvaluation
 semanticEvaluation = semanticBlock semanticEvaluationBody
 
 -- | Parses the body of a semantic evaluation expression.
 -- 
 -- These expressions are then composed to define the language rule semantics.
-semanticEvaluationBody :: Parser SemanticEvaluation
+semanticEvaluationBody :: ParserST SemanticEvaluation
 semanticEvaluationBody = do
     semType <- semanticType
     semID <- semanticIdentifier
@@ -435,14 +438,14 @@ semanticEvaluationBody = do
 -- 
 -- These semantic operations define how the semantic evaluations are combined to
 -- define the actual operation of the language.
-semanticOperationList :: Parser SemanticOperationList
+semanticOperationList :: ParserST SemanticOperationList
 semanticOperationList = do
     let parseExpr = semanticOperationAssignment `sepBy1` multilineListSep
     operations <- semanticBlock parseExpr
     return (SemanticOperationList operations)
 
 -- | Parses the evaluation operation of the semantics and its binding.
-semanticOperationAssignment :: Parser SemanticOperationAssignment
+semanticOperationAssignment :: ParserST SemanticOperationAssignment
 semanticOperationAssignment = do
     semId <- semanticIdentifier
     void semanticAssign
@@ -450,11 +453,11 @@ semanticOperationAssignment = do
     return (SemanticOperationAssignment semId semOp)
 
 -- | Parses the allowed semantic combination operations.
-semanticOperation :: Parser SemanticOperation
+semanticOperation :: ParserST SemanticOperation
 semanticOperation = makeExprParser semanticExpression semanticOperatorTable
 
 -- | Parses the allowed semantic combination expressions.
-semanticExpression :: Parser SemanticOperation
+semanticExpression :: ParserST SemanticOperation
 semanticExpression = parentheses semanticOperation
     <|> Variable <$> semanticIdentifier
     <|> Constant <$> semanticValue
@@ -463,7 +466,7 @@ semanticExpression = parentheses semanticOperation
 -- 
 -- Order in the top-level list defines precedence, and order in the sub-lists
 -- defines parse order. 
-semanticOperatorTable :: [[Operator Parser SemanticOperation]]
+semanticOperatorTable :: [[Operator ParserST SemanticOperation]]
 semanticOperatorTable =
     [
         [
@@ -506,26 +509,26 @@ semanticOperatorTable =
     ]
 
 -- | Parses the semantic special syntax expressions.
-semanticSpecialSyntax :: Parser SemanticSpecialSyntax
+semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
 semanticSpecialSyntax = SemanticSpecialSyntax <$> semanticTypeString
 
 -- | Parses a list of semantic restrictions.
 -- 
 -- These restrictions allow control over which semantic behaviour is performed
 -- conditional on the evaluation of the sub-terms.
-semanticRestrictionList :: Parser SemanticRestrictionList
+semanticRestrictionList :: ParserST SemanticRestrictionList
 semanticRestrictionList = do
     let parseExpr = semanticRestriction `sepBy` multilineListSep
     blocks <- restrictionBlock parseExpr
     return (SemanticRestrictionList blocks)
 
 -- | Parses a semantic restriction.
-semanticRestriction :: Parser SemanticRestriction
+semanticRestriction :: ParserST SemanticRestriction
 semanticRestriction =
     makeExprParser semanticRestrictionExpr semanticRestrictionOperator
 
 -- | Parses semantic restriction expressions.
-semanticRestrictionExpr :: Parser SemanticRestriction
+semanticRestrictionExpr :: ParserST SemanticRestriction
 semanticRestrictionExpr = SemVariable <$> semanticIdentifier
     <|> SemConstant <$> semanticValue
 
@@ -533,7 +536,7 @@ semanticRestrictionExpr = SemVariable <$> semanticIdentifier
 -- 
 -- All operators have the same precedence, with parse order defined by the order
 -- in the list.
-semanticRestrictionOperator :: [[Operator Parser SemanticRestriction]]
+semanticRestrictionOperator :: [[Operator ParserST SemanticRestriction]]
 semanticRestrictionOperator =
     [
         [
@@ -550,24 +553,23 @@ semanticRestrictionOperator =
 -- | Parses a semantic value.
 -- 
 -- These are constants of any allowable type.
-semanticValue :: Parser SemanticValue
+semanticValue :: ParserST SemanticValue
 semanticValue = semanticText
     <|> semanticNumber
     <|> semanticBoolean
 
 -- | Parses a piece of constant semantic text.
-semanticText :: Parser SemanticValue
+semanticText :: ParserST SemanticValue
 semanticText = do
-    let parseExpr = many nonEmptyChar
     textVal <- stringLiteral
     return (SemanticText textVal)
 
 -- | Parses a numerical constant.
-semanticNumber :: Parser SemanticValue
+semanticNumber :: ParserST SemanticValue
 semanticNumber = SemanticNumber <$> integer
 
 -- | Parses a boolean constant.
-semanticBoolean :: Parser SemanticValue
+semanticBoolean :: ParserST SemanticValue
 semanticBoolean = (terminal "true" *> pure (SemanticBoolean True)) 
     <|> (terminal "false" *> pure (SemanticBoolean False))
 
@@ -575,12 +577,12 @@ semanticBoolean = (terminal "true" *> pure (SemanticBoolean True))
 --
 -- This parser will only allow types that are in scope to be parsed, and will
 -- raise an error if the type is not in scope or does not exist.
-semanticType :: Parser SemanticType
+semanticType :: ParserST SemanticType
 semanticType = SemanticType <$> semanticTypeString <* spaceConsumer
 
 -- | Parses a semantic type that may not exist.
 -- 
 -- There are certain expressions where the inclusion of the type is optional.
 -- This parser supports their parsing.
-maybeSemanticType :: Parser (Maybe SemanticType)
+maybeSemanticType :: ParserST (Maybe SemanticType)
 maybeSemanticType = Just <$> semanticType

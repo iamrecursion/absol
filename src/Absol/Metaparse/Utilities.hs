@@ -29,21 +29,21 @@ import           Absol.Metaparse.Parser
 import           Control.Monad (void)
 import           Text.Megaparsec
 
-keywordWhere :: String -> Parser ()
+keywordWhere :: String -> ParserST ()
 keywordWhere kwd = do
     keyword kwd
     void whereSymbol
 
-checkKeys :: [MetaspecFeature] -> Parser ()
+checkKeys :: [MetaspecFeature] -> ParserST ()
 checkKeys = undefined
 
 trimString :: String -> String
 trimString = unwords . words
 
-parseString :: Parser String
+parseString :: ParserST String
 parseString = some anyChar
 
-syntaxEmpty :: Parser SyntaxPrimary
+syntaxEmpty :: ParserST SyntaxPrimary
 syntaxEmpty = do
     let parseExpr = terminal ")" 
             <|> terminal "]" 

@@ -14,11 +14,14 @@
 -------------------------------------------------------------------------------
 module Absol.Metaparse.Parser 
     (
-        Parser(..)
+        ParserST,
+        MetaState(..),
+        initParserState,
+        runStateT
     ) where
 
-import           Control.Monad.State.Lazy (StateT)
-import           Text.Megaparsec.Text  (Parser(..))
+import           Control.Monad.State.Lazy (StateT, runStateT)
+import           Text.Megaparsec.Text     (Parser)
 
 -- | Provides a parser type with backtracking user state.
 type ParserST = StateT MetaState Parser
@@ -29,3 +32,7 @@ data MetaState = MetaState {
     definedNTs :: [String],
     keywordsInScope :: [String]
 } deriving (Show) 
+
+-- | Generates an initial state for the parser.
+initParserState :: MetaState
+initParserState = MetaState [] [] []
