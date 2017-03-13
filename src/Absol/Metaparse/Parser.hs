@@ -20,6 +20,7 @@ module Absol.Metaparse.Parser
         runStateT
     ) where
 
+import           Absol.Metaparse.Grammar
 import           Control.Monad.State.Lazy (StateT, runStateT)
 import           Text.Megaparsec.Text     (Parser)
 
@@ -28,11 +29,13 @@ type ParserST = StateT MetaState Parser
 
 -- | The parser state.
 data MetaState = MetaState {
-    importedFeatures :: [String],
-    definedNTs :: [String],
-    keywordsInScope :: [String]
+    importedFeatures :: [MetaspecFeature],
+    definedNTs :: [NonTerminalIdentifier],
+    usedNTs :: [NonTerminalIdentifier]
 } deriving (Show) 
 
 -- | Generates an initial state for the parser.
 initParserState :: MetaState
 initParserState = MetaState [] [] []
+
+-- TODO Accessor helper functions that wrap around put/get/modify

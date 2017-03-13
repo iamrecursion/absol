@@ -31,12 +31,6 @@ spaceConsumer = L.space (void spaceChar) lineComment blockComment
         lineComment = L.skipLineComment "//"
         blockComment = L.skipBlockComment "(*" "*)"
 
-spaceConsumer' :: ParserST ()
-spaceConsumer' = L.space (void spaceChar) lineComment blockComment
-    where
-        lineComment = L.skipLineComment "//"
-        blockComment = L.skipBlockComment "(*" "*)"        
-
 -- | This function provides a wrapper for lexeme parsers.
 -- 
 -- It specifies how to consume whitespace after each lexeme. 

@@ -25,7 +25,7 @@ language : {
 <arith-expr> ::= <number> | <arith-op> "\"";
 
 <arith-op> ::=
-    <arith-expr> "+" "\"" <arith-expr> --> {
+    <arith-expr> "+" <arith-expr> --> {
         num n : {n = n1 + n2}() :
             {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
     } |

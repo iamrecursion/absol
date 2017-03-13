@@ -121,9 +121,6 @@ semanticSpecialSyntaxList =
     ]
 
 -- Identifier Types
-type Keyword = String
-type Identifier = String
-
 newtype NonTerminalIdentifier = NonTerminalIdentifier String deriving (Show, Eq)
 newtype TerminalString = TerminalString String deriving (Show, Eq)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq)
@@ -140,7 +137,7 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
-type MetaspecFeature = String
+newtype MetaspecFeature = MetaspecFeature String deriving (Show)
 
 data StartRule = StartRule
     StartSymbol

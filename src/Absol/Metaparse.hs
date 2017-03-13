@@ -38,6 +38,8 @@ import           Text.Megaparsec.Expr
 --      + Check keywords against the allowed list from imports.
 --      + Check if keywords exist. 
 --      + For non-imported types suggest the import.
+--      + Track the used non-terminals and error if they are not defined by the
+--      end. 
 
 -- TODO Special Syntax and Types (Using):
 --      + Define the list of using keywords.
@@ -53,6 +55,7 @@ import           Text.Megaparsec.Expr
 --          > Help text
 --          > Imported function names
 --          > Imported types
+--      + May need a list of functions to make this work. 
 
 -- TODO Rethink Semantic Restrictions:
 --      + Nest environment accesses and stores in more places in the semantics.
@@ -62,7 +65,6 @@ import           Text.Megaparsec.Expr
 
 -- TODO General:
 --      + Update EBNF grammar to reflect these changes.
---      + Refactor 'Either' out of the grammar where possible.
 
 -------------------------------------------------------------------------------
 
@@ -122,7 +124,7 @@ usingDefblock = do
 -- 
 -- The list is delimited by ','.
 metaspecFeature :: ParserST MetaspecFeature
-metaspecFeature = some (alphaNumChar <|> oneOf allowedSeps)
+metaspecFeature = MetaspecFeature <$> some (alphaNumChar <|> oneOf allowedSeps)
     where
         allowedSeps = "_-" :: String
 
