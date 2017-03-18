@@ -68,63 +68,12 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
--- Keyword Lists
-metaspecFeatureList :: [String]
-metaspecFeatureList =
-    [
-        "funcall",
-        "integer",
-        "floating-point",
-        "array",
-        "text",
-        "list",
-        "matrix",
-        "associative-array",
-        "map",
-        "reduce",
-        "state",
-        "maybe",
-        "random"
-    ]
-
-semanticTypeList :: [String]
-semanticTypeList =
-    [
-        "uinteger",
-        "integer",
-        "int32",
-        "int64",
-        "uint32",
-        "uint64",
-        "num",
-        "text",
-        "matrix",
-        "array",
-        "list",
-        "map",
-        "any",
-        "none",
-        "maybe"
-    ]
-
-semanticSpecialSyntaxList :: [String]
-semanticSpecialSyntaxList =
-    [
-        "funcall",
-        "array",
-        "store",
-        "retrieve",
-        "map",
-        "reduce",
-        "apply",
-        "rand"
-    ]
-
 -- Identifier Types
-newtype NonTerminalIdentifier = NonTerminalIdentifier String deriving (Show, Eq)
-newtype TerminalString = TerminalString String deriving (Show, Eq)
-newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq)
-newtype SemanticType = SemanticType String deriving (Show, Eq)
+newtype NonTerminalIdentifier = NonTerminalIdentifier String 
+    deriving (Show, Eq, Ord)
+newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
+newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
+newtype SemanticType = SemanticType String deriving (Show, Eq, Ord)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)

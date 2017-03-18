@@ -23,6 +23,8 @@ library
                         Absol.Metaparse.Grammar,
                         Absol.Metaparse.Utilities,
                         Absol.Metaparse.Parser,
+                        Absol.Metaspec,
+                        Absol.Metaspec.Special,
                         Absol.Metaverify,
                         Absol.Utilities
   build-depends:        base >= 4.7 && < 5

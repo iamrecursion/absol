@@ -41,6 +41,9 @@ semantics:
 In combination, these rules ensure that all programs defined in this language
 are able to terminate. 
 
+Additionally, the language needs to be able to deal with cycles in the rules, 
+both in the case of direct and indirect recursion in rules. This is graph based.
+
 ## The Semantic Checker Algorithm
 The basic idea of this algorithm is to perform a traversal of a graph formed 
 from the definitions of all non-terminals, including the start rule. 
@@ -79,6 +82,7 @@ A basic (iterative) sketch of the algorithm is as follows:
 The error report should trace the non-termination for every rule that does not
 terminate (e.g. Production `<foo>` does not terminate due to indirect dependency
 on `<bar>` which does no terminate (via `<foo> => <baz> => <bang> => <bar>`)).
+Both forms of non-termination (divergence, hang) should be reported as such.
 
 ### Verifying the Sub-Term Criterion
 Considering the form of the rules as follows:
@@ -109,7 +113,8 @@ For each kind of production sub-term, the following rules can be applied:
   known to terminate.
 - **Repetition (Grouped):** Terminates if the repeated group is known to
   terminate.
-- **Optional:** Terminates if the optional group is known to terminate.
+- **Optional:** Terminates if the optional group is known to terminate 
+  (sequencing).
 
 Productions consisting only of terminals should either have semantics defined 
 for them (hence not falling into this case), or should be listed in the `truths`

@@ -25,21 +25,20 @@ import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Absol.Metaparse.Parser
 import           Control.Monad (void)
+import           Data.List (intercalate)
 import           Data.Text (Text)
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 
+import Debug.Trace
 -------------------------------------------------------------------------------
 
 -- TODO Stateful parsing:
 --      + Track the defined non-terminals.
---      + Ensure that no non-terminal is defined more than once. 
 --      + Error if a type is used without being imported or doesn't exist.
 --      + Check keywords against the allowed list from imports.
 --      + Check if keywords exist. 
 --      + For non-imported types suggest the import.
---      + Track the used non-terminals and error if they are not defined by the
---      end. 
 
 -- TODO Special Syntax and Types (Using):
 --      + Define the list of using keywords.
@@ -62,6 +61,7 @@ import           Text.Megaparsec.Expr
 --      + Needs to be more sophisticated.
 --      + Should allow literals of any type in the retrictions.
 --      + Should allow literals of any type in the semantic combination blocks.
+--      + Don't just want semantic types any more - in scope types. 
 
 -- TODO General:
 --      + Update EBNF grammar to reflect these changes.
@@ -77,7 +77,18 @@ parseMetaspecFile = parseTest (runStateT parseMetaspec initParserState)
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec
-parseMetaspec = between spaceConsumer eof metaspec
+parseMetaspec = between spaceConsumer eof metaspec -- >>= check
+    where
+        check x = do
+            result <- checkNTsInLang
+            case result of
+                Left ntList -> failExpr ntList
+                Right _ -> return x
+        failExpr x = fail (show $ str ++ ntStrings)
+            where
+                str = "The following Non-Terminals are used but not defined: "
+                ntStrings = intercalate ", " $ map extract x
+                extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
 
 -- | Parses the top level metaspec definition blocks. 
 -- 
@@ -118,6 +129,7 @@ usingDefblock :: ParserST MetaspecDefblock
 usingDefblock = do
     keywordWhere "using"
     items <- semanticBlock $ metaspecFeature `sepBy` multilineListSep
+    modify (updateImportedFeatures items)
     return (UsingDefblock items)
 
 -- | Parses the list of language features.
@@ -157,17 +169,23 @@ languageDefinition = do
 -- | Parses language productions.
 languageRule :: ParserST LanguageRule
 languageRule = do
+    modify setPositionHead
     prodName <- nonTerminal
     void definingSymbol
+    modify setPositionBody
     ruleBody <- languageRuleBody
+    modify setPositionNone
     return (LanguageRule prodName ruleBody)
 
 -- | Parses the language start rule.
 startRule :: ParserST StartRule
 startRule = do
+    modify setPositionHead
     startSym <- startSymbol
     void definingSymbol
+    modify setPositionBody
     ruleBody <- languageRuleBody
+    modify setPositionNone
     return (StartRule startSym ruleBody)
 
 -- | Parses the language start symbol. 
@@ -259,7 +277,7 @@ syntaxGrouped = SyntaxGrouped <$> grammarGroup syntaxExpression
 -- | Parses a special syntax block.
 -- 
 -- Special syntax is used for language extensions and is currently not handled
--- by the metacompiler.
+-- by the metacompiler. Special expressions can contain any kind of text.
 syntaxSpecial :: ParserST SyntaxPrimary
 syntaxSpecial = do
     void specialSequenceStartSymbol
@@ -281,7 +299,10 @@ parseTerminal = Terminal <$> terminalString
 
 -- | Parses a non-terminal symbol for the language.
 nonTerminal :: ParserST NonTerminal
-nonTerminal = NonTerminal <$> nonTerminalDelim nonTerminalIdentifier
+nonTerminal = do
+    nt <- checkNTNotDefined $ nonTerminalDelim nonTerminalIdentifier
+    modify $ addNTIdentifier nt
+    return (NonTerminal nt)
 
 -- | Parses the optional language rule semantics.
 languageRuleSemantics :: ParserST (Maybe LanguageRuleSemantics)

@@ -59,14 +59,17 @@ keyword word = string word *> notFollowedBy illegals *> spaceConsumer
 -- 
 -- TODO Need to have this take inputs instead, as these change based on parse
 -- state. This is fine for now though.
+-- 
+-- TODO update this to deal with currently imported types and keywords.
 identifier :: ParserST String
 identifier = (lexeme . try) (p >>= check)
     where
         p = (:) <$> letterChar <*> many identifierChar
-        check x = if
-            | x `elem` semanticTypeList -> failExpr x
-            | x `elem` semanticSpecialSyntaxList -> failExpr x
-            | otherwise -> return x
+        check = return
+        -- check x = if
+        --     | x `elem` semanticTypeList -> failExpr x
+        --     | x `elem` semanticSpecialSyntaxList -> failExpr x
+        --     | otherwise -> return x
         failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
 
 semanticIdentifier :: ParserST SemanticIdentifier
@@ -349,3 +352,7 @@ closeParenthesis = terminal ")"
 -- | Parses a block surrounded by parentheses.
 parentheses :: ParserST a -> ParserST a
 parentheses = between openParenthesis closeParenthesis
+
+-- | Parses a simple string consisting of any characters.
+parseString :: ParserST String
+parseString = some anyChar
