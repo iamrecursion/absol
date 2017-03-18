@@ -16,5 +16,6 @@
 
 module Absol.Utilities where
 
+-- | The output token for certain diagnostic messages.
 outputToken :: String
 outputToken = ">> "

@@ -17,41 +17,19 @@
 module Absol.Metaparse.Utilities
     (   
         keywordWhere,
-        checkKeys,
         trimString,
-        parseString,
-        syntaxEmpty
     ) where
 
 import           Absol.Metalex
-import           Absol.Metaparse.Grammar
+import           Absol.Metaparse.Parser
 import           Control.Monad (void)
-import           Text.Megaparsec
--- import           Text.Megaparsec.Char
--- import           Text.Megaparsec.Expr
--- import           Text.Megaparsec.Perm
-import           Text.Megaparsec.Text  (Parser)
 
-keywordWhere :: String -> Parser ()
+-- | A utility parser for parsing a keyword followed by the where symbol.
+keywordWhere :: String -> ParserST ()
 keywordWhere kwd = do
     keyword kwd
     void whereSymbol
 
-checkKeys :: [MetaspecFeature] -> Parser ()
-checkKeys = undefined
-
+-- | Trims whitespace from the start and end of a string. 
 trimString :: String -> String
 trimString = unwords . words
-
-parseString :: Parser String
-parseString = some anyChar
-
-syntaxEmpty :: Parser SyntaxPrimary
-syntaxEmpty = do
-    let parseExpr = terminal ")" 
-            <|> terminal "]" 
-            <|> terminal "}"
-            <|> terminal "|"
-            <|> terminal ";"
-    void $ lookAhead $ try parseExpr
-    return SyntaxEmpty

@@ -41,6 +41,7 @@ number = natural-number | integer | floating-point-number;
 textual-glyph = utf-8-char - digit;
 eol-symbol = ? EOL ?;
 literal-quote = ? ASCII-double-quote-symbol ?;
+newline = ? \n and \r ?
 
 (*
     This section defines the terminal symbols of the language itself, including:
@@ -102,6 +103,34 @@ syntax-access-end-symbol = "]";
 
 special-syntax-start = "(";
 special-syntax-end = ")";
+
+(*
+    This section defines the allowed types of identifiers in metaspec.
+*)
+
+non-terminal-identifier = 
+    textual-glyph, { textual-glyph | natural-number | "-" | "_"};
+terminal-string =  { utf-8-char - newline };
+semantic-identifier = 
+    (textual-glyph, { textual-glyph | natural-number | "-" | "_"})
+    - (semantic-type | metaspec-feature | semantic-special-syntax);
+semantic-type = 
+    "uinteger" |
+    "integer" |
+    "int32" |
+    "int64" |
+    "uint32" |
+    "uint64" |
+    "num" | (*for all numeric types *)
+    "text" |
+    "matrix" |
+    "array" |
+    "list" |
+    "map" |
+    "any" |
+    "none" |
+    "maybe";
+string-literal = literal-quote, text, literal-quote;
 
 (*
     This section defines the grammar of metaspec itself.
@@ -191,9 +220,9 @@ metaspec-feature =
 *)
 language-definition = start-rule, { language-rule };
 
-non-terminal = non-terminal-start, text, non-terminal-end;
-terminal = literal-quote, text, literal-quote;
-start-symbol = start-symbol-start, text, start-symbol-end;
+non-terminal = non-terminal-start, non-terminal-identifier, non-terminal-end;
+terminal = literal-quote, terminal-string, literal-quote;
+start-symbol = start-symbol-start, non-terminal-identifier, start-symbol-end;
 
 start-rule = start-symbol, defining-symbol, language-rule-body;
 
@@ -283,8 +312,6 @@ special-syntax-rule =
     { semantic-list-delimiter, (syntax-access-block|environment-access-rule) },
     special-syntax-end;
 
-semantic-identifier = text;
-
 semantic-evaluation-rule = 
     semantic-type,
     semantic-identifier,
@@ -301,7 +328,7 @@ semantic-eveluation-list =
 semantic-evaluation = 
     semantic-block-start
     semantic-type, 
-    identifier,
+    semantic-identifier,
     evaluates-to,
     [ syntax-access-block | special-syntax-rule ],
     semantic-block-end;
@@ -313,26 +340,18 @@ semantic-operation-list =
     semantic-block-end;
 
 semantic-operation-assignment =
-    identifier,
+    semantic-identifier,
     semantic-assign,
     semantic-operation;
 
 // Revise this section in response to live code changes
-semantic-operation = 
-    prefix-unary-op-expression | 
-    postfix-unary-op-expression |
-    binary-op-expression;
-
-prefix-unary-op-expression = 
-    prefix-semantic-unary-operator, ( identifier | prefix-unary-op-expression );
-
-postfix-unary-op-expression = 
-    (identifier | postfix-unary-op-expression), postfix-semantic-unary-operator;
-
-binary-op-expression = 
-    identifier | binary-op-expression, 
-    semantic-binary-operator, 
-    identifier | binary-op-expression;
+semantic-operation 
+    = semantic-identifier
+    | semantic-value
+    | "(", semantic-operation, ")"
+    | prefix-semantic-unary-operator, semantic-operation
+    | semantic-operation, postfix-semantic-unary-operator
+    | semantic-operation, semantic-binary-operator, semantic-operation;
 
 semantic-restriction-list = 
     restriction-block-start
@@ -340,34 +359,15 @@ semantic-restriction-list =
     { semantic-list-delimiter, semantic-restriction },
     restriction-block-end;
 
-semantic-restriction = 
-    identifier, 
-    semantic-restriction-check-operator,
-    identifier | semantic-restriction-value;
+semantic-restriction = semantic-identifier, semantic-restriction-check-operator,
+    semantic-value | identifier;
 
 (* The symbols here are dependent on the language using imports *)
 semantic-restriction-check-operator = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
-semantic-restriction-value = text | number | semantic-boolean;
+semantic-value = string-literal | number | semantic-boolean;
 
 semantic-boolean = "true" | "false";
-
-semantic-type = 
-    "uinteger" |
-    "integer" |
-    "int32" |
-    "int64" |
-    "uint32" |
-    "uint64" |
-    "num" | (*for all numeric types *)
-    "text" |
-    "matrix" |
-    "array" |
-    "list" |
-    "map" |
-    "any" |
-    "none" |
-    "maybe";
 
 semantic-binary-operator = 
     "+" |

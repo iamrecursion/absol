@@ -15,8 +15,6 @@
 -------------------------------------------------------------------------------
 module Absol.Metaparse.Grammar where
 
-import           Data.Text
-
 -- Basic Terminal Symbol Types
 type MetaspecTerminal = String
 
@@ -70,60 +68,12 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
-type Keyword = String
-type Identifier = String
-
--- Keyword Lists
-metaspecFeatureList :: [Text]
-metaspecFeatureList =
-    [
-        "funcall",
-        "integer",
-        "floating-point",
-        "array",
-        "text",
-        "list",
-        "matrix",
-        "associative-array",
-        "map",
-        "reduce",
-        "state",
-        "maybe",
-        "random"
-    ]
-
-semanticTypeList :: [Text]
-semanticTypeList =
-    [
-        "uinteger",
-        "integer",
-        "int32",
-        "int64",
-        "uint32",
-        "uint64",
-        "num",
-        "text",
-        "matrix",
-        "array",
-        "list",
-        "map",
-        "any",
-        "none",
-        "maybe"
-    ]
-
-semanticSpecialSyntaxList :: [Text]
-semanticSpecialSyntaxList =
-    [
-        "funcall",
-        "array",
-        "store",
-        "retrieve",
-        "map",
-        "reduce",
-        "apply",
-        "rand"
-    ]
+-- Identifier Types
+newtype NonTerminalIdentifier = NonTerminalIdentifier String 
+    deriving (Show, Eq, Ord)
+newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
+newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
+newtype SemanticType = SemanticType String deriving (Show, Eq, Ord)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
@@ -136,14 +86,14 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
-type MetaspecFeature = String
+newtype MetaspecFeature = MetaspecFeature String deriving (Show)
 
 data StartRule = StartRule
     StartSymbol
     LanguageRuleBody
     deriving (Show)
 
-newtype StartSymbol = StartSymbol Identifier deriving (Show)
+newtype StartSymbol = StartSymbol NonTerminalIdentifier deriving (Show)
 
 data LanguageRule = LanguageRule
     NonTerminal
@@ -187,15 +137,13 @@ data SyntaxPrimary
     | SyntaxEmpty
     deriving (Show)
 
-newtype Terminal = Terminal Identifier deriving (Show)
+newtype Terminal = Terminal TerminalString deriving (Show)
 
-newtype NonTerminal = NonTerminal Identifier deriving (Show)
+newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Show)
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
     [SemanticRule]
     deriving (Show)
-
-newtype SemanticType = SemanticType String deriving (Show)
 
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
@@ -208,8 +156,6 @@ data SemanticRule
         SemanticRestrictionList
         SemanticEvaluationList
     deriving (Show)
-
-type SemanticIdentifier = Identifier
 
 newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
 
@@ -245,13 +191,13 @@ type SemanticTruthsList = [SemanticTruth]
 
 data SemanticEvaluation = SemanticEvaluation
     SemanticType
-    Identifier
+    SemanticIdentifier
     AccessBlockOrSpecial
     deriving (Show)
 
 data SemanticTruth = SemanticTruth
     SemanticType
-    Identifier
+    SemanticIdentifier
     NonTerminal
     deriving (Show)
 
@@ -260,13 +206,13 @@ newtype SemanticOperationList = SemanticOperationList
     deriving (Show)
 
 data SemanticOperationAssignment = SemanticOperationAssignment
-    Identifier
+    SemanticIdentifier
     SemanticOperation
     deriving (Show)
 
 -- TODO update real grammar to reflect this
 data SemanticOperation
-    = Variable Identifier
+    = Variable SemanticIdentifier
     | Constant SemanticValue
     | Parentheses SemanticOperation
     | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
@@ -309,7 +255,7 @@ newtype SemanticRestrictionList = SemanticRestrictionList
     deriving (Show)
 
 data SemanticRestriction
-    = SemVariable Identifier
+    = SemVariable SemanticIdentifier
     | SemConstant SemanticValue
     | SemInfixExpr
         SemanticRestrictionOperator

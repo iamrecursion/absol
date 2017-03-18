@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
--- Module      : Absol.Metaverify
--- Description : Functions for the verification of metaspec semantics.
+-- Module      : Absol.Metaspec
+-- Description : Functions for handling metaspec-specific language features.
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
 --
@@ -9,8 +9,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This file contains functions for performing the semantic verification process
--- on the AST of a metaspec file. 
+-- A module for working with metaspec language features.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaverify where
+module Absol.Metaspec where
