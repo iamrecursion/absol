@@ -17,7 +17,8 @@
 module Absol.Metaparse
     (
         parseMetaspecFile,
-        parseMetaspec
+        parseMetaspec,
+        parseErrorPretty
     ) where
 
 import           Absol.Metalex
@@ -30,6 +31,7 @@ import           Data.List (intercalate)
 import           Data.Maybe (fromJust)
 import           Data.Text (Text)
 import           Text.Megaparsec
+import           Text.Megaparsec.Error (ParseError, Dec)
 import           Text.Megaparsec.Expr
 
 -------------------------------------------------------------------------------
@@ -38,8 +40,13 @@ import           Text.Megaparsec.Expr
 -- 
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned. 
-parseMetaspecFile :: Text -> IO ()
-parseMetaspecFile = parseTest (runStateT parseMetaspec initParserState)
+-- parseMetaspecFile :: Text -> String -> Either (ParseError)
+parseMetaspecFile 
+    :: String 
+    -> Text 
+    -> Either (ParseError Char Dec) (Metaspec, MetaState)
+parseMetaspecFile filename input = 
+    runParser (runStateT parseMetaspec initParserState) filename input
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec

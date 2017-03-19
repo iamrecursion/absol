@@ -8,6 +8,8 @@ import           System.IO
 import           System.IO.Error
 import qualified Data.Text.IO as TI
 
+import Debug.Trace
+
 -- | The main function for ABSOL.
 main :: IO ()
 main = runMetacompiler =<< execParser (
@@ -29,24 +31,26 @@ runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
         Right _ -> processSuccess
     return ()
     where
-        process = acquireMetaspecFile file (processMetaspecFile opts)
+        process = acquireMetaspecFile file (processMetaspecFile opts file)
         processFailure ex = do
-            hPrint stderr ex
+            hPutStrLn stderr $ show ex
             exitFailure :: IO ()
-        processSuccess = do
-            putStrLn $ outputToken ++ "Input file successfully processed."
-            exitSuccess :: IO ()
-runMetacompiler CLIOptions{cleanFlag=True} = undefined
--- TODO cleanup functionality
+        processSuccess = exitSuccess :: IO ()
+runMetacompiler CLIOptions{cleanFlag=True} = 
+    putStrLn "Cleaning not yet implemented."
 
 -- | Loads the metaspec file and executes the metacompiler processing on it.
 acquireMetaspecFile :: FilePath -> (Handle -> IO a) -> IO a
 acquireMetaspecFile file = withFile file ReadMode
 
 -- | The main processing chain for the metacompiler.
-processMetaspecFile :: CLIOptions -> Handle -> IO ()
--- processMetaspecFile _ mFile = P.parseMetaspecFile =<< TI.hGetContents mFile
-processMetaspecFile _ mFile = do
+processMetaspecFile :: CLIOptions -> String -> Handle -> IO ()
+processMetaspecFile _ filename mFile = do
     contents <- TI.hGetContents mFile
-    -- TI.putStrLn contents
-    P.parseMetaspecFile contents
+    case P.parseMetaspecFile filename contents of
+        Left err -> hPutStr stderr $ P.parseErrorPretty err
+        Right ast -> printAst ast
+    where
+        printAst ast = do
+            putStrLn $ show ast
+            putStrLn $ outputToken ++ "Input file processed."
