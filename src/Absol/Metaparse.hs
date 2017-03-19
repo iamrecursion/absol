@@ -32,12 +32,10 @@ import           Data.Text (Text)
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 
-import Debug.Trace
 -------------------------------------------------------------------------------
 
 -- TODO General:
 --      + Update EBNF grammar to reflect these changes.
---      + General refactoring.
 
 -------------------------------------------------------------------------------
 

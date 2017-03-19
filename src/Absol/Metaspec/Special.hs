@@ -31,6 +31,7 @@ module Absol.Metaspec.Special
 
 import           Absol.Metaparse.Grammar
 
+-- | Gets the types defined by a particular feature.
 getTypes :: MetaspecFeature -> [SemanticType]
 getTypes FeatureBase = [AnyType, NoneType, BoolType]
 getTypes FeatureNumber = 
@@ -53,6 +54,7 @@ getTypes FeatureMatrix = [MatrixType]
 getTypes FeatureTraverse = []
 getTypes FeatureFuncall = []
 
+-- | Gets the non-terminals defined by a particular feature.
 getNonTerminals :: MetaspecFeature -> [NonTerminalIdentifier]
 getNonTerminals FeatureBase = makeNTI <$> 
     [
@@ -83,6 +85,7 @@ getNonTerminals FeatureMatrix = []
 getNonTerminals FeatureTraverse = []
 getNonTerminals FeatureFuncall = []
 
+-- | Gets the special syntax elements defined by features.
 getSpecialSyntax :: MetaspecFeature -> [SemanticSpecialSyntax]
 getSpecialSyntax FeatureBase = []
 getSpecialSyntax FeatureNumber = []
@@ -103,6 +106,7 @@ getSpecialSyntax FeatureFuncall =
         SpecialSyntaxCallfun
     ]
 
+-- | Converts a special syntax element to their metaspec form.
 toSpecialSyntaxName :: SemanticSpecialSyntax -> String
 toSpecialSyntaxName SpecialSyntaxMap = "map"
 toSpecialSyntaxName SpecialSyntaxFold = "fold"
@@ -112,45 +116,49 @@ toSpecialSyntaxName SpecialSyntaxDeffun = "deffun"
 toSpecialSyntaxName SpecialSyntaxCallproc = "callproc"
 toSpecialSyntaxName SpecialSyntaxCallfun = "callfun"
 
+-- | Checks if a given feature provides a non-terminal.
 providesNonTerminal :: NonTerminalIdentifier -> MetaspecFeature -> Bool
 providesNonTerminal nti feature = nti `elem` getNonTerminals feature
 
+-- | Checks if a given feature provides a type.
 providesType :: SemanticType -> MetaspecFeature -> Bool
 providesType semType feature = semType `elem` getTypes feature 
 
+-- | Finds the feature corresponding to a non-terminal.
 findFeatureForNT :: NonTerminalIdentifier -> (Maybe [MetaspecFeature])
-findFeatureForNT nti = result (length defs)
-    where
-        zipped = zip availableFeatures (getNonTerminals <$>  availableFeatures)
-        defs = [ x | (x, y) <- zipped, nti `elem` y]
-        result len = if
-            | len <= 0 -> Nothing
-            | otherwise -> Just defs
+findFeatureForNT nti = findFeatureForX nti getNonTerminals
 
+-- | Finds the feature corresponding to a type.
 findFeatureForType :: SemanticType -> (Maybe [MetaspecFeature])
-findFeatureForType semType = result (length defs)
-    where
-        zipped = zip availableFeatures (getTypes <$>  availableFeatures)
-        defs = [ x | (x, y) <- zipped, semType `elem` y]
-        result len = if
-            | len <= 0 -> Nothing
-            | otherwise -> Just defs
+findFeatureForType semType = findFeatureForX semType getTypes
 
+-- | Finds the feature corresponding to a special-syntax element.
 findFeatureForSpecial :: SemanticSpecialSyntax -> (Maybe [MetaspecFeature])
-findFeatureForSpecial syntax = result (length defs)
+findFeatureForSpecial syntax = findFeatureForX syntax getSpecialSyntax
+
+-- | Finds the feature corresponding to a given input (using an accessor fn).
+findFeatureForX 
+    :: (Eq a) 
+    => a 
+    -> (MetaspecFeature -> [a]) 
+    -> (Maybe [MetaspecFeature])
+findFeatureForX item fn = result (length defs)
     where
-        zipped = zip availableFeatures (getSpecialSyntax <$>  availableFeatures)
-        defs = [ x | (x, y) <- zipped, syntax `elem` y]
+        zipped = zip availableFeatures (fn <$> availableFeatures)
+        defs = [ x | (x, y) <- zipped, item `elem` y]
         result len = if
             | len <= 0 -> Nothing
             | otherwise -> Just defs
 
+-- | Gets a list of the non-terminals made available by a set of features. 
 availableNonTerminals :: [MetaspecFeature] -> [NonTerminalIdentifier]
 availableNonTerminals features = concat $ getNonTerminals <$> features
 
+-- | Gets a list of the types made available by a set of features.
 availableTypes :: [MetaspecFeature] -> [SemanticType]
 availableTypes features = concat $ getTypes <$> features
 
+-- | Translates feature instances to their import names. 
 toFeatureName :: MetaspecFeature -> String
 toFeatureName FeatureBase = "base"
 toFeatureName FeatureNumber = "number"
@@ -160,6 +168,7 @@ toFeatureName FeatureMatrix = "matrix"
 toFeatureName FeatureTraverse = "traverse"
 toFeatureName FeatureFuncall = "funcall"
 
+-- | The list of features available in the language.
 availableFeatures :: [MetaspecFeature]
 availableFeatures =
     [
@@ -176,6 +185,7 @@ availableFeatures =
 makeNTI :: String -> NonTerminalIdentifier
 makeNTI = NonTerminalIdentifier
 
+-- | Extracts the string from the Non-Terminal.
 extractNTIString :: NonTerminalIdentifier -> String
 extractNTIString (NonTerminalIdentifier x) = x
 

@@ -41,8 +41,6 @@ import           Data.Maybe               (fromJust)
 import qualified Data.Set                 as S
 import           Text.Megaparsec.Text     (Parser)
 
-import Debug.Trace
-
 -- | Provides a parser type with backtracking user state.
 type ParserST = StateT MetaState Parser
 
