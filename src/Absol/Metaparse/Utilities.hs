@@ -17,10 +17,11 @@
 module Absol.Metaparse.Utilities
     (   
         keywordWhere,
-        trimString,
+        trimString
     ) where
 
 import           Absol.Metalex
+import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Parser
 import           Control.Monad (void)
 

@@ -25,6 +25,7 @@ module Absol.Metaparse.Parser
         setPositionNone,
         checkNTsInLang,
         checkNTNotDefined,
+        checkTypeDefined,
         modify,
         get,
         put,
@@ -32,8 +33,10 @@ module Absol.Metaparse.Parser
     ) where
 
 import           Absol.Metaparse.Grammar
+import           Absol.Metaspec.Special
 import           Control.Monad.State.Lazy
-import           Data.List                (foldl')
+import           Data.List                (foldl', intercalate)
+import           Data.Maybe               (fromJust)
 import qualified Data.Set                 as S
 import           Text.Megaparsec.Text     (Parser)
 
@@ -50,16 +53,23 @@ data MetaState = MetaState {
     importedFeatures :: [MetaspecFeature],
     definedNTs :: [NonTerminalIdentifier],
     usedNTs :: S.Set NonTerminalIdentifier,
+    importedTypes :: [SemanticType],
     parserPosition :: RulePosition
 } deriving (Show) 
 
 -- | Generates an initial state for the parser.
 initParserState :: MetaState
-initParserState = MetaState [] [] S.empty None
+initParserState = MetaState [] [] S.empty [] None
 
 -- | Updates the list of imported features in the parser state.
+-- 
+-- TODO bring things into scope as this is updated.
 updateImportedFeatures :: [MetaspecFeature] -> MetaState -> MetaState
-updateImportedFeatures list st = st {importedFeatures = list}
+updateImportedFeatures list st = st {
+        importedFeatures = list,
+        definedNTs = concat $ getNonTerminals <$> list,
+        importedTypes = concat $ getTypes <$> list
+    }
 
 -- | Updates the list of defined non-terminals in the parser state.
 updateDefinedNTs :: NonTerminalIdentifier -> MetaState -> MetaState
@@ -123,7 +133,34 @@ checkNTNotDefined ident = do
     case (unpackedId `elem` definedIdentifiers, parsePos) of
         (_, None)     -> return unpackedId
         (False, Head) -> return unpackedId
-        (True, Head)  -> failExpr $ show unpackedId
+        (True, Head)  -> failExpr $ unpackedId
         (_, Body)     -> return unpackedId
     where
-        failExpr x = fail $ "Non-Terminal with name " ++ x ++ " already defined"
+        failExpr nt@(NonTerminalIdentifier x) = 
+            fail $ "Non-Terminal with name \"" ++ x ++ "\" already defined. " 
+                ++ suggest nt
+        suggest x = case findFeatureForNT x of
+            Nothing -> "Defined elsewhere in document."
+            Just xs -> "Defined by language feature(s): " ++ feats xs ++ "."
+            where
+                feats x = intercalate ", " $ toFeatureName <$> x
+
+-- | Checks if a given type is defined in the current language context.
+-- 
+-- If the type doesn't exist in scope, it will determine which feature needs to
+-- be imported if the type exists, otherwise error. 
+checkTypeDefined :: ParserST SemanticType -> ParserST SemanticType
+checkTypeDefined t = do
+    semType <- t
+    scopeTypes <- gets importedTypes
+    case semType `elem` scopeTypes of
+        True -> return semType
+        False -> failExpr semType
+        where
+            failExpr x = fail $ failStr x
+            failStr x = "Type \"" ++ (toTypeString x) ++ "\" not in scope. "
+                ++ suggest x
+            suggest x = case findFeatureForType x of
+                Nothing -> "Does not exist."
+                Just f -> "Defined in language feature(s): " ++ feats f ++ "."
+            feats x = intercalate ", " $ toFeatureName <$> x

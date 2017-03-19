@@ -68,12 +68,32 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
+-- Semantic Types
+data SemanticType 
+    = AnyType
+    | NoneType
+    | BoolType
+    | NaturalType
+    | IntegerType
+    | Int32Type
+    | UInt32Type
+    | Int64Type
+    | UInt64Type
+    | FloatType
+    | DoubleType
+    | IntegralType
+    | FloatingType
+    | NumberType
+    | StringType
+    | ListType
+    | MatrixType
+    deriving (Show, Eq, Ord)
+
 -- Identifier Types
 newtype NonTerminalIdentifier = NonTerminalIdentifier String 
     deriving (Show, Eq, Ord)
 newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
-newtype SemanticType = SemanticType String deriving (Show, Eq, Ord)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
@@ -86,7 +106,16 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
-newtype MetaspecFeature = MetaspecFeature String deriving (Show)
+-- newtype MetaspecFeature = MetaspecFeature String deriving (Show)
+data MetaspecFeature 
+    = FeatureBase
+    | FeatureNumber
+    | FeatureString
+    | FeatureList
+    | FeatureMatrix
+    | FeatureTraverse
+    | FeatureFuncall
+    deriving (Show, Eq)
 
 data StartRule = StartRule
     StartSymbol

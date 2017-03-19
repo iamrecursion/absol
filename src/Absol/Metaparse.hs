@@ -34,26 +34,11 @@ import Debug.Trace
 -------------------------------------------------------------------------------
 
 -- TODO Stateful parsing:
---      + Track the defined non-terminals.
---      + Error if a type is used without being imported or doesn't exist.
 --      + Check keywords against the allowed list from imports.
 --      + Check if keywords exist. 
---      + For non-imported types suggest the import.
 
 -- TODO Special Syntax and Types (Using):
---      + Define the list of using keywords.
---      + For each, define the:
---          > Types they import
---          > Keywords they import 
---          > Operations they allow
---          > Semantics of these operations (sketch termination properties).
---      + Modules for the special syntax Metaspec.Special.x (all exposed via
---      Metaspec.Special)
 --      + Make each special syntax a part of the grammar (properly).
---      + Have a typeclass for language features, with functions providing:
---          > Help text
---          > Imported function names
---          > Imported types
 --      + May need a list of functions to make this work. 
 
 -- TODO Rethink Semantic Restrictions:
@@ -77,18 +62,20 @@ parseMetaspecFile = parseTest (runStateT parseMetaspec initParserState)
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec
-parseMetaspec = between spaceConsumer eof metaspec -- >>= check
+parseMetaspec = between spaceConsumer eof metaspec >>= check
     where
         check x = do
             result <- checkNTsInLang
             case result of
                 Left ntList -> failExpr ntList
                 Right _ -> return x
-        failExpr x = fail (show $ str ++ ntStrings)
+        failExpr x = fail (show $ str ++ ntStrings ++ suggestion)
             where
                 str = "The following Non-Terminals are used but not defined: "
+                suggestion = ". Did you forget to import a language feature?"
                 ntStrings = intercalate ", " $ map extract x
                 extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
+        -- TODO make this intelligently suggest the import if it exists.
 
 -- | Parses the top level metaspec definition blocks. 
 -- 
@@ -125,6 +112,8 @@ versionDefblock = do
     return (VersionDefblock $ trimString version)
 
 -- | Parses the using definition block for language features.
+--
+-- The using list is separated by ','.
 usingDefblock :: ParserST MetaspecDefblock
 usingDefblock = do
     keywordWhere "using"
@@ -132,13 +121,15 @@ usingDefblock = do
     modify (updateImportedFeatures items)
     return (UsingDefblock items)
 
--- | Parses the list of language features.
--- 
--- The list is delimited by ','.
+-- | Parses a language feature.
 metaspecFeature :: ParserST MetaspecFeature
-metaspecFeature = MetaspecFeature <$> some (alphaNumChar <|> oneOf allowedSeps)
-    where
-        allowedSeps = "_-" :: String
+metaspecFeature = FeatureBase <$ terminal "base"
+    <|> FeatureNumber <$ terminal "number"
+    <|> FeatureString <$ terminal "string"
+    <|> FeatureList <$ terminal "list"
+    <|> FeatureMatrix <$ terminal "matrix"
+    <|> FeatureTraverse <$ terminal "traverse"
+    <|> FeatureFuncall <$ terminal "funcall"
 
 -- | Parses the list of language truths.
 -- 
@@ -316,6 +307,9 @@ languageRuleSemantics = do
 -- As the rules diverge only after consuming some portion of syntax, this parser
 -- utilises the ability for infinite-lookahead backtracking to parse these 
 -- productions.
+-- 
+-- TODO can I factor out the type checks? Nasty errors because of 'try' right
+-- now.
 semanticRule :: ParserST SemanticRule
 semanticRule = try semanticEvaluationRule 
     <|> try environmentInputRule
@@ -533,7 +527,7 @@ semanticOperatorTable =
 
 -- | Parses the semantic special syntax expressions.
 semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
-semanticSpecialSyntax = SemanticSpecialSyntax <$> semanticTypeString
+semanticSpecialSyntax = SemanticSpecialSyntax <$> specialSyntaxString
 
 -- | Parses a list of semantic restrictions.
 -- 
@@ -601,7 +595,25 @@ semanticBoolean = (terminal "true" *> pure (SemanticBoolean True))
 -- This parser will only allow types that are in scope to be parsed, and will
 -- raise an error if the type is not in scope or does not exist.
 semanticType :: ParserST SemanticType
-semanticType = SemanticType <$> semanticTypeString <* spaceConsumer
+semanticType = checkTypeDefined parser
+    where
+        parser = AnyType <$ semanticTypeString "any"
+            <|> NoneType <$ semanticTypeString "none"
+            <|> BoolType <$ semanticTypeString "bool"
+            <|> NaturalType <$ semanticTypeString "natural"
+            <|> IntegerType <$ semanticTypeString "integer"
+            <|> Int32Type <$ semanticTypeString "int32"
+            <|> UInt32Type <$ semanticTypeString "uint32"
+            <|> Int64Type <$ semanticTypeString "int64"
+            <|> UInt64Type <$ semanticTypeString "uint64"
+            <|> FloatType <$ semanticTypeString "float"
+            <|> DoubleType <$ semanticTypeString "double"
+            <|> IntegralType <$ semanticTypeString "integral"
+            <|> FloatingType <$ semanticTypeString "floating"
+            <|> NumberType <$ semanticTypeString "number"
+            <|> StringType <$ semanticTypeString "string"
+            <|> ListType <$ semanticTypeString "list"
+            <|> MatrixType <$ semanticTypeString "matrix"
 
 -- | Parses a semantic type that may not exist.
 -- 
