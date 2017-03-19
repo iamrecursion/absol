@@ -24,8 +24,10 @@ import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Absol.Metaparse.Parser
+import           Absol.Metaspec.Special
 import           Control.Monad (void)
 import           Data.List (intercalate)
+import           Data.Maybe (fromJust)
 import           Data.Text (Text)
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
@@ -55,13 +57,17 @@ parseMetaspec = between spaceConsumer eof metaspec >>= check
             case result of
                 Left ntList -> failExpr ntList
                 Right _ -> return x
-        failExpr x = fail (show $ str ++ ntStrings ++ suggestion)
-            where
-                str = "The following Non-Terminals are used but not defined: "
-                suggestion = ". Did you forget to import a language feature?"
-                ntStrings = intercalate ", " $ map extract x
-                extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
-        -- TODO make this intelligently suggest the import if it exists.
+        failExpr x = fail $ str ++ ntStrings x ++ ". " ++ suggestion x 
+        ntStrings x = intercalate ", " $ map extract x
+        extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
+        str = "The following Non-Terminals are used but not defined: "
+        suggestion x = "Some may be defined in: " ++ featureStrings x ++ "."
+        featuresForNTs x = filter whereValid $ findFeatureForNT <$> x
+        featureList x = concat $ fromJust <$> featuresForNTs x
+        featureStrings x = intercalate ", " $ toFeatureName <$> featureList x
+        whereValid x = case x of
+            Nothing -> False
+            Just _ -> True
 
 -- | Parses the top level metaspec definition blocks. 
 -- 
@@ -323,9 +329,7 @@ environmentInputRule = do
 specialSyntaxRule :: ParserST SpecialSyntaxRule
 specialSyntaxRule = do
     specialType <- semanticType
-    traceShowM specialType
     specialOp <- semanticSpecialSyntax
-    traceShowM specialOp
     semanticBlocks <- specialSyntaxBlock $ 
         accessBlockOrRule `sepBy` multilineListSep
     return (SpecialSyntaxRule specialType specialOp semanticBlocks)
