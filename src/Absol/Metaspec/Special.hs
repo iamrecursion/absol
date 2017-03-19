@@ -17,14 +17,16 @@ module Absol.Metaspec.Special
     (
         getTypes,
         getNonTerminals,
-        getOperations,
+        getSpecialSyntax,
         providesNonTerminal,
         providesType,
         toFeatureName,
         findFeatureForNT,
         findFeatureForType,
+        findFeatureForSpecial,
         extractNTIString,
-        toTypeString
+        toTypeString,
+        toSpecialSyntaxName
     ) where
 
 import           Absol.Metaparse.Grammar
@@ -81,14 +83,34 @@ getNonTerminals FeatureMatrix = []
 getNonTerminals FeatureTraverse = []
 getNonTerminals FeatureFuncall = []
 
-getOperations :: MetaspecFeature -> [String]
-getOperations FeatureBase = undefined
-getOperations FeatureNumber = undefined
-getOperations FeatureString = undefined
-getOperations FeatureList = undefined
-getOperations FeatureMatrix = undefined
-getOperations FeatureTraverse = undefined
-getOperations FeatureFuncall = undefined
+getSpecialSyntax :: MetaspecFeature -> [SemanticSpecialSyntax]
+getSpecialSyntax FeatureBase = []
+getSpecialSyntax FeatureNumber = []
+getSpecialSyntax FeatureString = []
+getSpecialSyntax FeatureList = []
+getSpecialSyntax FeatureMatrix = []
+getSpecialSyntax FeatureTraverse = 
+    [
+        SpecialSyntaxMap, 
+        SpecialSyntaxFold, 
+        SpecialSyntaxFilter
+    ]
+getSpecialSyntax FeatureFuncall =
+    [
+        SpecialSyntaxDefproc,
+        SpecialSyntaxDeffun,
+        SpecialSyntaxCallproc,
+        SpecialSyntaxCallfun
+    ]
+
+toSpecialSyntaxName :: SemanticSpecialSyntax -> String
+toSpecialSyntaxName SpecialSyntaxMap = "map"
+toSpecialSyntaxName SpecialSyntaxFold = "fold"
+toSpecialSyntaxName SpecialSyntaxFilter = "filter"
+toSpecialSyntaxName SpecialSyntaxDefproc = "defproc"
+toSpecialSyntaxName SpecialSyntaxDeffun = "deffun"
+toSpecialSyntaxName SpecialSyntaxCallproc = "callproc"
+toSpecialSyntaxName SpecialSyntaxCallfun = "callfun"
 
 providesNonTerminal :: NonTerminalIdentifier -> MetaspecFeature -> Bool
 providesNonTerminal nti feature = nti `elem` getNonTerminals feature
@@ -110,6 +132,15 @@ findFeatureForType semType = result (length defs)
     where
         zipped = zip availableFeatures (getTypes <$>  availableFeatures)
         defs = [ x | (x, y) <- zipped, semType `elem` y]
+        result len = if
+            | len <= 0 -> Nothing
+            | otherwise -> Just defs
+
+findFeatureForSpecial :: SemanticSpecialSyntax -> (Maybe [MetaspecFeature])
+findFeatureForSpecial syntax = result (length defs)
+    where
+        zipped = zip availableFeatures (getSpecialSyntax <$>  availableFeatures)
+        defs = [ x | (x, y) <- zipped, syntax `elem` y]
         result len = if
             | len <= 0 -> Nothing
             | otherwise -> Just defs

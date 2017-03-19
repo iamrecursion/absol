@@ -33,23 +33,9 @@ import           Text.Megaparsec.Expr
 import Debug.Trace
 -------------------------------------------------------------------------------
 
--- TODO Stateful parsing:
---      + Check keywords against the allowed list from imports.
---      + Check if keywords exist. 
-
--- TODO Special Syntax and Types (Using):
---      + Make each special syntax a part of the grammar (properly).
---      + May need a list of functions to make this work. 
-
--- TODO Rethink Semantic Restrictions:
---      + Nest environment accesses and stores in more places in the semantics.
---      + Needs to be more sophisticated.
---      + Should allow literals of any type in the retrictions.
---      + Should allow literals of any type in the semantic combination blocks.
---      + Don't just want semantic types any more - in scope types. 
-
 -- TODO General:
 --      + Update EBNF grammar to reflect these changes.
+--      + General refactoring.
 
 -------------------------------------------------------------------------------
 
@@ -336,8 +322,10 @@ environmentInputRule = do
 -- in defining the semantics of the production.
 specialSyntaxRule :: ParserST SpecialSyntaxRule
 specialSyntaxRule = do
-    specialType <- option Nothing maybeSemanticType
+    specialType <- semanticType
+    traceShowM specialType
     specialOp <- semanticSpecialSyntax
+    traceShowM specialOp
     semanticBlocks <- specialSyntaxBlock $ 
         accessBlockOrRule `sepBy` multilineListSep
     return (SpecialSyntaxRule specialType specialOp semanticBlocks)
@@ -476,8 +464,21 @@ semanticOperation = makeExprParser semanticExpression semanticOperatorTable
 -- | Parses the allowed semantic combination expressions.
 semanticExpression :: ParserST SemanticOperation
 semanticExpression = parentheses semanticOperation
+    <|> try variableAccess
     <|> Variable <$> semanticIdentifier
     <|> Constant <$> semanticValue
+
+-- | Parses addressing to variables.
+variableAccess :: ParserST SemanticOperation
+variableAccess = do
+    semId <- semanticIdentifier
+    access <- parseAccessor
+    return (VariableAccess semId access)
+    where
+        parseAccessor = parseListAccess <|> parseMatrixAccess
+        parseListAccess = between (terminal "[") (terminal "]") accessList
+        parseMatrixAccess = between (terminal "|") (terminal "|") accessList
+        accessList = integer `sepBy` multilineListSep
 
 -- | The operator table for the semantic operations.
 -- 
@@ -501,11 +502,13 @@ semanticOperatorTable =
         ],
         [
             InfixL (InfixExpr Times <$ operator "*"),
-            InfixL (InfixExpr Divide <$ operator "/")
+            InfixL (InfixExpr Divide <$ operator "/"),
+            InfixL (InfixExpr Modulo <$ operator "%")
         ],
         [
             InfixL (InfixExpr Plus <$ operator "+"),
-            InfixL (InfixExpr Minus <$ operator "-")
+            InfixL (InfixExpr Minus <$ operator "-"),
+            InfixL (InfixExpr Cons <$ operator ":")
         ],
         [
             InfixL (InfixExpr BitOr <$ operator "|"),
@@ -527,7 +530,15 @@ semanticOperatorTable =
 
 -- | Parses the semantic special syntax expressions.
 semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
-semanticSpecialSyntax = SemanticSpecialSyntax <$> specialSyntaxString
+semanticSpecialSyntax = checkSpecialSyntaxAvailable parse
+    where
+        parse = SpecialSyntaxMap <$ specialSyntaxString "map"
+            <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
+            <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
+            <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
+            <|> SpecialSyntaxDeffun <$ specialSyntaxString "deffun"
+            <|> SpecialSyntaxCallproc <$ specialSyntaxString "callproc"
+            <|> SpecialSyntaxCallfun <$ specialSyntaxString "callfun"
 
 -- | Parses a list of semantic restrictions.
 -- 
@@ -574,6 +585,23 @@ semanticValue :: ParserST SemanticValue
 semanticValue = semanticText
     <|> semanticNumber
     <|> semanticBoolean
+    <|> semanticListLiteral
+    <|> semanticMatrixLiteral
+
+-- | Parses a list literal of the form [a, b, ...] or [].
+semanticListLiteral :: ParserST SemanticValue
+semanticListLiteral = 
+    SemanticListLiteral <$> between (terminal "[") (terminal "]") parse
+    where
+        parse = (some nonSpace) `sepBy` multilineListSep
+
+-- | Parses a matrix literal of the form |a, b; c, d| or ||.
+semanticMatrixLiteral :: ParserST SemanticValue
+semanticMatrixLiteral = 
+    SemanticMatrixLiteral <$> between (terminal "|") (terminal "|") matrixValues
+    where
+        matrixValues = matrixRow `sepBy` (terminal ";")
+        matrixRow = (some nonSpace) `sepBy` multilineListSep
 
 -- | Parses a piece of constant semantic text.
 semanticText :: ParserST SemanticValue

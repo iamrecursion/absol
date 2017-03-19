@@ -163,9 +163,7 @@ Defines no keywords.
 - `+, *, /, ^, -`: Standard arithmetic.
 - `||`: Constructs an empty matrix, or with items given comma and semicolon 
   separated values.
-- `[]`: Addressing a matrix variable.
-- `at`: Item at a given position, well defined even if the position does not
-  exist.
+- `||`: Addressing a matrix variable.
 
 ### Traverse
 **Import Name:** traverse

@@ -26,6 +26,7 @@ module Absol.Metaparse.Parser
         checkNTsInLang,
         checkNTNotDefined,
         checkTypeDefined,
+        checkSpecialSyntaxAvailable,
         modify,
         get,
         put,
@@ -54,12 +55,13 @@ data MetaState = MetaState {
     definedNTs :: [NonTerminalIdentifier],
     usedNTs :: S.Set NonTerminalIdentifier,
     importedTypes :: [SemanticType],
+    importedSpecialSyntax :: [SemanticSpecialSyntax],
     parserPosition :: RulePosition
 } deriving (Show) 
 
 -- | Generates an initial state for the parser.
 initParserState :: MetaState
-initParserState = MetaState [] [] S.empty [] None
+initParserState = MetaState [] [] S.empty [] [] None
 
 -- | Updates the list of imported features in the parser state.
 -- 
@@ -68,7 +70,8 @@ updateImportedFeatures :: [MetaspecFeature] -> MetaState -> MetaState
 updateImportedFeatures list st = st {
         importedFeatures = list,
         definedNTs = concat $ getNonTerminals <$> list,
-        importedTypes = concat $ getTypes <$> list
+        importedTypes = concat $ getTypes <$> list,
+        importedSpecialSyntax = concat $ getSpecialSyntax <$> list
     }
 
 -- | Updates the list of defined non-terminals in the parser state.
@@ -164,3 +167,25 @@ checkTypeDefined t = do
                 Nothing -> "Does not exist."
                 Just f -> "Defined in language feature(s): " ++ feats f ++ "."
             feats x = intercalate ", " $ toFeatureName <$> x
+
+-- | Checks if a given piece of special syntax is in scope.
+-- 
+-- If the syntax is not in scope it will suggest the import for the used syntax.
+checkSpecialSyntaxAvailable 
+    :: ParserST SemanticSpecialSyntax 
+    -> ParserST SemanticSpecialSyntax
+checkSpecialSyntaxAvailable parser = do
+    specialSyntax <- parser
+    scopeSyntax <- gets importedSpecialSyntax
+    case specialSyntax `elem` scopeSyntax of
+        True -> return specialSyntax
+        False -> failExpr specialSyntax
+    where
+        failExpr x = fail $ failStr x
+        failStr x = "Special Syntax \"" ++ toSpecialSyntaxName x
+            ++ "\" not in scope. " ++ suggest x
+        suggest x = case findFeatureForSpecial x of
+            Nothing -> "Feature does not exist."
+            Just f -> "Please import one of the following: " ++ feats f ++ "."
+        feats x = intercalate ", " $ toFeatureName <$> x
+

@@ -186,10 +186,20 @@ data SemanticRule
         SemanticEvaluationList
     deriving (Show)
 
-newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
+-- newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
+
+data SemanticSpecialSyntax
+    = SpecialSyntaxMap
+    | SpecialSyntaxFold
+    | SpecialSyntaxFilter
+    | SpecialSyntaxDefproc
+    | SpecialSyntaxDeffun
+    | SpecialSyntaxCallproc
+    | SpecialSyntaxCallfun
+    deriving (Show, Eq)
 
 data SpecialSyntaxRule = SpecialSyntaxRule
-    (Maybe SemanticType)
+    SemanticType
     SemanticSpecialSyntax
     [AccessBlockOrRule]
     deriving (Show)
@@ -242,6 +252,7 @@ data SemanticOperationAssignment = SemanticOperationAssignment
 -- TODO update real grammar to reflect this
 data SemanticOperation
     = Variable SemanticIdentifier
+    | VariableAccess SemanticIdentifier [Integer]
     | Constant SemanticValue
     | Parentheses SemanticOperation
     | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
@@ -264,8 +275,10 @@ data PostfixSemanticUnaryOperator
 data SemanticBinaryOperator
     = Plus
     | Minus
+    | Cons
     | Times
     | Divide
+    | Modulo
     | Exponent
     | BitOr
     | Or
@@ -296,6 +309,8 @@ data SemanticValue
     = SemanticText String
     | SemanticNumber Integer
     | SemanticBoolean Bool
+    | SemanticListLiteral [String]
+    | SemanticMatrixLiteral [[String]]
     deriving (Show)
 
 data SemanticRestrictionOperator
