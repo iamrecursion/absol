@@ -96,22 +96,14 @@ terminalString = do
 stringLiteral :: ParserST String
 stringLiteral = char '"' >> manyTill L.charLiteral (char '"') <* spaceConsumer
 
--- | Parses semantic types.
--- 
--- Disallows recognising the environment symbol 'e' as a type.
-semanticTypeString :: ParserST String
-semanticTypeString = try (p >>= check) 
-    where
-        p = many identifierChar <* spaceConsumer
-        check x = if
-            | x == "e" -> failExpr x
-            | otherwise -> return x
-        failExpr x = fail $ show x ++ " is not a valid type."
+-- | Parses special syntax strings.
+specialSyntaxString :: String -> ParserST String
+specialSyntaxString n = (lexeme . try) (string n)
 
 -- | Parses a non-terminal name.
 nonTerminalIdentifier :: ParserST NonTerminalIdentifier
 nonTerminalIdentifier =
-    NonTerminalIdentifier <$> ( (:) <$> letterChar <*> many identifierChar )
+    NonTerminalIdentifier <$> ( (:) <$> letterChar <*> many identifierChar)
 
 -- | Parses the start symbol for a non-terminal.
 nonTerminalStart :: ParserST NonTerminalStart
@@ -356,3 +348,7 @@ parentheses = between openParenthesis closeParenthesis
 -- | Parses a simple string consisting of any characters.
 parseString :: ParserST String
 parseString = some anyChar
+
+-- | Parses semantic type strings with backtracking behaviour. 
+semanticTypeString :: String -> ParserST String
+semanticTypeString n = (lexeme . try) (string n <* notFollowedBy nonSpace)

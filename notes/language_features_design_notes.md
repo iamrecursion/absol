@@ -68,6 +68,9 @@ Each section contains the following details:
 - `<digit>` --- Digits
 - `<nondigit>` --- All utf-8 nondigit characters excluding newlines.
 - `<utf-8-char>` --- All allowable utf-8 characters. 
+- `<bool>`
+- `<space-char>` 
+- `<newline>`
 
 **Operations:**
 - `&&, ||, *, |, ==, !=, <, >, <=, >=`
@@ -84,6 +87,9 @@ Each section contains the following details:
 - uint64: An unsigned 64-bit integer type.
 - float: An IEEE 754 32-bit floating-point number.
 - double: An IEEE 754 64-bit floating-point number.
+- integral: For any integral type.
+- floating: For any FP type.
+- number: For any of the numeric types imported by this feature.
 
 **Non-Terminals:**
 - `<natural>`
@@ -95,7 +101,7 @@ Each section contains the following details:
 - `<float>`
 - `<double>`
 - `<integral>` --- for any integral type
-- `<floating-point>` --- for any floating-point type
+- `<floating>` --- for any floating-point type
 - `<number>` for any of the number types in this feature
 
 **Operations:**
@@ -109,9 +115,7 @@ Each section contains the following details:
 - string: An efficient, packed UTF-8 string.
 
 **Non-Terminals:**
-- `<digit>` --- Digits
-- `<nondigit>` --- All utf-8 nondigit characters excluding newlines.
-- `<utf-8-char>` --- All allowable utf-8 characters. 
+- `<string>` 
 
 **Keywords:**
 This language feature implements no keywords. 
@@ -159,9 +163,7 @@ Defines no keywords.
 - `+, *, /, ^, -`: Standard arithmetic.
 - `||`: Constructs an empty matrix, or with items given comma and semicolon 
   separated values.
-- `[]`: Addressing a matrix variable.
-- `at`: Item at a given position, well defined even if the position does not
-  exist.
+- `||`: Addressing a matrix variable.
 
 ### Traverse
 **Import Name:** traverse

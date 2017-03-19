@@ -68,12 +68,32 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
+-- Semantic Types
+data SemanticType 
+    = AnyType
+    | NoneType
+    | BoolType
+    | NaturalType
+    | IntegerType
+    | Int32Type
+    | UInt32Type
+    | Int64Type
+    | UInt64Type
+    | FloatType
+    | DoubleType
+    | IntegralType
+    | FloatingType
+    | NumberType
+    | StringType
+    | ListType
+    | MatrixType
+    deriving (Show, Eq, Ord)
+
 -- Identifier Types
 newtype NonTerminalIdentifier = NonTerminalIdentifier String 
     deriving (Show, Eq, Ord)
 newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
-newtype SemanticType = SemanticType String deriving (Show, Eq, Ord)
 
 -- Defines the Grammar
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
@@ -86,7 +106,15 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
-newtype MetaspecFeature = MetaspecFeature String deriving (Show)
+data MetaspecFeature 
+    = FeatureBase
+    | FeatureNumber
+    | FeatureString
+    | FeatureList
+    | FeatureMatrix
+    | FeatureTraverse
+    | FeatureFuncall
+    deriving (Show, Eq)
 
 data StartRule = StartRule
     StartSymbol
@@ -157,10 +185,18 @@ data SemanticRule
         SemanticEvaluationList
     deriving (Show)
 
-newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
+data SemanticSpecialSyntax
+    = SpecialSyntaxMap
+    | SpecialSyntaxFold
+    | SpecialSyntaxFilter
+    | SpecialSyntaxDefproc
+    | SpecialSyntaxDeffun
+    | SpecialSyntaxCallproc
+    | SpecialSyntaxCallfun
+    deriving (Show, Eq)
 
 data SpecialSyntaxRule = SpecialSyntaxRule
-    (Maybe SemanticType)
+    SemanticType
     SemanticSpecialSyntax
     [AccessBlockOrRule]
     deriving (Show)
@@ -213,6 +249,7 @@ data SemanticOperationAssignment = SemanticOperationAssignment
 -- TODO update real grammar to reflect this
 data SemanticOperation
     = Variable SemanticIdentifier
+    | VariableAccess SemanticIdentifier [Integer]
     | Constant SemanticValue
     | Parentheses SemanticOperation
     | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
@@ -235,8 +272,10 @@ data PostfixSemanticUnaryOperator
 data SemanticBinaryOperator
     = Plus
     | Minus
+    | Cons
     | Times
     | Divide
+    | Modulo
     | Exponent
     | BitOr
     | Or
@@ -267,6 +306,8 @@ data SemanticValue
     = SemanticText String
     | SemanticNumber Integer
     | SemanticBoolean Bool
+    | SemanticListLiteral [String]
+    | SemanticMatrixLiteral [[String]]
     deriving (Show)
 
 data SemanticRestrictionOperator

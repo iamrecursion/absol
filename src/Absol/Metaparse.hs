@@ -17,54 +17,22 @@
 module Absol.Metaparse
     (
         parseMetaspecFile,
-        parseMetaspec
+        parseMetaspec,
+        parseErrorPretty
     ) where
 
 import           Absol.Metalex
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Absol.Metaparse.Parser
+import           Absol.Metaspec.Special
 import           Control.Monad (void)
 import           Data.List (intercalate)
+import           Data.Maybe (fromJust)
 import           Data.Text (Text)
 import           Text.Megaparsec
+import           Text.Megaparsec.Error (ParseError, Dec)
 import           Text.Megaparsec.Expr
-
-import Debug.Trace
--------------------------------------------------------------------------------
-
--- TODO Stateful parsing:
---      + Track the defined non-terminals.
---      + Error if a type is used without being imported or doesn't exist.
---      + Check keywords against the allowed list from imports.
---      + Check if keywords exist. 
---      + For non-imported types suggest the import.
-
--- TODO Special Syntax and Types (Using):
---      + Define the list of using keywords.
---      + For each, define the:
---          > Types they import
---          > Keywords they import 
---          > Operations they allow
---          > Semantics of these operations (sketch termination properties).
---      + Modules for the special syntax Metaspec.Special.x (all exposed via
---      Metaspec.Special)
---      + Make each special syntax a part of the grammar (properly).
---      + Have a typeclass for language features, with functions providing:
---          > Help text
---          > Imported function names
---          > Imported types
---      + May need a list of functions to make this work. 
-
--- TODO Rethink Semantic Restrictions:
---      + Nest environment accesses and stores in more places in the semantics.
---      + Needs to be more sophisticated.
---      + Should allow literals of any type in the retrictions.
---      + Should allow literals of any type in the semantic combination blocks.
---      + Don't just want semantic types any more - in scope types. 
-
--- TODO General:
---      + Update EBNF grammar to reflect these changes.
 
 -------------------------------------------------------------------------------
 
@@ -72,23 +40,34 @@ import Debug.Trace
 -- 
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned. 
-parseMetaspecFile :: Text -> IO ()
-parseMetaspecFile = parseTest (runStateT parseMetaspec initParserState)
+-- parseMetaspecFile :: Text -> String -> Either (ParseError)
+parseMetaspecFile 
+    :: String 
+    -> Text 
+    -> Either (ParseError Char Dec) (Metaspec, MetaState)
+parseMetaspecFile filename input = 
+    runParser (runStateT parseMetaspec initParserState) filename input
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec
-parseMetaspec = between spaceConsumer eof metaspec -- >>= check
+parseMetaspec = between spaceConsumer eof metaspec >>= check
     where
         check x = do
             result <- checkNTsInLang
             case result of
                 Left ntList -> failExpr ntList
                 Right _ -> return x
-        failExpr x = fail (show $ str ++ ntStrings)
-            where
-                str = "The following Non-Terminals are used but not defined: "
-                ntStrings = intercalate ", " $ map extract x
-                extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
+        failExpr x = fail $ str ++ ntStrings x ++ ". " ++ suggestion x 
+        ntStrings x = intercalate ", " $ map extract x
+        extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
+        str = "The following Non-Terminals are used but not defined: "
+        suggestion x = "Some may be defined in: " ++ featureStrings x ++ "."
+        featuresForNTs x = filter whereValid $ findFeatureForNT <$> x
+        featureList x = concat $ fromJust <$> featuresForNTs x
+        featureStrings x = intercalate ", " $ toFeatureName <$> featureList x
+        whereValid x = case x of
+            Nothing -> False
+            Just _ -> True
 
 -- | Parses the top level metaspec definition blocks. 
 -- 
@@ -125,6 +104,8 @@ versionDefblock = do
     return (VersionDefblock $ trimString version)
 
 -- | Parses the using definition block for language features.
+--
+-- The using list is separated by ','.
 usingDefblock :: ParserST MetaspecDefblock
 usingDefblock = do
     keywordWhere "using"
@@ -132,13 +113,15 @@ usingDefblock = do
     modify (updateImportedFeatures items)
     return (UsingDefblock items)
 
--- | Parses the list of language features.
--- 
--- The list is delimited by ','.
+-- | Parses a language feature.
 metaspecFeature :: ParserST MetaspecFeature
-metaspecFeature = MetaspecFeature <$> some (alphaNumChar <|> oneOf allowedSeps)
-    where
-        allowedSeps = "_-" :: String
+metaspecFeature = FeatureBase <$ terminal "base"
+    <|> FeatureNumber <$ terminal "number"
+    <|> FeatureString <$ terminal "string"
+    <|> FeatureList <$ terminal "list"
+    <|> FeatureMatrix <$ terminal "matrix"
+    <|> FeatureTraverse <$ terminal "traverse"
+    <|> FeatureFuncall <$ terminal "funcall"
 
 -- | Parses the list of language truths.
 -- 
@@ -316,6 +299,9 @@ languageRuleSemantics = do
 -- As the rules diverge only after consuming some portion of syntax, this parser
 -- utilises the ability for infinite-lookahead backtracking to parse these 
 -- productions.
+-- 
+-- TODO can I factor out the type checks? Nasty errors because of 'try' right
+-- now.
 semanticRule :: ParserST SemanticRule
 semanticRule = try semanticEvaluationRule 
     <|> try environmentInputRule
@@ -342,7 +328,7 @@ environmentInputRule = do
 -- in defining the semantics of the production.
 specialSyntaxRule :: ParserST SpecialSyntaxRule
 specialSyntaxRule = do
-    specialType <- option Nothing maybeSemanticType
+    specialType <- semanticType
     specialOp <- semanticSpecialSyntax
     semanticBlocks <- specialSyntaxBlock $ 
         accessBlockOrRule `sepBy` multilineListSep
@@ -482,8 +468,21 @@ semanticOperation = makeExprParser semanticExpression semanticOperatorTable
 -- | Parses the allowed semantic combination expressions.
 semanticExpression :: ParserST SemanticOperation
 semanticExpression = parentheses semanticOperation
+    <|> try variableAccess
     <|> Variable <$> semanticIdentifier
     <|> Constant <$> semanticValue
+
+-- | Parses addressing to variables.
+variableAccess :: ParserST SemanticOperation
+variableAccess = do
+    semId <- semanticIdentifier
+    access <- parseAccessor
+    return (VariableAccess semId access)
+    where
+        parseAccessor = parseListAccess <|> parseMatrixAccess
+        parseListAccess = between (terminal "[") (terminal "]") accessList
+        parseMatrixAccess = between (terminal "|") (terminal "|") accessList
+        accessList = naturalNumber `sepBy` multilineListSep
 
 -- | The operator table for the semantic operations.
 -- 
@@ -507,11 +506,13 @@ semanticOperatorTable =
         ],
         [
             InfixL (InfixExpr Times <$ operator "*"),
-            InfixL (InfixExpr Divide <$ operator "/")
+            InfixL (InfixExpr Divide <$ operator "/"),
+            InfixL (InfixExpr Modulo <$ operator "%")
         ],
         [
             InfixL (InfixExpr Plus <$ operator "+"),
-            InfixL (InfixExpr Minus <$ operator "-")
+            InfixL (InfixExpr Minus <$ operator "-"),
+            InfixL (InfixExpr Cons <$ operator ":")
         ],
         [
             InfixL (InfixExpr BitOr <$ operator "|"),
@@ -533,7 +534,15 @@ semanticOperatorTable =
 
 -- | Parses the semantic special syntax expressions.
 semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
-semanticSpecialSyntax = SemanticSpecialSyntax <$> semanticTypeString
+semanticSpecialSyntax = checkSpecialSyntaxAvailable parse
+    where
+        parse = SpecialSyntaxMap <$ specialSyntaxString "map"
+            <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
+            <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
+            <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
+            <|> SpecialSyntaxDeffun <$ specialSyntaxString "deffun"
+            <|> SpecialSyntaxCallproc <$ specialSyntaxString "callproc"
+            <|> SpecialSyntaxCallfun <$ specialSyntaxString "callfun"
 
 -- | Parses a list of semantic restrictions.
 -- 
@@ -580,6 +589,23 @@ semanticValue :: ParserST SemanticValue
 semanticValue = semanticText
     <|> semanticNumber
     <|> semanticBoolean
+    <|> semanticListLiteral
+    <|> semanticMatrixLiteral
+
+-- | Parses a list literal of the form [a, b, ...] or [].
+semanticListLiteral :: ParserST SemanticValue
+semanticListLiteral = 
+    SemanticListLiteral <$> between (terminal "[") (terminal "]") parse
+    where
+        parse = (some nonSpace) `sepBy` multilineListSep
+
+-- | Parses a matrix literal of the form |a, b; c, d| or ||.
+semanticMatrixLiteral :: ParserST SemanticValue
+semanticMatrixLiteral = 
+    SemanticMatrixLiteral <$> between (terminal "|") (terminal "|") matrixValues
+    where
+        matrixValues = matrixRow `sepBy` (terminal ";")
+        matrixRow = (some nonSpace) `sepBy` multilineListSep
 
 -- | Parses a piece of constant semantic text.
 semanticText :: ParserST SemanticValue
@@ -601,7 +627,25 @@ semanticBoolean = (terminal "true" *> pure (SemanticBoolean True))
 -- This parser will only allow types that are in scope to be parsed, and will
 -- raise an error if the type is not in scope or does not exist.
 semanticType :: ParserST SemanticType
-semanticType = SemanticType <$> semanticTypeString <* spaceConsumer
+semanticType = checkTypeDefined parser
+    where
+        parser = AnyType <$ semanticTypeString "any"
+            <|> NoneType <$ semanticTypeString "none"
+            <|> BoolType <$ semanticTypeString "bool"
+            <|> NaturalType <$ semanticTypeString "natural"
+            <|> IntegerType <$ semanticTypeString "integer"
+            <|> Int32Type <$ semanticTypeString "int32"
+            <|> UInt32Type <$ semanticTypeString "uint32"
+            <|> Int64Type <$ semanticTypeString "int64"
+            <|> UInt64Type <$ semanticTypeString "uint64"
+            <|> FloatType <$ semanticTypeString "float"
+            <|> DoubleType <$ semanticTypeString "double"
+            <|> IntegralType <$ semanticTypeString "integral"
+            <|> FloatingType <$ semanticTypeString "floating"
+            <|> NumberType <$ semanticTypeString "number"
+            <|> StringType <$ semanticTypeString "string"
+            <|> ListType <$ semanticTypeString "list"
+            <|> MatrixType <$ semanticTypeString "matrix"
 
 -- | Parses a semantic type that may not exist.
 -- 
