@@ -34,11 +34,6 @@ import           Text.Megaparsec.Expr
 
 -------------------------------------------------------------------------------
 
--- TODO General:
---      + Update EBNF grammar to reflect these changes.
-
--------------------------------------------------------------------------------
-
 -- | Parses a metaspec file.
 -- 
 -- The file is taken as input and the corresponding parse-tree or error state is
@@ -480,7 +475,7 @@ variableAccess = do
         parseAccessor = parseListAccess <|> parseMatrixAccess
         parseListAccess = between (terminal "[") (terminal "]") accessList
         parseMatrixAccess = between (terminal "|") (terminal "|") accessList
-        accessList = integer `sepBy` multilineListSep
+        accessList = naturalNumber `sepBy` multilineListSep
 
 -- | The operator table for the semantic operations.
 -- 

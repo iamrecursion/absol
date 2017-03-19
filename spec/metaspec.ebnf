@@ -114,23 +114,25 @@ terminal-string =  { utf-8-char - newline };
 semantic-identifier = 
     (textual-glyph, { textual-glyph | natural-number | "-" | "_"})
     - (semantic-type | metaspec-feature | semantic-special-syntax);
-semantic-type = 
-    "uinteger" |
-    "integer" |
-    "int32" |
-    "int64" |
-    "uint32" |
-    "uint64" |
-    "num" | (*for all numeric types *)
-    "text" |
-    "matrix" |
-    "array" |
-    "list" |
-    "map" |
-    "any" |
-    "none" |
-    "maybe";
 string-literal = literal-quote, text, literal-quote;
+semantic-type
+    = "any"
+    | "none"
+    | "bool" 
+    | "natural"
+    | "integer"
+    | "int32"
+    | "int64"
+    | "uint32"
+    | "uint64"
+    | "float"
+    | "double"
+    | "integral"
+    | "floating"
+    | "number"
+    | "string"
+    | "list"
+    | "matrix" ;
 
 (*
     This section defines the grammar of metaspec itself.
@@ -148,17 +150,13 @@ comment-list = { metaspec-comment };
 metaspec-def = metaspec-defblock, rule-termination-symbol;
 
 (* 
-    All of these blocks must be defined once. If multiple definitions are found,
-    the first is used. 
-
-    NB: This is unsatisfactory, but I can't come up with a nice way to enforce
-    all of them being there only once without enforcing an ordering constraint.
+    All of these blocks must be defined once in order.
 *)
 metaspec-defblock = 
-    name-defblock | 
-    version-defblock | 
-    using-defblock |
-    truths-defblock |
+    name-defblock, 
+    version-defblock, 
+    using-defblock, 
+    truths-defblock,
     language-defblock ;
 
 (* names can be arbitrary *)
@@ -196,20 +194,14 @@ language-defblock =
     The syntax and usage of these features is tbc, and they appear in semantic
     portions of the defined language.
 *)
-metaspec-feature = 
-    "funcall" |
-    "integer" |
-    "floating-point" |
-    "array" |
-    "text" |
-    "list" |
-    "matrix" |
-    "associative-array" |
-    "map" |
-    "reduce" |
-    "state" |
-    "maybe" |
-    "random";
+metaspec-feature
+    = "base"
+    | "number"
+    | "string"
+    | "list"
+    | "matrix"
+    | "traverse"
+    | "funcall" ;
 
 (*
     The language described by the metalanguage is defined in terms of rules 
@@ -250,7 +242,6 @@ syntax-primary =
     syntax-repeated |
     syntax-grouped |
     syntax-special |
-    syntax-empty |
     non-terminal |
     terminal;
 
@@ -264,8 +255,6 @@ syntax-special =
     special-sequence-start-symbol,
     text,
     special-sequence-end-symbol;
-
-syntax-empty = ;
 
 (* These productions define the syntax of the semantic definition blocks *)
 language-rule-semantics = 
@@ -348,10 +337,14 @@ semantic-operation-assignment =
 semantic-operation 
     = semantic-identifier
     | semantic-value
+    | semantic-identifier-access
     | "(", semantic-operation, ")"
     | prefix-semantic-unary-operator, semantic-operation
     | semantic-operation, postfix-semantic-unary-operator
     | semantic-operation, semantic-binary-operator, semantic-operation;
+
+semantic-identifier-access = 
+    semantic-identifier, "|", natural-number, "|" | "[", natural-number, "]";
 
 semantic-restriction-list = 
     restriction-block-start
@@ -374,6 +367,8 @@ semantic-binary-operator =
     "-" |
     "*" |
     "/" |
+    "%" |
+    ":" |
     "^" |
     "|" |
     "||" |
@@ -390,12 +385,11 @@ prefix-semantic-unary-operator = "!" | "-" | "++" | "--";
 
 postfix-semantic-unary-operator = "--" | "++";
 
-semantic-special-syntax =
-    "funcall" |
-    "array" |
-    "store" |
-    "retrieve" |
-    "map" |
-    "reduce" |
-    "apply" | 
-    "rand";
+semantic-special-syntax 
+    = "map"
+    | "fold"
+    | "filter"
+    | "defproc"
+    | "deffun"
+    | "callproc"
+    | "callfun"

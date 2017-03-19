@@ -106,7 +106,6 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show)
 
--- newtype MetaspecFeature = MetaspecFeature String deriving (Show)
 data MetaspecFeature 
     = FeatureBase
     | FeatureNumber
@@ -185,8 +184,6 @@ data SemanticRule
         SemanticRestrictionList
         SemanticEvaluationList
     deriving (Show)
-
--- newtype SemanticSpecialSyntax = SemanticSpecialSyntax String deriving (Show)
 
 data SemanticSpecialSyntax
     = SpecialSyntaxMap
