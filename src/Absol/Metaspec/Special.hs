@@ -26,10 +26,14 @@ module Absol.Metaspec.Special
         findFeatureForSpecial,
         extractNTIString,
         toTypeString,
+        availableNonTerminals,
+        availableTypes,
         toSpecialSyntaxName
     ) where
 
 import           Absol.Metaparse.Grammar
+
+-- TODO A type-families approach would be better.
 
 -- | Gets the types defined by a particular feature.
 getTypes :: MetaspecFeature -> [SemanticType]
@@ -125,23 +129,23 @@ providesType :: SemanticType -> MetaspecFeature -> Bool
 providesType semType feature = semType `elem` getTypes feature 
 
 -- | Finds the feature corresponding to a non-terminal.
-findFeatureForNT :: NonTerminalIdentifier -> (Maybe [MetaspecFeature])
+findFeatureForNT :: NonTerminalIdentifier -> Maybe [MetaspecFeature]
 findFeatureForNT nti = findFeatureForX nti getNonTerminals
 
 -- | Finds the feature corresponding to a type.
-findFeatureForType :: SemanticType -> (Maybe [MetaspecFeature])
+findFeatureForType :: SemanticType -> Maybe [MetaspecFeature]
 findFeatureForType semType = findFeatureForX semType getTypes
 
 -- | Finds the feature corresponding to a special-syntax element.
-findFeatureForSpecial :: SemanticSpecialSyntax -> (Maybe [MetaspecFeature])
+findFeatureForSpecial :: SemanticSpecialSyntax -> Maybe [MetaspecFeature]
 findFeatureForSpecial syntax = findFeatureForX syntax getSpecialSyntax
 
 -- | Finds the feature corresponding to a given input (using an accessor fn).
 findFeatureForX 
     :: (Eq a) 
     => a 
-    -> (MetaspecFeature -> [a]) 
-    -> (Maybe [MetaspecFeature])
+    -> (MetaspecFeature -> [a])
+    -> Maybe [MetaspecFeature]
 findFeatureForX item fn = result (length defs)
     where
         zipped = zip availableFeatures (fn <$> availableFeatures)

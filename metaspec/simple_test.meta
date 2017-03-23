@@ -18,6 +18,8 @@ language : {
 
 <<simple_test>> ::= <statement> ;
 
+<statement> ::= <arith-expr> | <assignment> ;
+
 // Semantics only required for expressions containing terminals
 <my-number> ::= <integer> | <floating> ; // from imports, implicit semantics
 
@@ -48,8 +50,6 @@ language : {
     };
 
 <identifier> ::= <nondigit> { <integer> | <nondigit> };
-
-<statement> ::= <arith-expr> | <assignment> ;
 
 // Defaults to returning the assigned value unless suppressed with 'none'
 <assignment> ::= <identifier> "=" <arith-expr> --> {

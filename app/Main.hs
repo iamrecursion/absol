@@ -2,13 +2,12 @@ module Main where
 
 import           Absol.Utilities (outputToken)
 import qualified Absol.Metaparse as P
+import           Absol.Metaverify
 import           Cmdargs
 import           System.Exit
 import           System.IO
 import           System.IO.Error
 import qualified Data.Text.IO as TI
-
-import Debug.Trace
 
 -- | The main function for ABSOL.
 main :: IO ()
@@ -20,8 +19,6 @@ main = runMetacompiler =<< execParser (
     )
 
 -- | Contains the main execution context of the metacompiler.
--- 
--- TODO Fix the processing, should error on error
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
     putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file
@@ -49,8 +46,7 @@ processMetaspecFile _ filename mFile = do
     contents <- TI.hGetContents mFile
     case P.parseMetaspecFile filename contents of
         Left err -> hPutStr stderr $ P.parseErrorPretty err
-        Right ast -> printAst ast
-    where
-        printAst ast = do
-            putStrLn $ show ast
-            putStrLn $ outputToken ++ "Input file processed."
+        Right (ast, _) -> do
+            let foo = verifyLanguage ast
+            print foo
+            return ()

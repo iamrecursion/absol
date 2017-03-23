@@ -40,13 +40,11 @@ import           Text.Megaparsec.Expr
 -- 
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned. 
--- parseMetaspecFile :: Text -> String -> Either (ParseError)
 parseMetaspecFile 
     :: String 
     -> Text 
     -> Either (ParseError Char Dec) (Metaspec, MetaState)
-parseMetaspecFile filename input = 
-    runParser (runStateT parseMetaspec initParserState) filename input
+parseMetaspecFile = runParser (runStateT parseMetaspec initParserState)
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec

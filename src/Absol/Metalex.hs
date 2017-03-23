@@ -56,21 +56,11 @@ keyword word = string word *> notFollowedBy illegals *> spaceConsumer
         illegals = alphaNumChar
 
 -- | Determines if an identifier is a reserved word.
--- 
--- TODO Need to have this take inputs instead, as these change based on parse
--- state. This is fine for now though.
--- 
--- TODO update this to deal with currently imported types and keywords.
 identifier :: ParserST String
 identifier = (lexeme . try) (p >>= check)
     where
         p = (:) <$> letterChar <*> many identifierChar
         check = return
-        -- check x = if
-        --     | x `elem` semanticTypeList -> failExpr x
-        --     | x `elem` semanticSpecialSyntaxList -> failExpr x
-        --     | otherwise -> return x
-        failExpr x = fail $ "keyword " ++ show x ++ " cannot be an identifier."
 
 semanticIdentifier :: ParserST SemanticIdentifier
 semanticIdentifier = SemanticIdentifier <$> identifier

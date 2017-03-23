@@ -44,6 +44,10 @@ are able to terminate.
 Additionally, the language needs to be able to deal with cycles in the rules, 
 both in the case of direct and indirect recursion in rules. This is graph based.
 
+It assumes that rules cannot recurse through the start rule. This is no real
+limitation as language designers can just indirect through a non-terminal if
+needed. 
+
 ## The Semantic Checker Algorithm
 The basic idea of this algorithm is to perform a traversal of a graph formed 
 from the definitions of all non-terminals, including the start rule. 

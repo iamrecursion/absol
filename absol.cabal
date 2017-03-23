@@ -1,5 +1,5 @@
 name:                absol
-version:             0.0.1.0
+version:             0.2.0.0
 synopsis:            Automatic Builder for Semantically Oriented Languages
 description:         Please see README.md
 homepage:            https://github.com/iamrecursion/absol#readme
@@ -26,6 +26,9 @@ library
                         Absol.Metaspec,
                         Absol.Metaspec.Special,
                         Absol.Metaverify,
+                        Absol.Metaverify.Collate,
+                        Absol.Metaverify.RuleTag,
+                        Absol.Metaverify.State,
                         Absol.Utilities
   build-depends:        base >= 4.7 && < 5
                       , text
@@ -33,6 +36,7 @@ library
                       , containers
                       , megaparsec
                       , mtl
+                      , parallel
   default-language:     Haskell2010
   default-extensions:   ApplicativeDo
                       , BangPatterns
