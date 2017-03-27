@@ -60,8 +60,8 @@ initVerifierState
     -> [LanguageRule] 
     -> [SemanticTruth] 
     -> VerifierState
-initVerifierState (StartRule _ body) rules truths = 
-    VerifierState (Untouched, body) (mapRules rules) truths
+initVerifierState (StartRule _ body) rules = 
+    VerifierState (Untouched, body) (mapRules rules)
     where
         mapRules r = M.fromList [ 
                 (getKey v, (Untouched, getBody v)) 

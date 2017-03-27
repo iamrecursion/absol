@@ -162,7 +162,6 @@ data SyntaxPrimary
     | SyntaxSpecial String
     | TerminalProxy Terminal
     | NonTerminalProxy NonTerminal
-    | SyntaxEmpty
     deriving (Show, Eq)
 
 newtype Terminal = Terminal TerminalString deriving (Show, Eq)

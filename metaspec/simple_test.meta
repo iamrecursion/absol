@@ -11,53 +11,56 @@ using : {
 
 truths : {
     {integer n <= <integer>},
-    {floating n <= <floating-point>}
+    {floating n <= <floating-point>},
+    {number n <= <number>}
 };
 
 language : {
 
 <<simple_test>> ::= <statement> ;
 
-<statement> ::= <arith-expr> | <assignment> ;
+// <statement> ::= <arith-expr> | <assignment> ;
+
+<statement> ::= <my-number> | <number> ;
 
 // Semantics only required for expressions containing terminals
 <my-number> ::= <integer> | <floating> ; // from imports, implicit semantics
 
-<arith-expr> ::= <my-number> | <arith-op> ;
+// <arith-expr> ::= <my-number> | <arith-op> ;
 
-<arith-op> ::= 
-    <arith-expr> "+" <arith-expr> --> {
-        number n : {n = n1 + n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
-    } |
-    <arith-expr> "-" <arith-expr> --> {
-        number n : {n = n1 - n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
-    } |
-    <arith-expr> "*" <arith-expr> --> {
-        number n : {n = n1 * n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
-    } |
-    <arith-expr> "/" <arith-expr> --> {
-        number n : {n = n1 / n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
-    } |
-    <arith-expr> "^" <arith-expr> --> {
-        number n : {n = n1 ^ n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        number n : {n = n1 * n1}(n2 == 2) :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
-    };
+// <arith-op> ::= 
+//     <arith-expr> "+" <arith-expr> --> {
+//         number n : {n = n1 + n2}() :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+//     } |
+//     <arith-expr> "-" <arith-expr> --> {
+//         number n : {n = n1 - n2}() :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+//     } |
+//     <arith-expr> "*" <arith-expr> --> {
+//         number n : {n = n1 * n2}() :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+//     } |
+//     <arith-expr> "/" <arith-expr> --> {
+//         number n : {n = n1 / n2}() :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+//     } |
+//     <arith-expr> "^" <arith-expr> --> {
+//         number n : {n = n1 ^ n2}() :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+//         number n : {n = n1 * n1}(n2 == 2) :
+//             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+//     };
 
-<identifier> ::= <nondigit> { <integer> | <nondigit> };
+// <identifier> ::= <nondigit> { <integer> | <nondigit> };
 
 // Defaults to returning the assigned value unless suppressed with 'none'
-<assignment> ::= <identifier> "=" <arith-expr> --> {
-    none e <-- <identifier>[0] : <arith-expr>[0]
-};
+// <assignment> ::= <identifier> "=" <arith-expr> --> {
+//     none e <-- <identifier>[0] : <arith-expr>[0]
+// };
 
-<test> ::= "boo" --> {
-    any map(<identifier>[0], <identifier>[1])
-};
+// <test> ::= "boo" --> {
+//     any map(<identifier>[0], <identifier>[1])
+// };
 
 };

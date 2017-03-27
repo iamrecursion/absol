@@ -15,7 +15,8 @@
 module Absol.Metaverify.RuleTag
     (
         RuleTag(..),
-        NonTerminationType(..)
+        NonTerminationType(..),
+        tagPlus
     ) where
 
 import           Absol.Metaparse.Grammar
@@ -37,3 +38,14 @@ data NonTerminationType
     = Diverges
     | Incomplete
     deriving (Eq, Show, Ord)
+
+-- | Defines how to combine rule tags.
+-- 
+-- The operation is left associative, favouring the left value.
+tagPlus :: RuleTag -> RuleTag -> RuleTag
+tagPlus Untouched _ = Untouched
+tagPlus _ Untouched = Untouched
+tagPlus Terminates Terminates = Terminates
+tagPlus x@DoesNotTerminate{} _ = x
+tagPlus _ x@DoesNotTerminate{} = x
+
