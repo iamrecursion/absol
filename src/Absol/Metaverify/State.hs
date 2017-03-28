@@ -19,6 +19,8 @@ module Absol.Metaverify.State
         ProductionMap,
         VerifierState(..),
         initVerifierState,
+        defaultVerifierState,
+        extractFromState,
         runState,
         evalState,
         execState,
@@ -49,7 +51,7 @@ type ProductionMap = M.Map NonTerminal (RuleTag, LanguageRuleBody)
 data VerifierState = VerifierState {
     startRule :: (RuleTag, LanguageRuleBody),
     productions :: ProductionMap,
-    truths :: [SemanticTruth]
+    truths :: [NonTerminal]
 } deriving (Eq, Show)
 
 -- | Initialises the verifier state from the AST data.
@@ -60,8 +62,8 @@ initVerifierState
     -> [LanguageRule] 
     -> [SemanticTruth] 
     -> VerifierState
-initVerifierState (StartRule _ body) rules = 
-    VerifierState (Untouched, body) (mapRules rules)
+initVerifierState (StartRule _ body) rules truths = 
+    VerifierState (Untouched, body) (mapRules rules) extractTruths
     where
         mapRules r = M.fromList [ 
                 (getKey v, (Untouched, getBody v)) 
@@ -69,9 +71,23 @@ initVerifierState (StartRule _ body) rules =
                 let getKey (LanguageRule x _) = x;
                     getBody (LanguageRule _ x) = x
             ]
+        extractTruths = [ x | (SemanticTruth _ _ x) <- truths ]  
+
+-- | Constructs a default instance of the VerifierState type.
+-- 
+-- This default instance should not be used for anything. 
+defaultVerifierState :: VerifierState
+defaultVerifierState = 
+    VerifierState (Untouched, fakeStartRule) M.empty []
+    where
+        fakeStartRule = LanguageRuleBody $ SyntaxExpression []
 
 -- | Updates the rule tag for the start rule. 
 updateStartRuleTag :: RuleTag -> VerifierState -> VerifierState
 updateStartRuleTag t s = do
     let (_, sRule) = startRule s
     s { startRule = (t, sRule)}
+
+-- | Pulls result types out of the state monad.
+extractFromState :: VState a -> a
+extractFromState el = evalState el defaultVerifierState

@@ -23,16 +23,20 @@ import           Absol.Metaparse.Grammar
 import           Absol.Metaverify.Collate
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
-import           Control.Monad
 import qualified Data.Map                 as M
 
 import Debug.Trace
+
+-- TODO key termination rules for lookup (just store the NTs)
+-- TODO better error tracking for non-termination (currently tracks one)
 
 -- | Verifies the input language.
 -- 
 -- If the language can be proven complete, this returns True. In the case where
 -- that property cannot be shown, an error string is returned, describing the
 -- nature of the error.
+-- 
+-- It will also alert the user to any unused productions.
 verifyLanguage :: Metaspec -> Either Bool String
 verifyLanguage x = case runState runVerification (collateASTData x) of
     (True, VerifierState _ prod _) -> do
@@ -40,12 +44,16 @@ verifyLanguage x = case runState runVerification (collateASTData x) of
         Left True
     (False, st) -> Right $ failString st
     where
-        failString _ = "Failure to verify." -- TODO
+        failString _ = "Failure to verify." -- TODO 
 
+-- | Runs the verification process on the language rules.
+-- 
+-- It begins at the start rule and recurses through the productions of the 
+-- language.
 runVerification :: VState Bool
-runVerification = do 
+runVerification = do
     (_, initRule) <- gets startRule
-    (startRuleResult, _) <- verifyRule $ return initRule
+    startRuleResult <- verifyRule $ return initRule
     modify (updateStartRuleTag startRuleResult)
     case startRuleResult of
         Terminates -> return True
@@ -54,43 +62,23 @@ runVerification = do
 -- | Verifies a language rule.
 -- 
 -- It will trace the current verification path in case of error.
-verifyRule :: VState LanguageRuleBody -> VState (RuleTag, [NonTerminal])
+verifyRule :: VState LanguageRuleBody -> VState RuleTag
 verifyRule rule = do
     (LanguageRuleBody expr) <- rule
     verifySyntaxExpr $ return expr
 
 -- | Verifies a syntax expression.
-verifySyntaxExpr :: VState SyntaxExpression -> VState (RuleTag, [NonTerminal])
+verifySyntaxExpr :: VState SyntaxExpression -> VState RuleTag
 verifySyntaxExpr expr = do
     (SyntaxExpression alternatives) <- expr
     let result = (verifyAlternative . return) <$> alternatives
     combineTerminationResults result
-
--- | Combines a set of subterm termination values into a result value for the 
--- term.
-combineTerminationResults 
-    :: [VState (RuleTag, [NonTerminal])]
-    -> VState (RuleTag, [NonTerminal])
-combineTerminationResults list = do
-    items <- sequence list
-    return $ combine items
-    where
-        combine :: [(RuleTag, [NonTerminal])] -> (RuleTag, [NonTerminal])
-        combine = undefined
-
--- TODO can I use `ap` here? 
-
--- | Pulls result types out of the state monad.
--- extractFromState :: VState a -> a
-extractFromState item = do
-    st <- get
-    evalState item st
  
 -- | Verifies a syntax alternative.
 -- 
 -- Each syntax alternative can have its semantics verified independently, so 
 -- it is simple to verify these in one go.
-verifyAlternative :: VState SyntaxAlternative -> VState (RuleTag, [NonTerminal])
+verifyAlternative :: VState SyntaxAlternative -> VState RuleTag
 verifyAlternative alt = do
     alternative <- alt
     traceShowM alternative
@@ -100,28 +88,25 @@ verifyAlternative alt = do
         verifySubSemantics alt
 
 -- | Verifies a syntax alternative where the semantics are defined by hand.
-verifyDefinedSemantics
-    :: VState SyntaxAlternative
-    -> VState (RuleTag, [NonTerminal])
+verifyDefinedSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifyDefinedSemantics alt = do
     (SyntaxAlternative _ semantics) <- alt
     traceShowM semantics
-    return (Terminates, [])
+    traceShowM "DefinedSemantics"
+    return Terminates
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
-verifySubSemantics
-    :: VState SyntaxAlternative
-    -> VState (RuleTag, [NonTerminal])
+verifySubSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifySubSemantics alt = do
-    (SyntaxAlternative terms _) <- alt 
-    let _ = (verifySyntaxTerm . return) <$> terms
-    return (Terminates, [])
+    (SyntaxAlternative terms _) <- alt
+    let result = (verifySyntaxTerm . return) <$> terms
+    combineTerminationResults result
 
 -- | Verifies a syntax term.
 -- 
 -- Exceptions are treated as purely syntactic, and hence are not verified 
 -- themselves.
-verifySyntaxTerm :: VState SyntaxTerm -> VState (RuleTag, [NonTerminal])
+verifySyntaxTerm :: VState SyntaxTerm -> VState RuleTag
 verifySyntaxTerm term = do
     (SyntaxTerm factor _) <- term
     verifySyntaxFactor $ return factor
@@ -129,33 +114,51 @@ verifySyntaxTerm term = do
 -- | Verifies a syntactic factor.
 -- 
 -- Repetition is purely a syntactic operation and is ignored here.
-verifySyntaxFactor :: VState SyntaxFactor -> VState (RuleTag, [NonTerminal])
+verifySyntaxFactor :: VState SyntaxFactor -> VState RuleTag
 verifySyntaxFactor factor = do
     (SyntaxFactor _ primary) <- factor
     verifySyntaxPrimary $ return primary
 
 -- | Verifies a syntax primary.
-verifySyntaxPrimary :: VState SyntaxPrimary -> VState (RuleTag, [NonTerminal])
+verifySyntaxPrimary :: VState SyntaxPrimary -> VState RuleTag
 verifySyntaxPrimary primary = do
     syntaxPrimary <- primary
     case syntaxPrimary of
-        (SyntaxOptional expr) -> verifySyntaxExpr $ return expr
-        (SyntaxRepeated expr) -> verifySyntaxExpr $ return expr
-        (SyntaxGrouped expr) -> verifySyntaxExpr $ return expr
         (SyntaxSpecial _) -> fail "Cannot verify special syntax."
-        (TerminalProxy _) -> return (Terminates, [])
+        (TerminalProxy _) -> return Terminates
         (NonTerminalProxy nonTerminal) -> verifyNonTerminal $ return nonTerminal
+        _ -> return $ 
+            DoesNotTerminate Incomplete [] "Cannot infer semantics for rule."
 
 -- | Verifies a given non-terminal. 
-verifyNonTerminal :: VState NonTerminal -> VState (RuleTag, [NonTerminal])
+-- TODO assign tags to the non-terminal in the map.
+-- TODO tag assignment
+-- TODO map lookup
+-- TODO truths check
+verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
     traceShowM nonTerminal
-    return (Terminates, [])
-    -- TODO map lookup and tag assignment
+    return Terminates 
+
+-- | Checks if a given non-terminal terminates in the truths block.
+-- 
+-- These truths are the trivial base-cases for the language semantics, and hence
+-- are taken as given by the proof engine. 
+checkTruthsForTermination :: VState NonTerminal -> VState RuleTag
+checkTruthsForTermination = undefined
 
 -- | Checks if a given language rule has explicitly defined semantics.
 hasSemantics :: SyntaxAlternative -> Bool
 hasSemantics (SyntaxAlternative _ lrs) = case lrs of
     Just _ -> True
     Nothing -> False
+
+-- | Combines a set of subterm termination values into a result value for the 
+-- term.
+combineTerminationResults 
+    :: [VState RuleTag]
+    -> VState RuleTag
+combineTerminationResults results = do
+    items <- sequence results
+    return $ foldl tagPlus Terminates items

@@ -125,3 +125,54 @@ for them (hence not falling into this case), or should be listed in the `truths`
 language defblock.
 
 This guarantees enough information to prove the totality of the language.
+
+#### Evolution of the Syntax-Only Cases
+While it is technically possible to automatically derive language semantics in
+many cases of syntax-only rules, the mechanism results in significant increases
+in complexity. The fact that this problem exists means that the grammar is 
+potentially under-constrained for the restricted semantics, allowing 
+representation of language concepts that cannot necessarily be encoded. 
+
+- In most cases where syntactic expressions consist of some chained terminals 
+  and non-terminals, it is not possible to infer the semantics of a rule in
+  the general case. Even if some inference rule were created that took the 
+  semantics of the first non-terminal, this would be nonsensical in most cases.
+- In order, however, to support language writers, there is a limited form of 
+  semantic inference that can be created.
+
+This form of semantic inference operates purely on top-level syntax definitions.
+
+- If the syntax rule consists purely of an alternation of non-terminals, then
+  the semantics for that rule can be inferred. 
+- While this could be extended to more complex rules, with some instances of 
+  grouping, repetition and optional syntax, it is complex to do so.
+- In the cases for which this semantic inference operates (as above), the 
+  semantics of that rule are defined as the semantics of whichever non-terminal
+  matches. 
+- This means that such a rule has defined semantics IF each of the alternation 
+  terms have defined semantics. 
+
+While this is a limitation for automatically deriving semantics, this is less of
+an issue due to the following factors:
+
+- The metalanguage is designed explicitly with the intent of letting the 
+  language designers define the semantics for their language.
+- As a result, it is inappropriate to attempt to infer incorrect semantics in
+  cases where it may not be clear.
+
+However, the need for this restriction is an indication that the metaspec 
+language grammar is under-constrained when it comes to specifying the syntax of
+these languages. In an ideal world it would be context-sensitive, forcing users
+to define semantics if the syntax rule doesn't match the expected format. 
+
+## Handling Special Syntax
+While most special syntax forms are trivial to handle, those contained in 
+`funcall` are more complex to deal with.
+
+- Is it possible to verify this at language compile time? 
+- Doesn't seem so -> this is a flaw with the language-level verification 
+  approach if my intuition is true.
+- Alternative constraints could be devised, with the wrong combination compiling
+  to a noop. Nevertheless, this is program-level verification, and hence is not
+  quite in accordance with the project philosophy. 
+- To this end, I don't think that `callproc` even needs to exist.

@@ -9,6 +9,9 @@ using : {
     traverse
 };
 
+// These don't need to look like this. All of the special feature terminations
+// can be taken as given but still need to be manually written -> users may want
+// to specify their own semantics.
 truths : {
     {integer n <= <integer>},
     {floating n <= <floating-point>},
