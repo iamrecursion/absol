@@ -31,7 +31,8 @@ module Absol.Metaverify.State
         state,
         gets,
         modify,
-        updateStartRuleTag
+        updateStartRuleTag,
+        updateRuleTag
     ) where
 
 import           Absol.Metaparse.Grammar
@@ -87,6 +88,19 @@ updateStartRuleTag :: RuleTag -> VerifierState -> VerifierState
 updateStartRuleTag t s = do
     let (_, sRule) = startRule s
     s { startRule = (t, sRule)}
+
+-- | Updates the tag for a given production.
+updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState
+updateRuleTag tag nt state = do
+    let prodMap = productions state
+        foundVal = M.lookup nt prodMap
+    case foundVal of
+        Nothing -> 
+            state { productions = M.insert nt (tag, fakeRuleBody) prodMap}
+        Just (_, body) -> 
+            state { productions = M.insert nt (tag, body) prodMap }
+    where
+        fakeRuleBody = LanguageRuleBody (SyntaxExpression [])
 
 -- | Pulls result types out of the state monad.
 extractFromState :: VState a -> a

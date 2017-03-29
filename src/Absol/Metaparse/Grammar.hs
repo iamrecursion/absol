@@ -166,7 +166,10 @@ data SyntaxPrimary
 
 newtype Terminal = Terminal TerminalString deriving (Show, Eq)
 
-newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Show, Eq, Ord)
+newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Eq, Ord)
+
+instance Show NonTerminal where
+    show (NonTerminal (NonTerminalIdentifier x)) = "<" ++ x ++ ">"
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
     [SemanticRule]

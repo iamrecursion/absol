@@ -48,4 +48,3 @@ tagPlus _ Untouched = Untouched
 tagPlus Terminates Terminates = Terminates
 tagPlus x@DoesNotTerminate{} _ = x
 tagPlus _ x@DoesNotTerminate{} = x
-

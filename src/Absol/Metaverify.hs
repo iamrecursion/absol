@@ -20,6 +20,7 @@ module Absol.Metaverify
     ) where
 
 import           Absol.Metaparse.Grammar
+import           Absol.Metaparse.Utilities
 import           Absol.Metaverify.Collate
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
@@ -39,10 +40,14 @@ import Debug.Trace
 -- It will also alert the user to any unused productions.
 verifyLanguage :: Metaspec -> Either Bool String
 verifyLanguage x = case runState runVerification (collateASTData x) of
-    (True, VerifierState _ prod _) -> do
-        traceShowM $ fst <$> M.elems prod
+    (True, VerifierState (tag, _) prod _) -> do
+        traceShowM tag
+        traceShowM $ zip (showNT <$> M.keys prod) (fst <$> M.elems prod)
         Left True
-    (False, st) -> Right $ failString st
+    (False, VerifierState (tag, _) prod _) -> do
+        traceShowM tag
+        traceShowM $ zip (showNT <$> M.keys prod) (fst <$> M.elems prod)
+        Right $ failString tag
     where
         failString _ = "Failure to verify." -- TODO 
 
@@ -72,7 +77,8 @@ verifySyntaxExpr :: VState SyntaxExpression -> VState RuleTag
 verifySyntaxExpr expr = do
     (SyntaxExpression alternatives) <- expr
     let result = (verifyAlternative . return) <$> alternatives
-    combineTerminationResults result
+    res <- combineTerminationResults result
+    return res
  
 -- | Verifies a syntax alternative.
 -- 
@@ -81,7 +87,6 @@ verifySyntaxExpr expr = do
 verifyAlternative :: VState SyntaxAlternative -> VState RuleTag
 verifyAlternative alt = do
     alternative <- alt
-    traceShowM alternative
     if hasSemantics alternative then
         verifyDefinedSemantics alt
     else
@@ -91,8 +96,7 @@ verifyAlternative alt = do
 verifyDefinedSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifyDefinedSemantics alt = do
     (SyntaxAlternative _ semantics) <- alt
-    traceShowM semantics
-    traceShowM "DefinedSemantics"
+    -- traceShowM semantics
     return Terminates
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
@@ -120,6 +124,7 @@ verifySyntaxFactor factor = do
     verifySyntaxPrimary $ return primary
 
 -- | Verifies a syntax primary.
+-- TODO diagnostic information
 verifySyntaxPrimary :: VState SyntaxPrimary -> VState RuleTag
 verifySyntaxPrimary primary = do
     syntaxPrimary <- primary
@@ -138,15 +143,31 @@ verifySyntaxPrimary primary = do
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
-    traceShowM nonTerminal
-    return Terminates 
+    prodMap <- gets productions
+    let ntRule = M.lookup nonTerminal prodMap
+    case ntRule of
+        Nothing -> checkTruthsForTermination nt
+        Just (tag, body) -> updateReturn nonTerminal $ verifyRule $ return body
+    where
+        updateReturn nt ntTag = do
+            tag <- ntTag
+            modify (updateRuleTag tag nt)
+            return tag
 
 -- | Checks if a given non-terminal terminates in the truths block.
 -- 
 -- These truths are the trivial base-cases for the language semantics, and hence
 -- are taken as given by the proof engine. 
 checkTruthsForTermination :: VState NonTerminal -> VState RuleTag
-checkTruthsForTermination = undefined
+checkTruthsForTermination nt = do
+    nonTerminal <- nt
+    semanticTruths <- gets truths
+    if nonTerminal `elem` semanticTruths then
+        return Terminates
+    else
+        return $ DoesNotTerminate Incomplete [] $
+            "No ground truth for " ++ show nonTerminal ++ " and rule\
+            \ not defined."
 
 -- | Checks if a given language rule has explicitly defined semantics.
 hasSemantics :: SyntaxAlternative -> Bool
