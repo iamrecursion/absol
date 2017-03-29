@@ -28,9 +28,6 @@ import qualified Data.Map                 as M
 
 import Debug.Trace
 
--- TODO better error tracking for non-termination (currently tracks one)
--- TODO list of ruleTags to allow provision of better diagnostics.
-
 -- | Verifies the input language.
 -- 
 -- If the language can be proven complete, this returns True. In the case where
@@ -96,7 +93,6 @@ verifyAlternative alt = do
 verifyDefinedSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifyDefinedSemantics alt = do
     (SyntaxAlternative _ semantics) <- alt
-    -- traceShowM semantics
     return Terminates
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
@@ -133,7 +129,7 @@ verifySyntaxPrimary primary = do
         (TerminalProxy _) -> return Terminates
         (NonTerminalProxy nonTerminal) -> verifyNonTerminal $ return nonTerminal
         _ -> return $ 
-            DoesNotTerminate UnableToInfer [] "Cannot infer semantics for rule."
+            DoesNotTerminate [(UnableToInfer, [], "Cannot infer semantics for rule.")]
 
 -- | Verifies a given non-terminal. 
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
@@ -148,9 +144,13 @@ verifyNonTerminal nt = do
                 modify (updateRuleTag ntTag nonTerminal)
                 return ntTag
     case termResult of
-        (DoesNotTerminate termKind trace msg) -> 
-            return $ DoesNotTerminate termKind (nonTerminal : trace) msg
+        x@(DoesNotTerminate xs) -> 
+            return $ DoesNotTerminate $ (addTrace nonTerminal) <$> xs
+        -- (DoesNotTerminate termKind trace msg) -> 
+        --     return $ DoesNotTerminate [(termKind (nonTerminal : trace) msg)]
         other -> return other
+    where
+        addTrace nt (termKind, trace, msg) = (termKind, (nt : trace), msg)
 
 -- | Checks if a given non-terminal terminates in the truths block.
 -- 
@@ -163,9 +163,12 @@ checkTruthsForTermination nt = do
     if nonTerminal `elem` semanticTruths then
         return Terminates
     else
-        return $ DoesNotTerminate Incomplete [] $
-            "No ground truth for " ++ show nonTerminal ++ " and no\ 
-            \ corresponding rule defined."
+        return $ DoesNotTerminate 
+            [
+                (Incomplete, [], 
+                "No ground truth for " ++ show nonTerminal ++ " and no\ 
+                \ corresponding rule defined.")
+            ]
 
 -- | Checks if a given language rule has explicitly defined semantics.
 hasSemantics :: SyntaxAlternative -> Bool

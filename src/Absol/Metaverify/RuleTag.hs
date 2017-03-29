@@ -29,7 +29,7 @@ import           Absol.Metaparse.Grammar
 data RuleTag
     = Untouched
     | Terminates
-    | DoesNotTerminate NonTerminationType [NonTerminal] String
+    | DoesNotTerminate [(NonTerminationType, [NonTerminal], String)]
     deriving (Eq, Show, Ord)
 
 -- | This type is used to record the kind of non-termination that the
@@ -46,8 +46,10 @@ data NonTerminationType
 -- 
 -- The operation is left associative, favouring the left value.
 tagPlus :: RuleTag -> RuleTag -> RuleTag
-tagPlus Untouched _ = Untouched
-tagPlus _ Untouched = Untouched
-tagPlus Terminates Terminates = Terminates
+tagPlus (DoesNotTerminate xs) (DoesNotTerminate ys) =
+    DoesNotTerminate $ xs ++ ys
 tagPlus x@DoesNotTerminate{} _ = x
 tagPlus _ x@DoesNotTerminate{} = x
+tagPlus Terminates Terminates = Terminates
+tagPlus Untouched _ = Untouched
+tagPlus _ Untouched = Untouched

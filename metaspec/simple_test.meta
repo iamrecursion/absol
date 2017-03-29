@@ -13,8 +13,8 @@ using : {
 // can be taken as given but still need to be manually written -> users may want
 // to specify their own semantics.
 truths : {
-    // {integer n <= <integer>},
-    {floating n <= <floating>},
+    {integer n <= <integer>},
+    // {floating n <= <floating>},
     {number n <= <number>}
 };
 
@@ -27,7 +27,7 @@ language : {
 <statement> ::= <my-number> | <number> ;
 
 // Semantics only required for expressions containing terminals
-<my-number> ::= (<integer>) | <floating> ; // from imports, implicit semantics
+<my-number> ::= <integer> | <floating> ; // from imports, implicit semantics
 
 // <arith-expr> ::= <my-number> | <arith-op> ;
 
