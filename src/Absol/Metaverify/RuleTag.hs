@@ -39,6 +39,7 @@ data NonTerminationType
     | Incomplete
     | IncompleteGuards
     | IncorrectForm
+    | UnableToInfer
     deriving (Eq, Show, Ord)
 
 -- | Defines how to combine rule tags.

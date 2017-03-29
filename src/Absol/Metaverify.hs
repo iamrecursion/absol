@@ -28,7 +28,6 @@ import qualified Data.Map                 as M
 
 import Debug.Trace
 
--- TODO key termination rules for lookup (just store the NTs)
 -- TODO better error tracking for non-termination (currently tracks one)
 -- TODO list of ruleTags to allow provision of better diagnostics.
 
@@ -134,7 +133,7 @@ verifySyntaxPrimary primary = do
         (TerminalProxy _) -> return Terminates
         (NonTerminalProxy nonTerminal) -> verifyNonTerminal $ return nonTerminal
         _ -> return $ 
-            DoesNotTerminate Incomplete [] "Cannot infer semantics for rule."
+            DoesNotTerminate UnableToInfer [] "Cannot infer semantics for rule."
 
 -- | Verifies a given non-terminal. 
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
