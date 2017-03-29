@@ -37,6 +37,8 @@ data RuleTag
 data NonTerminationType
     = Diverges
     | Incomplete
+    | IncompleteGuards
+    | IncorrectForm
     deriving (Eq, Show, Ord)
 
 -- | Defines how to combine rule tags.

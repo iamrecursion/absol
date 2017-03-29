@@ -30,6 +30,7 @@ import Debug.Trace
 
 -- TODO key termination rules for lookup (just store the NTs)
 -- TODO better error tracking for non-termination (currently tracks one)
+-- TODO list of ruleTags to allow provision of better diagnostics.
 
 -- | Verifies the input language.
 -- 
@@ -42,11 +43,11 @@ verifyLanguage :: Metaspec -> Either Bool String
 verifyLanguage x = case runState runVerification (collateASTData x) of
     (True, VerifierState (tag, _) prod _) -> do
         traceShowM tag
-        traceShowM $ zip (showNT <$> M.keys prod) (fst <$> M.elems prod)
+        traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
         Left True
     (False, VerifierState (tag, _) prod _) -> do
         traceShowM tag
-        traceShowM $ zip (showNT <$> M.keys prod) (fst <$> M.elems prod)
+        traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
         Right $ failString tag
     where
         failString _ = "Failure to verify." -- TODO 
@@ -136,23 +137,21 @@ verifySyntaxPrimary primary = do
             DoesNotTerminate Incomplete [] "Cannot infer semantics for rule."
 
 -- | Verifies a given non-terminal. 
--- TODO assign tags to the non-terminal in the map.
--- TODO tag assignment
--- TODO map lookup
--- TODO truths check
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
     prodMap <- gets productions
     let ntRule = M.lookup nonTerminal prodMap
-    case ntRule of
-        Nothing -> checkTruthsForTermination nt
-        Just (tag, body) -> updateReturn nonTerminal $ verifyRule $ return body
-    where
-        updateReturn nt ntTag = do
-            tag <- ntTag
-            modify (updateRuleTag tag nt)
-            return tag
+    termResult <- case ntRule of
+            Nothing -> checkTruthsForTermination nt
+            Just (tag, body) -> do
+                ntTag <- verifyRule $ return body
+                modify (updateRuleTag ntTag nonTerminal)
+                return ntTag
+    case termResult of
+        (DoesNotTerminate termKind trace msg) -> 
+            return $ DoesNotTerminate termKind (nonTerminal : trace) msg
+        other -> return other
 
 -- | Checks if a given non-terminal terminates in the truths block.
 -- 
@@ -166,8 +165,8 @@ checkTruthsForTermination nt = do
         return Terminates
     else
         return $ DoesNotTerminate Incomplete [] $
-            "No ground truth for " ++ show nonTerminal ++ " and rule\
-            \ not defined."
+            "No ground truth for " ++ show nonTerminal ++ " and no\ 
+            \ corresponding rule defined."
 
 -- | Checks if a given language rule has explicitly defined semantics.
 hasSemantics :: SyntaxAlternative -> Bool
