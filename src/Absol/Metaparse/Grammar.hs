@@ -172,19 +172,22 @@ instance Show NonTerminal where
     show (NonTerminal (NonTerminalIdentifier x)) = "<" ++ x ++ ">"
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
-    [SemanticRule]
+    SemanticRule
     deriving (Show, Eq)
 
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
     | SpecialSyntaxRuleProxy SpecialSyntaxRule
-    | SemanticEvaluationRule
-        SemanticType
-        SemanticIdentifier
-        SemanticOperationList
-        SemanticRestrictionList
-        SemanticEvaluationList
+    | SemanticEvaluationRuleList [SemanticEvaluationRule]
+    deriving (Show, Eq)
+
+data SemanticEvaluationRule = SemanticEvaluationRule
+    SemanticType
+    SemanticIdentifier
+    SemanticOperationList
+    SemanticRestrictionList
+    SemanticEvaluationList
     deriving (Show, Eq)
 
 data SemanticSpecialSyntax

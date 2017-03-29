@@ -261,14 +261,13 @@ language-rule-semantics =
     semantic-behaves-as,
     semantic-block-start,
     semantic-rule,
-    { semantic-disjunction, semantic-rule },
     semantic-block-end;
 
 semantic-rule = 
     environment-input-rule |
     environment-access-rule |
     special-syntax-rule |
-    semantic-evaluation-rule;
+    semantic-evaluation-rule-list;
 
 environment-input-rule =
     semantic-type, 
@@ -300,6 +299,10 @@ special-syntax-rule =
     [ syntax-access-block | environment-access-rule ],
     { semantic-list-delimiter, (syntax-access-block|environment-access-rule) },
     special-syntax-end;
+
+semantic-evaluation-rule-list = 
+    semantic-evaluation-rule,
+    { semantic-disjunction, semantic-evaluation-rule };
 
 semantic-evaluation-rule = 
     semantic-type,

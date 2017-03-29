@@ -28,6 +28,8 @@ import qualified Data.Map                 as M
 
 import Debug.Trace
 
+-- TODO functions for generating nice diagnostics.
+
 -- | Verifies the input language.
 -- 
 -- If the language can be proven complete, this returns True. In the case where
@@ -94,6 +96,9 @@ verifyDefinedSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifyDefinedSemantics alt = do
     (SyntaxAlternative _ semantics) <- alt
     return Terminates
+
+verifyEnvironmentInputRule :: VState SemanticRule -> VState RuleTag
+verifyEnvironmentInputRule = undefined
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
 verifySubSemantics :: VState SyntaxAlternative -> VState RuleTag

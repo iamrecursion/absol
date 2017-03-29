@@ -289,7 +289,7 @@ nonTerminal = do
 languageRuleSemantics :: ParserST (Maybe LanguageRuleSemantics)
 languageRuleSemantics = do
     void semanticBehavesAs
-    rules <- semanticBlock $ semanticRule `sepBy1` multilineAlternative
+    rules <- semanticBlock semanticRule
     return (Just $ LanguageRuleSemantics rules)
 
 -- | Parses a semantic evaluation rule.
@@ -297,11 +297,8 @@ languageRuleSemantics = do
 -- As the rules diverge only after consuming some portion of syntax, this parser
 -- utilises the ability for infinite-lookahead backtracking to parse these 
 -- productions.
--- 
--- TODO can I factor out the type checks? Nasty errors because of 'try' right
--- now.
 semanticRule :: ParserST SemanticRule
-semanticRule = try semanticEvaluationRule 
+semanticRule = try semanticEvaluationRuleList
     <|> try environmentInputRule
     <|> try environmentAccessRuleProxy
     <|> specialSyntaxRuleProxy
@@ -344,11 +341,16 @@ environmentAccessRule = do
     accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
     return (EnvironmentAccessRule semType accessBlocks)
 
+semanticEvaluationRuleList :: ParserST SemanticRule
+semanticEvaluationRuleList = do
+    rules <- semanticEvaluationRule `sepBy` multilineAlternative
+    return $ SemanticEvaluationRuleList rules
+
 -- | Parses a semantic evaluation rule.
 -- 
 -- These are the rules that are checked directly by the proof mechanism, and
 -- they are restricted to being defined in a certain form.
-semanticEvaluationRule :: ParserST SemanticRule
+semanticEvaluationRule :: ParserST SemanticEvaluationRule
 semanticEvaluationRule = do
     exprType <- semanticType
     semIdentifier <- semanticIdentifier
