@@ -104,8 +104,8 @@ verifyDefinedSemantics alt = do
     (SyntaxAlternative syntax semantics) <- alt
     let (LanguageRuleSemantics rule) = fromJust semantics
     let ntsInSyntax = getNTList syntax
-    -- traceShowM ntsInSyntax
-    case rule of
+    let ntsResult = Terminates -- TODO result from all NTs in the syntax
+    semanticsResult <- case rule of
         x@EnvironmentInputRule{} -> 
             verifyEnvironmentInputRule $ return (x, ntsInSyntax)
         (EnvironmentAccessRuleProxy ear) -> 
@@ -114,6 +114,7 @@ verifyDefinedSemantics alt = do
             verifySpecialSyntaxRule $ return (ssr, ntsInSyntax)
         (SemanticEvaluationRuleList xs) -> 
             verifySemanticEvaluationRuleList $ return (xs, ntsInSyntax)
+    return $ ntsResult `tagPlus` semanticsResult
 
 -- | Gets a list of NonTerminals and their counts from a syntactic expression.
 getNTList :: [SyntaxTerm] -> NTCountMap
@@ -142,18 +143,24 @@ getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
             M.fromList [ (k, countOccurrences k nts) | k <- L.nub nts ]
 
 -- | Verifies semantics taking the form of an environment access rule.
+-- 
+-- TODO
 verifyEnvironmentInputRule 
     :: VState (SemanticRule, NTCountMap) 
     -> VState RuleTag
 verifyEnvironmentInputRule _ = return Terminates
 
 -- | Verifies semantics taking the form of an environment input rule.
+-- 
+-- TODO
 verifyEnvironmentAccessRule 
     :: VState (EnvironmentAccessRule, NTCountMap)
     -> VState RuleTag
 verifyEnvironmentAccessRule _ = return Terminates
 
 -- | Verifies semantics taking the form of a special syntax rule.
+-- 
+-- TODO
 verifySpecialSyntaxRule 
     :: VState (SpecialSyntaxRule, NTCountMap) 
     -> VState RuleTag
@@ -166,8 +173,72 @@ verifySemanticEvaluationRuleList
 verifySemanticEvaluationRuleList input = do
     args@(rules, nts) <- input
     guardsComplete <- verifyGuards $ return rules
-    return guardsComplete
+    rulesComplete <- verifySemanticRules $ return args
+    let tests = [guardsComplete, rulesComplete] :: [RuleTag]
+    return $ foldl tagPlus Terminates tests
 
+-- | Verifies that the semantic rules meet their requirements.
+verifySemanticRules
+    :: VState (SemanticEvaluationRuleList, NTCountMap)
+    -> VState RuleTag
+verifySemanticRules input = do
+    args@(rules, _) <- input
+    satisfiesEvaluationCriterion <- verifyEvaluationCriterion $ return rules
+    satisfiesSemanticForm <- verifySemanticForm $ return args
+    let tests :: [RuleTag]
+        tests = [satisfiesEvaluationCriterion, satisfiesSemanticForm]
+    return $ foldl tagPlus Terminates tests
+
+-- | Checks if the evaluation rules satisfy their restriction.
+-- 
+-- The output variable must be on the left of the leftmost evaluation rule. This
+-- is the only location in which it may occur. Variables from sub-evaluations
+-- may only appear on the RHS of an assignment. 
+-- 
+-- As it is enforced by the parser, this function can rely on having at least
+-- one semantic evaluation.
+verifyEvaluationCriterion 
+    :: VState SemanticEvaluationRuleList
+    -> VState RuleTag
+verifyEvaluationCriterion input = return Terminates
+
+-- | Separates the variables used in the evaluations into three categories. 
+-- 
+-- In order, these are the output variable, any temporary that is assigned to,
+-- and any variables used as part of the evaluation operations. The output
+-- variable is not a temporary, and hence does not appear in the first list.
+getOperationVars 
+    :: [SemanticOperation] 
+    -> (SemanticIdentifier, [SemanticIdentifier], [SemanticIdentifier])
+getOperationVars ops = undefined
+
+-- | Checks the semantic form of the semantic evaluation rules.
+-- 
+-- This checks the subterm criteria, and also the evaluation list form.
+verifySemanticForm
+    :: VState (SemanticEvaluationRuleList, NTCountMap)
+    -> VState RuleTag
+verifySemanticForm input = do
+    (rules, nts) <- input
+    let ntIndexPairs = getNTsFromSubEvaluations <$> rules
+    traceShowM ntIndexPairs
+    -- TODO!!!!!!!!!!!!!!!!!!!!!!!!
+    return Terminates
+
+-- | Gets the non-terminals and their indices used in the sub-evaluations.
+getNTsFromSubEvaluations :: SemanticEvaluationRule -> [(NonTerminal, Integer)]
+getNTsFromSubEvaluations (SemanticEvaluationRule _ _ _ _ evals) = 
+    concat $ getItems <$> evals
+    where
+        getItems (SemanticEvaluation _ _ evalBlock) = 
+            extractEval evalBlock
+        extractEval (Left (SyntaxAccessBlock nt (SyntaxAccessor ix))) = 
+            [(nt, ix)]
+        extractEval (Right (SpecialSyntaxRule _ _ args)) = 
+            concat $ extractFromArg <$> args
+        extractFromArg (Left (SyntaxAccessBlock nt (SyntaxAccessor ix))) = 
+            [(nt, ix)]
+        extractFromArg (Right _) = []
 -- | Checks that the guards are complete across semantic evaluation rules.
 -- 
 -- It also checks that the guards only refer to variables defined as part of the
@@ -185,10 +256,10 @@ verifyGuards input = do
 verifyGuardsComplete :: VState SemanticEvaluationRuleList -> VState RuleTag
 verifyGuardsComplete input = do
     rules <- input
-    let guards = concat $ extractGuards <$> rules
-        processedGuards = normaliseGuard <$> guards
-    traceShowM guards
-    traceShowM processedGuards
+    let guards = extractGuards <$> rules
+        -- processedGuards = normaliseGuard <$> guards
+    -- traceShowM guards
+    -- traceShowM processedGuards
     return Terminates
 
 -- | Normalises a guard into a standard form. 
@@ -250,23 +321,6 @@ extractSubtermVariables input = do
     where
         extractEvalVars (SemanticEvaluation _ var _) = var 
         extractEvaluations (SemanticEvaluationRule _ _ _ _ evals) = evals
-
--- | Checks if the evaluation rules satisfy their restriction.
--- 
--- The output variable must be on the left of the leftmost evaluation rule. This
--- is the only location in which it may occur.
-verifyEvaluationCriterion 
-    :: VState SemanticEvaluationRuleList
-    -> VState RuleTag
-verifyEvaluationCriterion = undefined
-
--- | Checks the semantic form of the semantic evaluation rules.
--- 
--- This checks the subterm criteria, and also the evaluation list form.
-verifySemanticForm
-    :: VState (SemanticEvaluationRuleList, NTCountMap)
-    -> VState RuleTag
-verifySemanticForm _ = return Terminates
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
 verifySubSemantics :: VState SyntaxAlternative -> VState RuleTag

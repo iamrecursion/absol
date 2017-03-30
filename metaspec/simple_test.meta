@@ -30,6 +30,8 @@ language : {
 
 <arith-expr> ::= <my-number> | <arith-op> ;
 
+<foo> ::= "aaA";
+
 <arith-op> ::= 
 //     <arith-expr> "+" <arith-expr> --> {
 //         number n : {n = n1 + n2}() :
@@ -47,10 +49,14 @@ language : {
 //         number n : {n = n1 / n2}() :
 //             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
 //     } |
-    <arith-expr> "^" <arith-expr> --> {
-        number n : {n = n1 * n1}(n2 == 2) :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        number n : {n = n1 ^ n2}(n2 < 2, n2 > 2) :
+    <arith-expr> "^" <arith-expr> <foo> --> {
+        // number n : {n = 1}(n1 == 1) :
+        //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        // number n : {n = n1 * n1}(n2 == 2) :
+        //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        // number n : {n = n1 ^ n2}(n2 < 2, n2 > 2) :
+        //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        number n : {n = n1 ^ n3, n3 = n2 ^ 1}(n2 != 2) :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
     };
 

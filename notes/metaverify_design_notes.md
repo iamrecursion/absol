@@ -205,7 +205,7 @@ is as follows:
       `>=` -> `>`, `=`
 
    And additionally placing all variables on the right hand side of the 
-   expression.
+   expression. This translation takes place within the given guard.
 3. There is now a simple set of patterns to match, so we group patterns keyed on
    the left and right hand side of each expression and an ordering is imposed 
    on these groups. This ordering is arbitrary and it doesn't matter how it is
@@ -221,6 +221,7 @@ problem itself seems to be NP-complete as the only way to guarantee completeness
 is to perform an exhaustive check (maybe some proof of equivalence to some 
 NP-complete problem to come).
 
+### Over-Constrained Guards
 The suspicion here is that this checking method over-constrains the form of
 valid guard patterns. This is confirmed by a set of guards as follows, for
 variables `n1`, `n2`:
@@ -232,9 +233,75 @@ variables `n1`, `n2`:
 This set of guards would not be allowed by the algorithm above. To allow useful
 guards like this, the algorithm requires alteration as follows:
 
-1. Perform steps 1 to 3 as for the above algorithm. The guards are now in a 
-   normalised form, and have some ordering imposed upon them.
-2. 
+1. Check the guards for form: If the guards contain expressions with multiple
+   operations or nonsensical guards, an error is emitted.
+2. Expand/Normalise the guards by performing the following translation:
+  
+      `!=` -> `<`, `>`
+      `<=` -> `<`, `=`
+      `>=` -> `>`, `=`
+
+   And additionally placing all variables on the right hand side of the 
+   expression. This translation takes place within the given guard.
+3. Categorise guard expressions based on the left and right operands. If there
+   are multiple expressions with the same operands in one pattern separate into
+   independent patterns. Example:
+
+      `(n1 < 2, n1 > 2)` -> `(n1 < 2)`, `(n1 > 2)`
+
+   This translation attaches the same semantic rule to the 'ghost' pattern.
+4. Insert holes into patterns such that each pattern has a place for each
+   variable seen on the left of an restriction expression. 
+5. Check that for each 'kind' of restriction expression (keyed by the left and
+   right operands), there is either a complete set of guards or a 'hole' that
+   corresponds to that category of restriction. These 'holes' act as catch-all
+   clauses. If this restriction is satisfied, then the pattern guards are 
+   complete. 
 
 While these examples have been in terms of a variable and a constant, this 
 algorithm should work just as well for relations between variables: `(n1 < n2)`.
+
+#### An Algorithmic Example - Rejection
+Consider a set of guards over variables `n1, n2, n3` as follows:
+
+    (n1 <= n2)
+    (n3 == 3)
+
+    |
+    V
+
+    (n1 < n2, n1 == n2)
+    (n3 == 3)
+
+    |
+    V
+
+    (n1 < n2)
+    (n1 == n2)
+    (n3 == 3)
+
+    |
+    V
+
+    (n1 < n2, ())
+    (n1 == n2, ())
+    ((), n3 == 3)
+
+    ACCEPT
+
+This result is incorrect, and so the algorithm is incorrect.
+
+### Further Changes
+As shown by the counterexample above, the revised algorithm is also incorrect. 
+It would suffice to add an additional restriction that there either must be a 
+complete set for each 'kind' of restriction, or that there must be catch-all
+hole. 
+
+## Typechecking
+While this is, for the most part, deferred until language compile time, rather
+than metalanguage check time, it may be possible to perform some type-related
+checks at the language level. 
+
+Whether or not this is the case, Metaspec provides some features to aid this.
+These include the typed evaluations for the truths, and the type annotations
+throughout the semantics. 
