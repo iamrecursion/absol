@@ -17,8 +17,7 @@
 module Absol.Metaparse.Utilities
     (   
         keywordWhere,
-        trimString,
-        showNT
+        trimString
     ) where
 
 import           Absol.Metalex
@@ -35,7 +34,3 @@ keywordWhere kwd = do
 -- | Trims whitespace from the start and end of a string. 
 trimString :: String -> String
 trimString = unwords . words
-
--- | Displays a textual representation of a non-terminal.
-showNT :: NonTerminal -> String
-showNT (NonTerminal (NonTerminalIdentifier x)) = "<" ++ x ++ ">"

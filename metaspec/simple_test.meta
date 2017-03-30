@@ -22,8 +22,7 @@ language : {
 
 <<simple_test>> ::= <statement> ;
 
-// <statement> ::= <arith-expr> | <assignment> ;
-<statement> ::= <my-number> | <number> ;
+<statement> ::= <my-number> | <number> | <arith-expr> ;
 
 <my-number> ::= <integer> ;
 
@@ -49,9 +48,9 @@ language : {
 //             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
 //     } |
     <arith-expr> "^" <arith-expr> --> {
-        number n : {n = n1 ^ n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
         number n : {n = n1 * n1}(n2 == 2) :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        number n : {n = n1 ^ n2}(n2 < 2, n2 > 2) :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
     };
 

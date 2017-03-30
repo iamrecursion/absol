@@ -19,16 +19,23 @@ module Absol.Metaverify
         verifyLanguage
     ) where
 
+import           Absol.Utilities          (countOccurrences)
 import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Utilities
 import           Absol.Metaverify.Collate
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
+import qualified Data.List                as L (nub)
 import qualified Data.Map                 as M
+import           Data.Maybe               (fromJust)
 
 import Debug.Trace
 
 -- TODO functions for generating nice diagnostics.
+-- TODO Refactor guard checker code to have less duplication
+
+-- | A type for storing the non-terminals defined in a syntax expression.
+type NTCountMap = M.Map NonTerminal Integer
 
 -- | Verifies the input language.
 -- 
@@ -94,11 +101,172 @@ verifyAlternative alt = do
 -- | Verifies a syntax alternative where the semantics are defined by hand.
 verifyDefinedSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifyDefinedSemantics alt = do
-    (SyntaxAlternative _ semantics) <- alt
+    (SyntaxAlternative syntax semantics) <- alt
+    let (LanguageRuleSemantics rule) = fromJust semantics
+    let ntsInSyntax = getNTList syntax
+    -- traceShowM ntsInSyntax
+    case rule of
+        x@EnvironmentInputRule{} -> 
+            verifyEnvironmentInputRule $ return (x, ntsInSyntax)
+        (EnvironmentAccessRuleProxy ear) -> 
+            verifyEnvironmentAccessRule $ return (ear, ntsInSyntax)
+        (SpecialSyntaxRuleProxy ssr) -> 
+            verifySpecialSyntaxRule $ return (ssr, ntsInSyntax)
+        (SemanticEvaluationRuleList xs) -> 
+            verifySemanticEvaluationRuleList $ return (xs, ntsInSyntax)
+
+-- | Gets a list of NonTerminals and their counts from a syntactic expression.
+getNTList :: [SyntaxTerm] -> NTCountMap
+getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
+    where
+        ntsInTerm :: SyntaxTerm -> [NonTerminal]
+        ntsInTerm (SyntaxTerm (SyntaxFactor _ primary) _) = ntsInPrimary primary
+
+        ntsInPrimary :: SyntaxPrimary -> [NonTerminal]
+        ntsInPrimary (SyntaxSpecial _) = []
+        ntsInPrimary (TerminalProxy _) = []
+        ntsInPrimary (NonTerminalProxy nt) = [nt]
+        ntsInPrimary (SyntaxOptional expr) = ntsInExpr expr
+        ntsInPrimary (SyntaxRepeated expr) = ntsInExpr expr
+        ntsInPrimary (SyntaxGrouped expr) = ntsInExpr expr
+
+        ntsInExpr :: SyntaxExpression -> [NonTerminal]
+        ntsInExpr (SyntaxExpression alts) = concat $ ntsInAlternative <$> alts
+
+        ntsInAlternative :: SyntaxAlternative -> [NonTerminal]
+        ntsInAlternative (SyntaxAlternative terms _) = 
+            concat $ ntsInTerm <$> terms
+
+        toCountMap :: [NonTerminal] -> NTCountMap
+        toCountMap nts = 
+            M.fromList [ (k, countOccurrences k nts) | k <- L.nub nts ]
+
+-- | Verifies semantics taking the form of an environment access rule.
+verifyEnvironmentInputRule 
+    :: VState (SemanticRule, NTCountMap) 
+    -> VState RuleTag
+verifyEnvironmentInputRule _ = return Terminates
+
+-- | Verifies semantics taking the form of an environment input rule.
+verifyEnvironmentAccessRule 
+    :: VState (EnvironmentAccessRule, NTCountMap)
+    -> VState RuleTag
+verifyEnvironmentAccessRule _ = return Terminates
+
+-- | Verifies semantics taking the form of a special syntax rule.
+verifySpecialSyntaxRule 
+    :: VState (SpecialSyntaxRule, NTCountMap) 
+    -> VState RuleTag
+verifySpecialSyntaxRule _ = return Terminates
+
+-- | Verifies a list of semantic evaluation rules
+verifySemanticEvaluationRuleList 
+    :: VState (SemanticEvaluationRuleList, NTCountMap)
+    -> VState RuleTag
+verifySemanticEvaluationRuleList input = do
+    args@(rules, nts) <- input
+    guardsComplete <- verifyGuards $ return rules
+    return guardsComplete
+
+-- | Checks that the guards are complete across semantic evaluation rules.
+-- 
+-- It also checks that the guards only refer to variables defined as part of the
+-- sub-evaluations.
+verifyGuards :: VState SemanticEvaluationRuleList -> VState RuleTag
+verifyGuards input = do
+    guardVariablesComplete <- verifyGuardSubtermVariables input
+    guardsCompleteOverDomain <- verifyGuardsComplete input
+    let tests = [guardVariablesComplete, guardsCompleteOverDomain] :: [RuleTag]
+    return $ foldl tagPlus Terminates tests
+
+-- | Verifies that the patterns in the guards are complete over the domain.
+-- 
+-- This means that all potential values of the variables must be accounted for.
+verifyGuardsComplete :: VState SemanticEvaluationRuleList -> VState RuleTag
+verifyGuardsComplete input = do
+    rules <- input
+    let guards = concat $ extractGuards <$> rules
+        processedGuards = normaliseGuard <$> guards
+    traceShowM guards
+    traceShowM processedGuards
     return Terminates
 
-verifyEnvironmentInputRule :: VState SemanticRule -> VState RuleTag
-verifyEnvironmentInputRule = undefined
+-- | Normalises a guard into a standard form. 
+-- 
+-- It will return an error in the case where guards aren't allowable.
+-- 
+-- This form is a guard with a single operator, and any constant on the right
+normaliseGuard :: SemanticRestriction -> Either String [SemanticRestriction]
+normaliseGuard guard = undefined
+
+-- | Checks that the pattern guards rely only on appropriate variables.
+-- 
+-- Such variables should only be defined in the subterm evaluations of the 
+-- semantic rules.
+verifyGuardSubtermVariables
+    :: VState SemanticEvaluationRuleList
+    -> VState RuleTag
+verifyGuardSubtermVariables input = do
+    rules <- input
+    let guards = extractGuards <$> rules :: [[SemanticRestriction]]
+        guardVars = (L.nub . concat . (fmap extractGuardVars)) <$> guards 
+    evalVars <- extractSubtermVariables $ return rules
+    let groups = zip guardVars evalVars
+        result = foldr (&&) True $ checkExists <$> groups
+    if result then
+        return Terminates
+    else
+        return $ DoesNotTerminate [
+                (
+                    IncompleteGuards, 
+                    [], 
+                    "Guard refers to variables not defined in sub-evaluations." 
+                )
+            ]
+    where
+        extractGuardVars :: SemanticRestriction -> [SemanticIdentifier]
+        extractGuardVars (SemVariable semId) = [semId]
+        extractGuardVars (SemConstant _) = []
+        extractGuardVars (SemInfixExpr _ l r) = 
+            (extractGuardVars l) ++ (extractGuardVars r)
+
+        checkExists :: (Eq a) => ([a], [a]) -> Bool
+        checkExists ([], ys) = True
+        checkExists (x:xs, ys) = (x `elem` ys) && (checkExists (xs, ys))
+
+-- | Extracts the guard patterns from an evaluation rule. 
+extractGuards :: SemanticEvaluationRule -> [SemanticRestriction]
+extractGuards 
+    (SemanticEvaluationRule _ _ _ (SemanticRestrictionList guards) _) = guards
+
+-- | Extracts the target variables from the subterm evaluations.
+extractSubtermVariables 
+    :: VState SemanticEvaluationRuleList
+    -> VState [[SemanticIdentifier]]
+extractSubtermVariables input = do
+    ruleList <- input
+    let evaluations = extractEvaluations <$> ruleList
+    return $ (fmap extractEvalVars) <$> evaluations
+    where
+        extractEvalVars (SemanticEvaluation _ var _) = var 
+        extractEvaluations (SemanticEvaluationRule _ _ _ _ evals) = evals
+
+-- | Checks if the evaluation rules satisfy their restriction.
+-- 
+-- The output variable must be on the left of the leftmost evaluation rule. This
+-- is the only location in which it may occur.
+verifyEvaluationCriterion 
+    :: VState SemanticEvaluationRuleList
+    -> VState RuleTag
+verifyEvaluationCriterion = undefined
+
+-- | Checks the semantic form of the semantic evaluation rules.
+-- 
+-- This checks the subterm criteria, and also the evaluation list form.
+verifySemanticForm
+    :: VState (SemanticEvaluationRuleList, NTCountMap)
+    -> VState RuleTag
+verifySemanticForm _ = return Terminates
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
 verifySubSemantics :: VState SyntaxAlternative -> VState RuleTag
@@ -134,7 +302,9 @@ verifySyntaxPrimary primary = do
         (TerminalProxy _) -> return Terminates
         (NonTerminalProxy nonTerminal) -> verifyNonTerminal $ return nonTerminal
         _ -> return $ 
-            DoesNotTerminate [(UnableToInfer, [], "Cannot infer semantics for rule.")]
+            DoesNotTerminate [
+                    (UnableToInfer, [], "Cannot infer semantics for rule.")
+                ]
 
 -- | Verifies a given non-terminal. 
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag

@@ -27,9 +27,14 @@ semantics:
 - **Complete Guards:** All guards must cover the entire domain over which they 
   are defined. Guards are evaluated in order, and must include enough cases to
   cover the domain. This does not preclude the creation of specific-case guards.
+  Each guard can have multiple conditions, but each condition must have only
+  one operator.
 - **Semantic Form Validation:** All rules must be of the form where the 
-  sub-evaluations must be syntactic sub-expressions of the main rule. If this is
-  satisfied, it guarantees that computations cannot diverge. 
+  sub-evaluations must be syntactic sub-expressions of the main rule. Checking 
+  this also involves checking the form of the evaluations. If this is satisfied, 
+  it guarantees that computations cannot diverge. This process also needs to 
+  check where variables are used. It also needs to check that no variable is
+  defined more than once.
 - **Recognition of Special Cases:** Special case semantics are those that cannot
   be proved by the recursive mechanism. These are assumed to terminate by the 
   proof algorithm, and are to be proven elsewhere (ahead of time) in a manual
@@ -176,3 +181,60 @@ While most special syntax forms are trivial to handle, those contained in
   to a noop. Nevertheless, this is program-level verification, and hence is not
   quite in accordance with the project philosophy. 
 - To this end, I don't think that `callproc` even needs to exist.
+
+## Misc Notes
+Some uncategorised notes:
+
+- While the grammar will allow it to be defined (hence under-constrained), the
+  creation of alternatives with semantics within other alternatives is entirely
+  ignored. Ideally, the grammar would be refactored to disallow this case, but 
+  in the sake of expediency for the project it is just ignored.
+
+## Notes on Checking Guard Completeness
+Checking completeness of guards is the halting problem in the general case, and 
+it is a significantly non-trivial task here. However, the restricted set of 
+guard operations allowed by metaspec makes the task less difficult. The process
+is as follows:
+
+1. Check the guards for form: If the guards contain expressions with multiple
+   operations or nonsensical guards, an error is emitted.
+2. Normalise the guards by performing the following translation:
+  
+      `!=` -> `<`, `>`
+      `<=` -> `<`, `=`
+      `>=` -> `>`, `=`
+
+   And additionally placing all variables on the right hand side of the 
+   expression.
+3. There is now a simple set of patterns to match, so we group patterns keyed on
+   the left and right hand side of each expression and an ordering is imposed 
+   on these groups. This ordering is arbitrary and it doesn't matter how it is
+   created.
+4. For groups $g_0, \dots, g_n$, where $g_i = (l op r | op \in \{<, =, >\})$, we 
+   need to have a situation where for each element in $g_i$, all three elements
+   in $g_{i+1}$ exist. A catch-all clause can be substituted for any set of 
+   guards, allowing correctness. 
+5. If this condition is satisfied, then the guards are complete.
+
+This algorithm is incredibly inefficient (with factorial complexity), but the 
+problem itself seems to be NP-complete as the only way to guarantee completeness
+is to perform an exhaustive check (maybe some proof of equivalence to some 
+NP-complete problem to come).
+
+The suspicion here is that this checking method over-constrains the form of
+valid guard patterns. This is confirmed by a set of guards as follows, for
+variables `n1`, `n2`:
+
+    (n1 <= 2, n2 == 2)
+    (n1 <= 2)
+    (n1 > 2)
+
+This set of guards would not be allowed by the algorithm above. To allow useful
+guards like this, the algorithm requires alteration as follows:
+
+1. Perform steps 1 to 3 as for the above algorithm. The guards are now in a 
+   normalised form, and have some ordering imposed upon them.
+2. 
+
+While these examples have been in terms of a variable and a constant, this 
+algorithm should work just as well for relations between variables: `(n1 < n2)`.

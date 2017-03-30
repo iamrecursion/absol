@@ -179,8 +179,10 @@ data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
     | SpecialSyntaxRuleProxy SpecialSyntaxRule
-    | SemanticEvaluationRuleList [SemanticEvaluationRule]
+    | SemanticEvaluationRuleList SemanticEvaluationRuleList
     deriving (Show, Eq)
+
+type SemanticEvaluationRuleList = [SemanticEvaluationRule]
 
 data SemanticEvaluationRule = SemanticEvaluationRule
     SemanticType

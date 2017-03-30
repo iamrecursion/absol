@@ -16,6 +16,12 @@
 
 module Absol.Utilities where
 
+import           Data.List (genericLength)
+
 -- | The output token for certain diagnostic messages.
 outputToken :: String
 outputToken = ">> "
+
+-- | Counts the number of occurrences of the input in the list.
+countOccurrences :: Eq a => a -> [a] -> Integer
+countOccurrences x = genericLength . filter (==x)
