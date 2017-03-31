@@ -33,6 +33,9 @@ import Debug.Trace
 
 -- TODO functions for generating nice diagnostics.
 -- TODO Refactor guard checker code to have less duplication
+-- TODO handle the touching of NTs better (e.g. <foo>), which is never used in a
+-- semantic sense, and hence should not get the value 'Terminates'. This lets
+-- the user define purely syntactic terms, and is hence important. 
 
 -- | A type for storing the non-terminals defined in a syntax expression.
 type NTCountMap = M.Map NonTerminal Integer
@@ -46,11 +49,11 @@ type NTCountMap = M.Map NonTerminal Integer
 -- It will also alert the user to any unused productions.
 verifyLanguage :: Metaspec -> Either Bool String
 verifyLanguage x = case runState runVerification (collateASTData x) of
-    (True, VerifierState (tag, _) prod _) -> do
+    (True, VerifierState (tag, _) prod _ _) -> do
         traceShowM tag
         traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
         Left True
-    (False, VerifierState (tag, _) prod _) -> do
+    (False, VerifierState (tag, _) prod _ _) -> do
         traceShowM tag
         traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
         Right $ failString tag
@@ -103,7 +106,9 @@ verifyDefinedSemantics alt = do
     (SyntaxAlternative syntax semantics) <- alt
     let (LanguageRuleSemantics rule) = fromJust semantics
     let ntsInSyntax = getNTList syntax
-    let ntsResult = Terminates -- TODO result from all NTs in the syntax
+    ntTemp <- sequence $ (verifyNonTerminal . return) <$> M.keys ntsInSyntax
+    traceShowM ntTemp
+    -- TODO is this even correct to do, fixing the recursion?
     semanticsResult <- case rule of
         x@EnvironmentInputRule{} -> 
             verifyEnvironmentInputRule $ return (x, ntsInSyntax)
@@ -113,7 +118,7 @@ verifyDefinedSemantics alt = do
             verifySpecialSyntaxRule $ return (ssr, ntsInSyntax)
         (SemanticEvaluationRuleList xs) -> 
             verifySemanticEvaluationRuleList $ return (xs, ntsInSyntax)
-    return $ ntsResult `tagPlus` semanticsResult
+    return $ foldl tagPlus Terminates $ semanticsResult:ntTemp
 
 -- | Gets a list of NonTerminals and their counts from a syntactic expression.
 getNTList :: [SyntaxTerm] -> NTCountMap
@@ -315,7 +320,7 @@ verifyGuardSubtermVariables input = do
             extractGuardVars l ++ extractGuardVars r
 
         checkExists :: (Eq a) => ([a], [a]) -> Bool
-        checkExists ([], ys) = True
+        checkExists ([], _) = True
         checkExists (x:xs, ys) = (x `elem` ys) && checkExists (xs, ys)
 
 -- | Extracts the guard patterns from an evaluation rule. 
@@ -379,12 +384,23 @@ verifyNonTerminal nt = do
     nonTerminal <- nt
     prodMap <- gets productions
     let ntRule = M.lookup nonTerminal prodMap
+    modify (pushProductionFrame nonTerminal)
+    prodTrace <- gets productionTrace
+    traceM $ "Nt: " ++ show nonTerminal ++ " Trace: " ++ show prodTrace
     termResult <- case ntRule of
             Nothing -> checkTruthsForTermination nt
-            Just (_, body) -> do
-                ntTag <- verifyRule $ return body
-                modify (updateRuleTag ntTag nonTerminal)
-                return ntTag
+            -- Just (_, body) -> do
+            --         ntTag <- verifyRule $ return body
+            --         modify (updateRuleTag ntTag nonTerminal)
+            --         return ntTag
+            Just (tag, body) ->
+                if nonTerminal `elem` tail prodTrace then
+                    return tag
+                else do
+                    ntTag <- verifyRule $ return body
+                    modify (updateRuleTag ntTag nonTerminal)
+                    return ntTag
+    modify popProductionFrame
     case termResult of
         (DoesNotTerminate xs) -> 
             return $ DoesNotTerminate $ addTrace nonTerminal <$> xs

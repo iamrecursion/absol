@@ -26,8 +26,6 @@ language : {
 
 <my-number> ::= <integer> ;
 
-// Semantics only required for expressions containing terminals
-
 <arith-expr> ::= <my-number> | <arith-op> ;
 
 <foo> ::= "aaA";

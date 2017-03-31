@@ -305,3 +305,82 @@ checks at the language level.
 Whether or not this is the case, Metaspec provides some features to aid this.
 These include the typed evaluations for the truths, and the type annotations
 throughout the semantics. 
+
+## Verification of Mutually-Recursive Rules
+It is possible, as part of the syntax, to write rules that are mutually 
+recursive. Consider the following example:
+
+  <a> ::= <c> | <b> ;
+  <b> ::= <a> | <d> ;
+
+Assuming that both `<c>` and `<d>` have well-defined semantics, this language 
+also has well-defined semantics. 
+
+However, the issue arises when actually performing this verification as there
+is a cycle that has to be resolved. The initial attempt to break this mutually
+recursive ruleset involves storing a 'production stack', so to speak, that
+tracks the current path through the productions.
+
+This process is sufficient to break the potentially infinite recursion, not
+revisiting a node that is a parent of the current NT in the verification graph.
+
+However, continuing the above example, this leaves a situation where both rules
+are potentially undefined as when in <b>, checking <a> will show 'untouched'. As
+'untouched' is signalling, meaning that all super-nodes become 'untouched' by 
+proxy, this does not work.
+
+An initially obvious solution is to mark a node as 'touched' at the start of its
+evaluation. Touched would not be signalling, and hence `touched && terminates`
+takes the value `terminates`. It is initially unclear as to whether this process
+is sound, so let's work an example. Using the above productions.
+
+1. We enter `<a>`, marking it as Touched.
+
+    <a> = touched
+    <b> = untouched
+    <c> = untouched
+    <d> = untouched
+
+2. We evaluate `<c>`, which gets the value terminates:
+
+    <a> = touched
+    <b> = untouched
+    <c> = terminates
+    <d> = untouched
+
+3. We enter `<b>`, which gets the value touched:
+
+    <a> = touched
+    <b> = touched
+    <c> = terminates
+    <d> = untouched
+
+4. In `<b>` we initially observe `<a>` again. The stack trace prevents us from 
+   recursing back to check `<a>` again (and hence prevents infinite recursion).
+5. We then continue on to `<d>`, which we can verify as terminating. It hence 
+   gets the value Terminates:
+
+    <a> = touched
+    <b> = touched
+    <c> = terminates
+    <d> = terminates
+
+6. As we return back up the call stack, `<b>` takes the value of the conjunction 
+   of its subterms (terminates && touched) = terminates.
+
+    <a> = touched
+    <b> = terminates
+    <c> = terminates
+    <d> = terminates
+
+7. Finally, `<a>` gets the value 'terminates' as both of its subterms terminate.
+
+As the value precedence of the tags is as follows:
+
+- Untouched
+- DoesNotTerminate
+- Terminates
+- Touched
+
+Any case where a rule is shown NOT to terminate will correctly propagate back up
+the stack of productions, without any interference by the value 'touched'. 

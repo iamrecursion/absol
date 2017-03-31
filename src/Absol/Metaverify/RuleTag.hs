@@ -28,6 +28,7 @@ import           Absol.Metaparse.Grammar
 -- terminate.
 data RuleTag
     = Untouched
+    | Touched
     | Terminates
     | DoesNotTerminate [(NonTerminationType, [NonTerminal], String)]
     deriving (Eq, Show, Ord)
@@ -47,10 +48,12 @@ data NonTerminationType
 -- 
 -- The operation is left associative, favouring the left value.
 tagPlus :: RuleTag -> RuleTag -> RuleTag
+tagPlus Untouched _ = Untouched
+tagPlus _ Untouched = Untouched
 tagPlus (DoesNotTerminate xs) (DoesNotTerminate ys) =
     DoesNotTerminate $ xs ++ ys
 tagPlus x@DoesNotTerminate{} _ = x
 tagPlus _ x@DoesNotTerminate{} = x
 tagPlus Terminates Terminates = Terminates
-tagPlus Untouched _ = Untouched
-tagPlus _ Untouched = Untouched
+tagPlus Touched x = x
+tagPlus x Touched = x

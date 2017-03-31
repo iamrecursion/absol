@@ -32,7 +32,9 @@ module Absol.Metaverify.State
         gets,
         modify,
         updateStartRuleTag,
-        updateRuleTag
+        updateRuleTag,
+        pushProductionFrame,
+        popProductionFrame
     ) where
 
 import           Absol.Metaparse.Grammar
@@ -52,7 +54,8 @@ type ProductionMap = M.Map NonTerminal (RuleTag, LanguageRuleBody)
 data VerifierState = VerifierState {
     startRule :: (RuleTag, LanguageRuleBody),
     productions :: ProductionMap,
-    truths :: [NonTerminal]
+    truths :: [NonTerminal],
+    productionTrace :: [NonTerminal]
 } deriving (Eq, Show)
 
 -- | Initialises the verifier state from the AST data.
@@ -64,7 +67,7 @@ initVerifierState
     -> [SemanticTruth] 
     -> VerifierState
 initVerifierState (StartRule _ body) rules truths = 
-    VerifierState (Untouched, body) (mapRules rules) extractTruths
+    VerifierState (Untouched, body) (mapRules rules) extractTruths []
     where
         mapRules r = M.fromList [ 
                 (getKey v, (Untouched, getBody v)) 
@@ -79,7 +82,7 @@ initVerifierState (StartRule _ body) rules truths =
 -- This default instance should not be used for anything. 
 defaultVerifierState :: VerifierState
 defaultVerifierState = 
-    VerifierState (Untouched, fakeStartRule) M.empty []
+    VerifierState (Untouched, fakeStartRule) M.empty [] []
     where
         fakeStartRule = LanguageRuleBody $ SyntaxExpression []
 
@@ -105,3 +108,13 @@ updateRuleTag tag nt st = do
 -- | Pulls result types out of the state monad.
 extractFromState :: VState a -> a
 extractFromState el = evalState el defaultVerifierState
+
+-- | Pushes a production 'frame' onto the top of the current trace in the state.
+pushProductionFrame :: NonTerminal -> VerifierState -> VerifierState
+pushProductionFrame nt st@(VerifierState _ _ _ stack) = 
+    st{productionTrace = nt:stack}
+
+-- | Removes the top production 'frame' from the current trace in the state.
+popProductionFrame :: VerifierState -> VerifierState
+popProductionFrame st@(VerifierState _ _ _ []) = st
+popProductionFrame st@(VerifierState _ _ _ (_:xs)) = st{productionTrace = xs}
