@@ -91,14 +91,14 @@ updateStartRuleTag t s = do
 
 -- | Updates the tag for a given production.
 updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState
-updateRuleTag tag nt state = do
-    let prodMap = productions state
+updateRuleTag tag nt st = do
+    let prodMap = productions st
         foundVal = M.lookup nt prodMap
     case foundVal of
         Nothing -> 
-            state { productions = M.insert nt (tag, fakeRuleBody) prodMap}
+            st { productions = M.insert nt (tag, fakeRuleBody) prodMap}
         Just (_, body) -> 
-            state { productions = M.insert nt (tag, body) prodMap }
+            st { productions = M.insert nt (tag, body) prodMap }
     where
         fakeRuleBody = LanguageRuleBody (SyntaxExpression [])
 

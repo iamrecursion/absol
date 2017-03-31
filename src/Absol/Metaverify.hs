@@ -21,10 +21,10 @@ module Absol.Metaverify
 
 import           Absol.Utilities          (countOccurrences)
 import           Absol.Metaparse.Grammar
-import           Absol.Metaparse.Utilities
 import           Absol.Metaverify.Collate
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
+import           Data.Either              (rights)
 import qualified Data.List                as L (nub)
 import qualified Data.Map                 as M
 import           Data.Maybe               (fromJust)
@@ -80,11 +80,10 @@ verifyRule rule = do
 
 -- | Verifies a syntax expression.
 verifySyntaxExpr :: VState SyntaxExpression -> VState RuleTag
-verifySyntaxExpr expr = do
+verifySyntaxExpr expr = do 
     (SyntaxExpression alternatives) <- expr
     let result = (verifyAlternative . return) <$> alternatives
-    res <- combineTerminationResults result
-    return res
+    combineTerminationResults result
  
 -- | Verifies a syntax alternative.
 -- 
@@ -135,8 +134,8 @@ getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
         ntsInExpr (SyntaxExpression alts) = concat $ ntsInAlternative <$> alts
 
         ntsInAlternative :: SyntaxAlternative -> [NonTerminal]
-        ntsInAlternative (SyntaxAlternative terms _) = 
-            concat $ ntsInTerm <$> terms
+        ntsInAlternative (SyntaxAlternative altTerms _) = 
+            concat $ ntsInTerm <$> altTerms
 
         toCountMap :: [NonTerminal] -> NTCountMap
         toCountMap nts = 
@@ -171,7 +170,7 @@ verifySemanticEvaluationRuleList
     :: VState (SemanticEvaluationRuleList, NTCountMap)
     -> VState RuleTag
 verifySemanticEvaluationRuleList input = do
-    args@(rules, nts) <- input
+    args@(rules, _) <- input
     guardsComplete <- verifyGuards $ return rules
     rulesComplete <- verifySemanticRules $ return args
     let tests = [guardsComplete, rulesComplete] :: [RuleTag]
@@ -200,7 +199,7 @@ verifySemanticRules input = do
 verifyEvaluationCriterion 
     :: VState SemanticEvaluationRuleList
     -> VState RuleTag
-verifyEvaluationCriterion input = return Terminates
+verifyEvaluationCriterion _ = return Terminates
 
 -- | Separates the variables used in the evaluations into three categories. 
 -- 
@@ -210,7 +209,7 @@ verifyEvaluationCriterion input = return Terminates
 getOperationVars 
     :: [SemanticOperation] 
     -> (SemanticIdentifier, [SemanticIdentifier], [SemanticIdentifier])
-getOperationVars ops = undefined
+getOperationVars _ = undefined
 
 -- | Checks the semantic form of the semantic evaluation rules.
 -- 
@@ -221,9 +220,22 @@ verifySemanticForm
 verifySemanticForm input = do
     (rules, nts) <- input
     let ntIndexPairs = getNTsFromSubEvaluations <$> rules
-    traceShowM ntIndexPairs
-    -- TODO!!!!!!!!!!!!!!!!!!!!!!!!
-    return Terminates
+    let result = rights $ concat $ fmap (checkNT nts) <$> ntIndexPairs
+    if null result then
+        return Terminates
+    else
+        return $ DoesNotTerminate $ resultToErr <$> result
+    where
+        checkNT :: NTCountMap -> (NonTerminal, Integer) -> Either Bool String
+        checkNT nts (nt, ix) = 
+            if (nt `elem` M.keys nts) && (ix < M.findWithDefault 0 nt nts) then
+                Left True
+            else
+                Right $ "Non-terminal " ++ show nt ++ " with index " ++ show ix 
+                    ++ " is not defined in this production."
+
+        resultToErr :: String -> (NonTerminationType, [NonTerminal], String)
+        resultToErr str = (NonExistentSubterms, [], str)
 
 -- | Gets the non-terminals and their indices used in the sub-evaluations.
 getNTsFromSubEvaluations :: SemanticEvaluationRule -> [(NonTerminal, Integer)]
@@ -238,7 +250,8 @@ getNTsFromSubEvaluations (SemanticEvaluationRule _ _ _ _ evals) =
             concat $ extractFromArg <$> args
         extractFromArg (Left (SyntaxAccessBlock nt (SyntaxAccessor ix))) = 
             [(nt, ix)]
-        extractFromArg (Right _) = []
+        extractFromArg (Right _) = [] -- These exist, as checked by the parser.
+                                    
 -- | Checks that the guards are complete across semantic evaluation rules.
 -- 
 -- It also checks that the guards only refer to variables defined as part of the
@@ -280,10 +293,10 @@ verifyGuardSubtermVariables
 verifyGuardSubtermVariables input = do
     rules <- input
     let guards = extractGuards <$> rules :: [[SemanticRestriction]]
-        guardVars = (L.nub . concat . (fmap extractGuardVars)) <$> guards 
+        guardVars = (L.nub . concatMap extractGuardVars) <$> guards 
     evalVars <- extractSubtermVariables $ return rules
     let groups = zip guardVars evalVars
-        result = foldr (&&) True $ checkExists <$> groups
+        result = and $ checkExists <$> groups
     if result then
         return Terminates
     else
@@ -299,11 +312,11 @@ verifyGuardSubtermVariables input = do
         extractGuardVars (SemVariable semId) = [semId]
         extractGuardVars (SemConstant _) = []
         extractGuardVars (SemInfixExpr _ l r) = 
-            (extractGuardVars l) ++ (extractGuardVars r)
+            extractGuardVars l ++ extractGuardVars r
 
         checkExists :: (Eq a) => ([a], [a]) -> Bool
         checkExists ([], ys) = True
-        checkExists (x:xs, ys) = (x `elem` ys) && (checkExists (xs, ys))
+        checkExists (x:xs, ys) = (x `elem` ys) && checkExists (xs, ys)
 
 -- | Extracts the guard patterns from an evaluation rule. 
 extractGuards :: SemanticEvaluationRule -> [SemanticRestriction]
@@ -317,7 +330,7 @@ extractSubtermVariables
 extractSubtermVariables input = do
     ruleList <- input
     let evaluations = extractEvaluations <$> ruleList
-    return $ (fmap extractEvalVars) <$> evaluations
+    return $ fmap extractEvalVars <$> evaluations
     where
         extractEvalVars (SemanticEvaluation _ var _) = var 
         extractEvaluations (SemanticEvaluationRule _ _ _ _ evals) = evals
@@ -368,18 +381,17 @@ verifyNonTerminal nt = do
     let ntRule = M.lookup nonTerminal prodMap
     termResult <- case ntRule of
             Nothing -> checkTruthsForTermination nt
-            Just (tag, body) -> do
+            Just (_, body) -> do
                 ntTag <- verifyRule $ return body
                 modify (updateRuleTag ntTag nonTerminal)
                 return ntTag
     case termResult of
-        x@(DoesNotTerminate xs) -> 
-            return $ DoesNotTerminate $ (addTrace nonTerminal) <$> xs
-        -- (DoesNotTerminate termKind trace msg) -> 
-        --     return $ DoesNotTerminate [(termKind (nonTerminal : trace) msg)]
+        (DoesNotTerminate xs) -> 
+            return $ DoesNotTerminate $ addTrace nonTerminal <$> xs
         other -> return other
     where
-        addTrace nt (termKind, trace, msg) = (termKind, (nt : trace), msg)
+        addTrace nonTerm (termKind, failTrace, msg) = 
+            (termKind, nonTerm : failTrace, msg)
 
 -- | Checks if a given non-terminal terminates in the truths block.
 -- 
