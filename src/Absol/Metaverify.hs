@@ -30,9 +30,6 @@ import qualified Data.List                    as L (delete, nub)
 import qualified Data.Map                     as M
 import           Data.Maybe                   (fromJust, isJust)
 
-import Debug.Trace
-
--- TODO functions for generating nice diagnostics.
 -- TODO Refactor guard checker code to have less duplication
 
 -- | A type for storing the non-terminals defined in a syntax expression.
@@ -47,7 +44,7 @@ type NTCountMap = M.Map NonTerminal Integer
 -- It will also alert the user to any unused productions.
 verifyLanguage :: Metaspec -> (Bool, String)
 verifyLanguage x = case runState runVerification (collateASTData x) of
-    (True, VerifierState (tag, _) prod _ _) -> 
+    (True, VerifierState (tag, _) _ _ _) -> 
         (True, "LANGUAGE: " ++ prettyPrintRuleTag tag)
     (False, VerifierState (tag, _) prod _ _) -> 
         (False, "LANGUAGE: " ++ prettyPrintRuleTag tag ++ "\n\n" ++ printLanguageDiagnostics prod)

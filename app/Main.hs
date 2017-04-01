@@ -21,7 +21,7 @@ main = runMetacompiler =<< execParser (
 -- | Contains the main execution context of the metacompiler.
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
-    putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file
+    putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file 
     result <- tryIOError process
     case result of
         Left ex -> processFailure ex
@@ -30,7 +30,7 @@ runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
     where
         process = acquireMetaspecFile file (processMetaspecFile opts file)
         processFailure ex = do
-            hPutStrLn stderr $ show ex
+            hPrint stderr ex
             exitFailure :: IO ()
         processSuccess = exitSuccess :: IO ()
 runMetacompiler CLIOptions{cleanFlag=True} = 
@@ -49,4 +49,8 @@ processMetaspecFile _ filename mFile = do
         Right (ast, _) -> do
             let (result, diagnostic) = verifyLanguage ast
             putStrLn diagnostic
+            if result then
+                putStrLn $ outputToken ++ "Success"
+            else 
+                putStrLn $ outputToken ++ "Failure"
             return ()

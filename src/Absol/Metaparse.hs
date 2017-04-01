@@ -534,9 +534,9 @@ semanticOperatorTable =
 
 -- | Parses the semantic special syntax expressions.
 semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
-semanticSpecialSyntax = checkSpecialSyntaxAvailable parse
+semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
     where
-        parse = SpecialSyntaxMap <$ specialSyntaxString "map"
+        parseExpr = SpecialSyntaxMap <$ specialSyntaxString "map"
             <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
             <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
             <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
@@ -595,17 +595,17 @@ semanticValue = semanticText
 -- | Parses a list literal of the form [a, b, ...] or [].
 semanticListLiteral :: ParserST SemanticValue
 semanticListLiteral = 
-    SemanticListLiteral <$> between (terminal "[") (terminal "]") parse
+    SemanticListLiteral <$> between (terminal "[") (terminal "]") parseExpr
     where
-        parse = (some nonSpace) `sepBy` multilineListSep
+        parseExpr = some nonSpace `sepBy` multilineListSep
 
 -- | Parses a matrix literal of the form |a, b; c, d| or ||.
 semanticMatrixLiteral :: ParserST SemanticValue
 semanticMatrixLiteral = 
     SemanticMatrixLiteral <$> between (terminal "|") (terminal "|") matrixValues
     where
-        matrixValues = matrixRow `sepBy` (terminal ";")
-        matrixRow = (some nonSpace) `sepBy` multilineListSep
+        matrixValues = matrixRow `sepBy` terminal ";"
+        matrixRow = some nonSpace `sepBy` multilineListSep
 
 -- | Parses a piece of constant semantic text.
 semanticText :: ParserST SemanticValue

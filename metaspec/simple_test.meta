@@ -13,7 +13,7 @@ using : {
 // can be taken as given but still need to be manually written -> users may want
 // to specify their own semantics.
 truths : {
-    // {integer n <= <integer>},
+    {integer n <= <integer>},
     // {floating n <= <floating>},
     {number n <= <number>}
 };
