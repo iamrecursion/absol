@@ -236,14 +236,13 @@ checkVariableEvalCriteria
         )
     -> Bool
 checkVariableEvalCriteria ((output, temps, vars), evalVars) = let
-        evalsInVars = and $ (`elem` vars) <$> evalVars
         evalsNotInTemps = and $ (`notElem` temps) <$> evalVars
+        varsInTempOrEval = and $ (`elem` (temps ++ evalVars)) <$> vars
         outNotInVars = output `notElem` vars
         outNotInTemps = output `notElem` temps
         outNotInEval = output `notElem` evalVars
-        varsInTempOrEval = and $ (`elem` vars) <$> (temps ++ evalVars)
     in
-        evalsInVars && evalsNotInTemps && outNotInVars && outNotInTemps
+        evalsNotInTemps && outNotInVars && outNotInTemps
             && outNotInEval && varsInTempOrEval
 
 -- | Separates the variables used in the evaluations into three categories. 
