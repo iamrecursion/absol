@@ -33,7 +33,6 @@ import Debug.Trace
 
 -- TODO functions for generating nice diagnostics.
 -- TODO Refactor guard checker code to have less duplication
--- This REALLY should have better diagnostics, but effort.
 
 -- | A type for storing the non-terminals defined in a syntax expression.
 type NTCountMap = M.Map NonTerminal Integer
@@ -122,7 +121,6 @@ markAsTouched nt = do
     modify (updateRuleTag Touched nonTerminal)
     return ()
 
-
 -- | Gets a list of NonTerminals and their counts from a syntactic expression.
 getNTList :: [SyntaxTerm] -> NTCountMap
 getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
@@ -152,11 +150,30 @@ getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
 -- | Verifies semantics taking the form of an environment access rule.
 -- 
 -- Environment stores will always terminate, so this function needs to verify if
--- the operands exist.
+-- the operands exist and that they themselves terminate.
 verifyEnvironmentInputRule 
     :: VState (SemanticRule, NTCountMap) 
     -> VState RuleTag
-verifyEnvironmentInputRule _ = return Terminates
+verifyEnvironmentInputRule input = do
+    (rule, nts) <- input
+    case rule of
+        (EnvironmentInputRule _ accessBlock accessList) -> do
+            let accessBlocks = accessBlock:accessList
+                ntPairs = extractSyntaxAccessBlock <$> accessBlocks
+                result = rights $ checkNT nts <$> ntPairs
+            subResults <- sequence 
+                $ (\(x,_) -> verifyNonTerminal $ return x) <$> ntPairs
+            let subResult = foldl tagPlus Terminates subResults
+            if null result then
+                return $ Terminates `tagPlus` subResult
+            else
+                return $ (DoesNotTerminate $ resultToErr <$> result) 
+                    `tagPlus` subResult
+        _ -> return Terminates
+
+-- | Extracts syntax access blocks into a suitable form for processing.
+extractSyntaxAccessBlock :: SyntaxAccessBlock -> (NonTerminal, Integer)
+extractSyntaxAccessBlock (SyntaxAccessBlock nt (SyntaxAccessor i)) = (nt, i)
 
 -- | Verifies semantics taking the form of an environment input rule.
 -- 
@@ -332,7 +349,6 @@ checkNT nts (nt, ix) =
             ++ " is not defined in this production."
 
 -- | Gets the non-terminals and their indices used in the sub-evaluations.
--- TODO extract these into separate functions.
 getNTsFromSubEvaluations :: SemanticEvaluationRule -> [(NonTerminal, Integer)]
 getNTsFromSubEvaluations (SemanticEvaluationRule _ _ _ _ evals) = 
     concat $ getItems <$> evals
@@ -351,6 +367,7 @@ getNTsFromSubEvaluations (SemanticEvaluationRule _ _ _ _ evals) =
 -- 
 -- It also checks that the guards only refer to variables defined as part of the
 -- sub-evaluations.
+-- TODO Complete guard verification.
 verifyGuards :: VState SemanticEvaluationRuleList -> VState RuleTag
 verifyGuards input = do
     guardVariablesComplete <- verifyGuardSubtermVariables input

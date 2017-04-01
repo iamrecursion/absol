@@ -22,7 +22,7 @@ language : {
 
 <<simple_test>> ::= <statement> ;
 
-<statement> ::= <my-number> | <number> | <arith-expr> | <test> ;
+<statement> ::= <my-number> | <number> | <arith-expr> | <test> | <assignment> ;
 
 <my-number> ::= <integer> ;
 
@@ -61,9 +61,9 @@ language : {
 // <identifier> ::= <nondigit> { <integer> | <nondigit> };
 
 // Defaults to returning the assigned value unless suppressed with 'none'
-// <assignment> ::= <identifier> "=" <arith-expr> --> {
-//     none e <-- <identifier>[0] : <arith-expr>[0]
-// };
+<assignment> ::= <statement> "=" <arith-expr> --> {
+    none e <-- <statement>[0] : <arith-expr>[0]
+};
 
 <test> ::= <statement> "boo" <statement> --> {
     any map(<statement>[0], <statement>[1])

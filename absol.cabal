@@ -27,6 +27,7 @@ library
                         Absol.Metaspec.Special,
                         Absol.Metaverify,
                         Absol.Metaverify.Collate,
+                        Absol.Metaverify.Diagnostics,
                         Absol.Metaverify.RuleTag,
                         Absol.Metaverify.State,
                         Absol.Utilities

@@ -1,0 +1,16 @@
+-------------------------------------------------------------------------------
+-- |
+-- Module      : Absol.Metaverify.Diagnostics
+-- Description : Functions for pretty-printing language diagnostic messages.
+-- Copyright   : (c) Ara Adkins (2017)
+-- License     : See LICENSE file
+--
+-- Maintainer  : Ara Adkins
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- This file contains functions to assist in pretty-printing the diagnostic 
+-- messages produced by the verification engine. 
+--
+-------------------------------------------------------------------------------
+module Absol.Metaverify.Diagnostics where
