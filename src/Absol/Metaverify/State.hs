@@ -93,17 +93,16 @@ updateStartRuleTag t s = do
     s { startRule = (t, sRule)}
 
 -- | Updates the tag for a given production.
+-- 
+-- If the production doesn't exist, the state is returned unchanged.
 updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState
 updateRuleTag tag nt st = do
     let prodMap = productions st
         foundVal = M.lookup nt prodMap
     case foundVal of
-        Nothing -> 
-            st { productions = M.insert nt (tag, fakeRuleBody) prodMap}
+        Nothing -> st
         Just (_, body) -> 
             st { productions = M.insert nt (tag, body) prodMap }
-    where
-        fakeRuleBody = LanguageRuleBody (SyntaxExpression [])
 
 -- | Pulls result types out of the state monad.
 extractFromState :: VState a -> a

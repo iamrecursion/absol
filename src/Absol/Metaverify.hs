@@ -25,7 +25,7 @@ import           Absol.Metaverify.Collate
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
 import           Data.Either              (rights)
-import qualified Data.List                as L (nub)
+import qualified Data.List                as L (delete, nub)
 import qualified Data.Map                 as M
 import           Data.Maybe               (fromJust)
 
@@ -33,9 +33,7 @@ import Debug.Trace
 
 -- TODO functions for generating nice diagnostics.
 -- TODO Refactor guard checker code to have less duplication
--- TODO handle the touching of NTs better (e.g. <foo>), which is never used in a
--- semantic sense, and hence should not get the value 'Terminates'. This lets
--- the user define purely syntactic terms, and is hence important. 
+-- This REALLY should have better diagnostics, but effort.
 
 -- | A type for storing the non-terminals defined in a syntax expression.
 type NTCountMap = M.Map NonTerminal Integer
@@ -106,10 +104,8 @@ verifyDefinedSemantics alt = do
     (SyntaxAlternative syntax semantics) <- alt
     let (LanguageRuleSemantics rule) = fromJust semantics
     let ntsInSyntax = getNTList syntax
-    ntTemp <- sequence $ (verifyNonTerminal . return) <$> M.keys ntsInSyntax
-    traceShowM ntTemp
-    -- TODO is this even correct to do, fixing the recursion?
-    semanticsResult <- case rule of
+    sequence_ $ (markAsTouched . return) <$> M.keys ntsInSyntax
+    case rule of
         x@EnvironmentInputRule{} -> 
             verifyEnvironmentInputRule $ return (x, ntsInSyntax)
         (EnvironmentAccessRuleProxy ear) -> 
@@ -118,7 +114,14 @@ verifyDefinedSemantics alt = do
             verifySpecialSyntaxRule $ return (ssr, ntsInSyntax)
         (SemanticEvaluationRuleList xs) -> 
             verifySemanticEvaluationRuleList $ return (xs, ntsInSyntax)
-    return $ foldl tagPlus Terminates $ semanticsResult:ntTemp
+
+-- Marks a given non-terminal as having been visited but not processed. 
+markAsTouched :: VState NonTerminal -> VState ()
+markAsTouched nt = do
+    nonTerminal <- nt
+    modify (updateRuleTag Touched nonTerminal)
+    return ()
+
 
 -- | Gets a list of NonTerminals and their counts from a syntactic expression.
 getNTList :: [SyntaxTerm] -> NTCountMap
@@ -204,7 +207,44 @@ verifySemanticRules input = do
 verifyEvaluationCriterion 
     :: VState SemanticEvaluationRuleList
     -> VState RuleTag
-verifyEvaluationCriterion _ = return Terminates
+verifyEvaluationCriterion list = do
+    rules <- list
+    let rulePairs = getOutputRulePair <$> rules
+        opVars = getOperationVars <$> rulePairs
+        evalVars = getEvaluationVars <$> rules
+        results = checkVariableEvalCriteria <$> zip opVars evalVars
+    if and results then
+        return Terminates
+    else
+        return $ DoesNotTerminate 
+            [(IncorrectEvaluationForm, [], "Malformed semantic operation(s).")]
+    where
+        getOutputRulePair 
+            :: SemanticEvaluationRule 
+            -> (SemanticIdentifier, [SemanticOperationAssignment])
+        getOutputRulePair 
+            (SemanticEvaluationRule _ ident (SemanticOperationList evals) _ _) =
+            (ident, evals)
+
+-- | Checks that the usage of variables in the semantic operation is correct.
+-- 
+-- This means that it has to obey the evaluation rules.
+checkVariableEvalCriteria
+    :: (
+            (SemanticIdentifier, [SemanticIdentifier], [SemanticIdentifier]), 
+            [SemanticIdentifier]
+        )
+    -> Bool
+checkVariableEvalCriteria ((output, temps, vars), evalVars) = let
+        evalsInVars = and $ (`elem` vars) <$> evalVars
+        evalsNotInTemps = and $ (`notElem` temps) <$> evalVars
+        outNotInVars = output `notElem` vars
+        outNotInTemps = output `notElem` temps
+        outNotInEval = output `notElem` evalVars
+        varsInTempOrEval = and $ (`elem` vars) <$> (temps ++ evalVars)
+    in
+        evalsInVars && evalsNotInTemps && outNotInVars && outNotInTemps
+            && outNotInEval && varsInTempOrEval
 
 -- | Separates the variables used in the evaluations into three categories. 
 -- 
@@ -212,9 +252,31 @@ verifyEvaluationCriterion _ = return Terminates
 -- and any variables used as part of the evaluation operations. The output
 -- variable is not a temporary, and hence does not appear in the first list.
 getOperationVars 
-    :: [SemanticOperation] 
+    :: (SemanticIdentifier, [SemanticOperationAssignment])
     -> (SemanticIdentifier, [SemanticIdentifier], [SemanticIdentifier])
-getOperationVars _ = undefined
+getOperationVars (ident, opAssigns) = 
+    (ident, L.delete ident (temps <$> opAssigns), concat (evalVars <$> opAssigns))
+    where
+        temps :: SemanticOperationAssignment -> SemanticIdentifier
+        temps (SemanticOperationAssignment identifier _) = identifier
+
+        evalVars :: SemanticOperationAssignment -> [SemanticIdentifier]
+        evalVars (SemanticOperationAssignment _ op) = getEvalVar op
+
+        getEvalVar :: SemanticOperation -> [SemanticIdentifier]
+        getEvalVar (Variable identifier) = [identifier]
+        getEvalVar (VariableAccess identifier _) = [identifier]
+        getEvalVar (Constant _) = []
+        getEvalVar (Parentheses op) = getEvalVar op
+        getEvalVar (PrefixExpr _ op) = getEvalVar op
+        getEvalVar (PostfixExpr _ op) = getEvalVar op
+        getEvalVar (InfixExpr _ op1 op2) = getEvalVar op1 ++ getEvalVar op2
+
+-- | Gets the variables defined by the sub-evaluations.
+getEvaluationVars :: SemanticEvaluationRule -> [SemanticIdentifier]
+getEvaluationVars (SemanticEvaluationRule _ _ _ _ evals) = getVar <$> evals
+    where
+        getVar (SemanticEvaluation _ ident _) = ident 
 
 -- | Checks the semantic form of the semantic evaluation rules.
 -- 
@@ -225,6 +287,8 @@ verifySemanticForm
 verifySemanticForm input = do
     (rules, nts) <- input
     let ntIndexPairs = getNTsFromSubEvaluations <$> rules
+    _ <- sequence $ (\(x,_) -> (verifyNonTerminal . return) x) <$> 
+        concat ntIndexPairs
     let result = rights $ concat $ fmap (checkNT nts) <$> ntIndexPairs
     if null result then
         return Terminates
@@ -243,6 +307,7 @@ verifySemanticForm input = do
         resultToErr str = (NonExistentSubterms, [], str)
 
 -- | Gets the non-terminals and their indices used in the sub-evaluations.
+-- TODO extract these into separate functions.
 getNTsFromSubEvaluations :: SemanticEvaluationRule -> [(NonTerminal, Integer)]
 getNTsFromSubEvaluations (SemanticEvaluationRule _ _ _ _ evals) = 
     concat $ getItems <$> evals
@@ -379,6 +444,9 @@ verifySyntaxPrimary primary = do
                 ]
 
 -- | Verifies a given non-terminal. 
+-- 
+-- Uses the 'Touched' value constructor and stack value checks to ensure that 
+-- any mutually-recursive productions can be verified correctly. 
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
@@ -386,13 +454,10 @@ verifyNonTerminal nt = do
     let ntRule = M.lookup nonTerminal prodMap
     modify (pushProductionFrame nonTerminal)
     prodTrace <- gets productionTrace
-    traceM $ "Nt: " ++ show nonTerminal ++ " Trace: " ++ show prodTrace
+    -- traceM $ "Nt: " ++ show nonTerminal ++ " Trace: " ++ show prodTrace
+    modify (updateRuleTag Touched nonTerminal)
     termResult <- case ntRule of
             Nothing -> checkTruthsForTermination nt
-            -- Just (_, body) -> do
-            --         ntTag <- verifyRule $ return body
-            --         modify (updateRuleTag ntTag nonTerminal)
-            --         return ntTag
             Just (tag, body) ->
                 if nonTerminal `elem` tail prodTrace then
                     return tag

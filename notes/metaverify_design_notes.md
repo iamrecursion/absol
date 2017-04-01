@@ -384,3 +384,7 @@ As the value precedence of the tags is as follows:
 
 Any case where a rule is shown NOT to terminate will correctly propagate back up
 the stack of productions, without any interference by the value 'touched'. 
+
+This only works because the language itself is necessarily finite (and would
+not parse), which means that there is always a concrete set of syntax, and hence
+a concrete set of semantics associated with it. 
