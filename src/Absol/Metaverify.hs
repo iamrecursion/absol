@@ -27,7 +27,7 @@ import           Absol.Metaverify.State
 import           Data.Either              (rights)
 import qualified Data.List                as L (delete, nub)
 import qualified Data.Map                 as M
-import           Data.Maybe               (fromJust)
+import           Data.Maybe               (fromJust, isJust)
 
 import Debug.Trace
 
@@ -151,7 +151,8 @@ getNTList terms = toCountMap $ concat $ ntsInTerm <$> terms
 
 -- | Verifies semantics taking the form of an environment access rule.
 -- 
--- TODO
+-- Environment stores will always terminate, so this function needs to verify if
+-- the operands exist.
 verifyEnvironmentInputRule 
     :: VState (SemanticRule, NTCountMap) 
     -> VState RuleTag
@@ -159,7 +160,12 @@ verifyEnvironmentInputRule _ = return Terminates
 
 -- | Verifies semantics taking the form of an environment input rule.
 -- 
--- TODO
+-- Access rules depend only on the thing having been stored, and have well-
+-- defined semantics in either case. They have already been verified to rely
+-- on terminals that exist, and so the checking is not performed.
+-- 
+-- Environment accesses have a well-defined error state in cases where the
+-- element does not exist.
 verifyEnvironmentAccessRule 
     :: VState (EnvironmentAccessRule, NTCountMap)
     -> VState RuleTag
@@ -167,11 +173,29 @@ verifyEnvironmentAccessRule _ = return Terminates
 
 -- | Verifies semantics taking the form of a special syntax rule.
 -- 
--- TODO
+-- Special Syntax Rules themselves are guaranteed to terminate, so this function
+-- just needs to check if the operands exist, and that they themselves will
+-- terminate.
 verifySpecialSyntaxRule 
     :: VState (SpecialSyntaxRule, NTCountMap) 
     -> VState RuleTag
-verifySpecialSyntaxRule _ = return Terminates
+verifySpecialSyntaxRule input = do
+    (SpecialSyntaxRule _ _ accessList, nts) <- input
+    let ntList = fromJust <$> 
+            filter isJust (getNTsFromAccessBlockOrRule <$> accessList)
+        result = rights $ checkNT nts <$> ntList
+    subResults <- sequence $ (\(x,_) -> verifyNonTerminal $ return x) <$> ntList
+    let subResult = foldl tagPlus Terminates subResults
+    if null result then
+        return $ Terminates `tagPlus` subResult
+    else
+        return $ (DoesNotTerminate $ resultToErr <$> result) `tagPlus` subResult
+
+-- | Gets the non-terminals from syntax access blocks or env access rules.
+getNTsFromAccessBlockOrRule :: AccessBlockOrRule -> Maybe (NonTerminal, Integer)
+getNTsFromAccessBlockOrRule (Left (SyntaxAccessBlock nt (SyntaxAccessor i))) = 
+    Just (nt, i)
+getNTsFromAccessBlockOrRule (Right _) = Nothing
 
 -- | Verifies a list of semantic evaluation rules
 verifySemanticEvaluationRuleList 
@@ -293,17 +317,19 @@ verifySemanticForm input = do
         return Terminates
     else
         return $ DoesNotTerminate $ resultToErr <$> result
-    where
-        checkNT :: NTCountMap -> (NonTerminal, Integer) -> Either Bool String
-        checkNT nts (nt, ix) = 
-            if (nt `elem` M.keys nts) && (ix < M.findWithDefault 0 nt nts) then
-                Left True
-            else
-                Right $ "Non-terminal " ++ show nt ++ " with index " ++ show ix 
-                    ++ " is not defined in this production."
 
-        resultToErr :: String -> (NonTerminationType, [NonTerminal], String)
-        resultToErr str = (NonExistentSubterms, [], str)
+-- | Converts an error string into a non-termination result.
+resultToErr :: String -> (NonTerminationType, [NonTerminal], String)
+resultToErr str = (NonExistentSubterms, [], str)
+
+-- | Checks if a non-terminal is defined in the syntax properly.
+checkNT :: NTCountMap -> (NonTerminal, Integer) -> Either Bool String
+checkNT nts (nt, ix) = 
+    if (nt `elem` M.keys nts) && (ix < M.findWithDefault 0 nt nts) then
+        Left True
+    else
+        Right $ "Non-terminal " ++ show nt ++ " with index " ++ show ix 
+            ++ " is not defined in this production."
 
 -- | Gets the non-terminals and their indices used in the sub-evaluations.
 -- TODO extract these into separate functions.

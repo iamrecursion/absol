@@ -192,6 +192,12 @@ data SemanticEvaluationRule = SemanticEvaluationRule
     SemanticEvaluationList
     deriving (Show, Eq)
 
+data SpecialSyntaxRule = SpecialSyntaxRule
+    SemanticType
+    SemanticSpecialSyntax
+    [AccessBlockOrRule]
+    deriving (Show, Eq)
+
 data SemanticSpecialSyntax
     = SpecialSyntaxMap
     | SpecialSyntaxFold
@@ -200,12 +206,6 @@ data SemanticSpecialSyntax
     | SpecialSyntaxDeffun
     | SpecialSyntaxCallproc
     | SpecialSyntaxCallfun
-    deriving (Show, Eq)
-
-data SpecialSyntaxRule = SpecialSyntaxRule
-    SemanticType
-    SemanticSpecialSyntax
-    [AccessBlockOrRule]
     deriving (Show, Eq)
 
 data EnvironmentAccessRule = EnvironmentAccessRule
