@@ -47,6 +47,6 @@ processMetaspecFile _ filename mFile = do
     case P.parseMetaspecFile filename contents of
         Left err -> hPutStr stderr $ P.parseErrorPretty err
         Right (ast, _) -> do
-            let foo = verifyLanguage ast
-            print foo
+            let (result, diagnostic) = verifyLanguage ast
+            putStrLn diagnostic
             return ()

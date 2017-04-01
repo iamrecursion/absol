@@ -19,15 +19,16 @@ module Absol.Metaverify
         verifyLanguage
     ) where
 
-import           Absol.Utilities          (countOccurrences)
+import           Absol.Utilities              (countOccurrences)
 import           Absol.Metaparse.Grammar
 import           Absol.Metaverify.Collate
+import           Absol.Metaverify.Diagnostics
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
-import           Data.Either              (rights)
-import qualified Data.List                as L (delete, nub)
-import qualified Data.Map                 as M
-import           Data.Maybe               (fromJust, isJust)
+import           Data.Either                  (rights)
+import qualified Data.List                    as L (delete, nub)
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromJust, isJust)
 
 import Debug.Trace
 
@@ -44,18 +45,12 @@ type NTCountMap = M.Map NonTerminal Integer
 -- nature of the error.
 -- 
 -- It will also alert the user to any unused productions.
-verifyLanguage :: Metaspec -> Either Bool String
+verifyLanguage :: Metaspec -> (Bool, String)
 verifyLanguage x = case runState runVerification (collateASTData x) of
-    (True, VerifierState (tag, _) prod _ _) -> do
-        traceShowM tag
-        traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
-        Left True
-    (False, VerifierState (tag, _) prod _ _) -> do
-        traceShowM tag
-        traceShowM $ zip (show <$> M.keys prod) (fst <$> M.elems prod)
-        Right $ failString tag
-    where
-        failString _ = "Failure to verify." -- TODO 
+    (True, VerifierState (tag, _) prod _ _) -> 
+        (True, "LANGUAGE: " ++ prettyPrintRuleTag tag)
+    (False, VerifierState (tag, _) prod _ _) -> 
+        (False, "LANGUAGE: " ++ prettyPrintRuleTag tag ++ "\n\n" ++ printLanguageDiagnostics prod)
 
 -- | Runs the verification process on the language rules.
 -- 

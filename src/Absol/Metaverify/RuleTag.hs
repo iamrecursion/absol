@@ -16,10 +16,13 @@ module Absol.Metaverify.RuleTag
     (
         RuleTag(..),
         NonTerminationType(..),
+        NonTerminationItem,
         tagPlus
     ) where
 
 import           Absol.Metaparse.Grammar
+
+type NonTerminationItem = (NonTerminationType, [NonTerminal], String)
 
 -- | This type is used to tag each production with its verification state.
 -- 
@@ -30,7 +33,7 @@ data RuleTag
     = Untouched
     | Touched
     | Terminates
-    | DoesNotTerminate [(NonTerminationType, [NonTerminal], String)]
+    | DoesNotTerminate [NonTerminationItem]
     deriving (Eq, Show, Ord)
 
 -- | This type is used to record the kind of non-termination that the
