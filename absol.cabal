@@ -105,6 +105,9 @@ executable absol
                       , absol
                       , optparse-applicative
                       , text
+                      , time
+                      , directory
+                      , filepath
   default-extensions:   OverloadedStrings
   default-language:     Haskell2010
 

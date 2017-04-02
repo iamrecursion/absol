@@ -4,10 +4,12 @@ import           Absol.Utilities (outputToken)
 import qualified Absol.Metaparse as P
 import           Absol.Metaverify
 import           Cmdargs
+import qualified Data.Text.IO as TI
+import           System.Directory
 import           System.Exit
+import           System.FilePath
 import           System.IO
 import           System.IO.Error
-import qualified Data.Text.IO as TI
 
 -- | The main function for ABSOL.
 main :: IO ()
@@ -42,15 +44,32 @@ acquireMetaspecFile file = withFile file ReadMode
 
 -- | The main processing chain for the metacompiler.
 processMetaspecFile :: CLIOptions -> String -> Handle -> IO ()
-processMetaspecFile _ filename mFile = do
+processMetaspecFile 
+    CLIOptions{logFile = reportFile, outputDirectory = outDir, verboseFlag = v} 
+    filename mFile = do
     contents <- TI.hGetContents mFile
     case P.parseMetaspecFile filename contents of
         Left err -> hPutStr stderr $ P.parseErrorPretty err
         Right (ast, _) -> do
             let (result, diagnostic) = verifyLanguage ast
-            putStrLn diagnostic
+            -- Handle user-defined output file / path.
+            case reportFile of
+                Just fileName -> do
+                    dir <- case outDir of 
+                        Just directory -> return directory
+                        Nothing -> getCurrentDirectory
+                    let outPath = dir </> fileName
+                    withFile outPath WriteMode (writeLogFile diagnostic)
+                Nothing -> return ()
+            -- Print diagnostics based on logging preferences.
+            if v then
+                putStrLn diagnostic
+            else
+                putStrLn $ takeWhile (/= '\n') diagnostic -- get first line
             if result then
                 putStrLn $ outputToken ++ "Success"
             else 
                 putStrLn $ outputToken ++ "Failure"
             return ()
+    where
+        writeLogFile diag hndl = hPutStr hndl diag  
