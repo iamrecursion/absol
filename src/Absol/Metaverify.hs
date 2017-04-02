@@ -47,7 +47,10 @@ verifyLanguage x = case runState runVerification (collateASTData x) of
     (True, VerifierState (tag, _) _ _ _) -> 
         (True, "LANGUAGE: " ++ prettyPrintRuleTag tag)
     (False, VerifierState (tag, _) prod _ _) -> 
-        (False, "LANGUAGE: " ++ prettyPrintRuleTag tag ++ "\n\n" ++ printLanguageDiagnostics prod)
+        (False, 
+            "LANGUAGE: " ++ prettyPrintRuleTag tag ++ "\n\n" ++ 
+            printLanguageDiagnostics prod
+        )
 
 -- | Runs the verification process on the language rules.
 -- 
@@ -287,7 +290,9 @@ getOperationVars
     :: (SemanticIdentifier, [SemanticOperationAssignment])
     -> (SemanticIdentifier, [SemanticIdentifier], [SemanticIdentifier])
 getOperationVars (ident, opAssigns) = 
-    (ident, L.delete ident (temps <$> opAssigns), concat (evalVars <$> opAssigns))
+    (ident, L.delete ident (temps <$> opAssigns), 
+        concat (evalVars <$> opAssigns)
+    )
     where
         temps :: SemanticOperationAssignment -> SemanticIdentifier
         temps (SemanticOperationAssignment identifier _) = identifier
