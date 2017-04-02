@@ -128,6 +128,8 @@ checkNTNotDefined ident = do
     unpackedId <- ident
     definedIdentifiers <- gets definedNTs
     parsePos <- gets parserPosition
+
+    -- Check definition of the current NT.
     case (unpackedId `elem` definedIdentifiers, parsePos) of
         (_, None)     -> return unpackedId
         (False, Head) -> return unpackedId

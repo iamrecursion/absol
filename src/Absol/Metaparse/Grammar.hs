@@ -68,7 +68,7 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
--- Semantic Types
+-- A type defining the Semantic Types in Metaspec
 data SemanticType 
     = AnyType
     | NoneType
@@ -95,7 +95,7 @@ newtype NonTerminalIdentifier = NonTerminalIdentifier String
 newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
 
--- Defines the Grammar
+-- The Metaspec AST Structures
 newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show, Eq)
 
 data MetaspecDefblock
@@ -164,7 +164,10 @@ data SyntaxPrimary
     | NonTerminalProxy NonTerminal
     deriving (Show, Eq)
 
-newtype Terminal = Terminal TerminalString deriving (Show, Eq)
+newtype Terminal = Terminal TerminalString deriving (Eq)
+
+instance Show Terminal where
+    show (Terminal (TerminalString str)) = "\"" ++ str ++ "\""
 
 newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Eq, Ord)
 
@@ -253,7 +256,6 @@ data SemanticOperationAssignment = SemanticOperationAssignment
     SemanticOperation
     deriving (Show, Eq)
 
--- TODO update real grammar to reflect this
 data SemanticOperation
     = Variable SemanticIdentifier
     | VariableAccess SemanticIdentifier [Integer]

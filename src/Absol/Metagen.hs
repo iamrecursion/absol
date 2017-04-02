@@ -9,13 +9,9 @@
 -- Stability   : experimental
 -- Portability : GHC
 -- 
--- Functionality for generating the target compiler code. 
+-- Functionality for generating the target compiler code. This file is currently
+-- empty as code generation has been put out of scope of the project. It remains
+-- as a point for future extension. 
 --
 -------------------------------------------------------------------------------
-module Absol.Metagen 
-    ( 
-        someFunc
-    ) where
-
-someFunc :: IO ()
-someFunc = putStrLn "Metagen"
+module Absol.Metagen where

@@ -59,8 +59,6 @@ data VerifierState = VerifierState {
 } deriving (Eq, Show)
 
 -- | Initialises the verifier state from the AST data.
--- 
--- Eta reduction across the truths argument.
 initVerifierState 
     :: StartRule 
     -> [LanguageRule] 

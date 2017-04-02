@@ -21,12 +21,13 @@ module Absol.Metagen.Utilities (
 import qualified Data.Text as T
 import Data.Monoid ((<>))
 
--- | This type defines the output filenames for the 
+-- | This type defines the output filenames for the code-generator.
 data OutputFileNames = OutputFileNames {
     targetCompilerSource :: T.Text,
     targetCompilerBuildLog :: T.Text
 } deriving (Eq, Show)
 
+-- | Generates the set of output filenames for the code generator.
 generateOutputFileNames :: String -> String -> OutputFileNames
 generateOutputFileNames name ver = let
     namePart = T.pack $ name ++ "-" ++ ver

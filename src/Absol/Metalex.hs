@@ -65,7 +65,6 @@ identifier = (lexeme . try) (p >>= check)
 semanticIdentifier :: ParserST SemanticIdentifier
 semanticIdentifier = SemanticIdentifier <$> identifier
 
--- TODO update metaspec grammar to reflect this
 -- | Parses any character allowed in an identifier.
 identifierChar :: ParserST Char
 identifierChar = alphaNumChar <|> oneOf seps

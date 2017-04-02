@@ -15,8 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:       src/
-  exposed-modules:      Absol,
-                        Absol.Metagen,
+  exposed-modules:      Absol.Metagen,
                         Absol.Metagen.Utilities,
                         Absol.Metalex,
                         Absol.Metaparse,
