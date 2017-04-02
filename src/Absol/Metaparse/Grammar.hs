@@ -68,7 +68,7 @@ type LiteralQuote = MetaspecTerminal
 type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
--- Semantic Types
+-- A type defining the Semantic Types in Metaspec
 data SemanticType 
     = AnyType
     | NoneType
@@ -95,8 +95,8 @@ newtype NonTerminalIdentifier = NonTerminalIdentifier String
 newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
 
--- Defines the Grammar
-newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show)
+-- The Metaspec AST Structures
+newtype Metaspec = Metaspec [MetaspecDefblock] deriving (Show, Eq)
 
 data MetaspecDefblock
     = NameDefblock String
@@ -104,7 +104,7 @@ data MetaspecDefblock
     | UsingDefblock [MetaspecFeature]
     | TruthsDefblock SemanticTruthsList
     | LanguageDefblock StartRule [LanguageRule]
-    deriving (Show)
+    deriving (Show, Eq)
 
 data MetaspecFeature 
     = FeatureBase
@@ -119,41 +119,41 @@ data MetaspecFeature
 data StartRule = StartRule
     StartSymbol
     LanguageRuleBody
-    deriving (Show)
+    deriving (Show, Eq)
 
-newtype StartSymbol = StartSymbol NonTerminalIdentifier deriving (Show)
+newtype StartSymbol = StartSymbol NonTerminalIdentifier deriving (Show, Eq)
 
 data LanguageRule = LanguageRule
     NonTerminal
     LanguageRuleBody
-    deriving (Show)
+    deriving (Show, Eq)
 
 newtype LanguageRuleBody = LanguageRuleBody
     SyntaxExpression
-    deriving (Show)
+    deriving (Show, Eq)
 
 newtype SyntaxExpression = SyntaxExpression
     [SyntaxAlternative]
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SyntaxAlternative = SyntaxAlternative
     [SyntaxTerm]
     (Maybe LanguageRuleSemantics)
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SyntaxTerm = SyntaxTerm
     SyntaxFactor
     (Maybe SyntaxException)
-    deriving (Show)
+    deriving (Show, Eq)
 
-newtype SyntaxException = SyntaxException SyntaxFactor deriving (Show)
+newtype SyntaxException = SyntaxException SyntaxFactor deriving (Show, Eq)
 
 data SyntaxFactor = SyntaxFactor
     (Maybe RepeatSyntax)
     SyntaxPrimary
-    deriving (Show)
+    deriving (Show, Eq)
 
-newtype RepeatSyntax = RepeatSyntax Integer deriving (Show)
+newtype RepeatSyntax = RepeatSyntax Integer deriving (Show, Eq)
 
 data SyntaxPrimary
     = SyntaxOptional SyntaxExpression
@@ -162,28 +162,44 @@ data SyntaxPrimary
     | SyntaxSpecial String
     | TerminalProxy Terminal
     | NonTerminalProxy NonTerminal
-    | SyntaxEmpty
-    deriving (Show)
+    deriving (Show, Eq)
 
-newtype Terminal = Terminal TerminalString deriving (Show)
+newtype Terminal = Terminal TerminalString deriving (Eq)
 
-newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Show)
+instance Show Terminal where
+    show (Terminal (TerminalString str)) = "\"" ++ str ++ "\""
+
+newtype NonTerminal = NonTerminal NonTerminalIdentifier deriving (Eq, Ord)
+
+instance Show NonTerminal where
+    show (NonTerminal (NonTerminalIdentifier x)) = "<" ++ x ++ ">"
 
 newtype LanguageRuleSemantics = LanguageRuleSemantics
-    [SemanticRule]
-    deriving (Show)
+    SemanticRule
+    deriving (Show, Eq)
 
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
     | SpecialSyntaxRuleProxy SpecialSyntaxRule
-    | SemanticEvaluationRule
-        SemanticType
-        SemanticIdentifier
-        SemanticOperationList
-        SemanticRestrictionList
-        SemanticEvaluationList
-    deriving (Show)
+    | SemanticEvaluationRuleList SemanticEvaluationRuleList
+    deriving (Show, Eq)
+
+type SemanticEvaluationRuleList = [SemanticEvaluationRule]
+
+data SemanticEvaluationRule = SemanticEvaluationRule
+    SemanticType
+    SemanticIdentifier
+    SemanticOperationList
+    SemanticRestrictionList
+    SemanticEvaluationList
+    deriving (Show, Eq)
+
+data SpecialSyntaxRule = SpecialSyntaxRule
+    SemanticType
+    SemanticSpecialSyntax
+    [AccessBlockOrRule]
+    deriving (Show, Eq)
 
 data SemanticSpecialSyntax
     = SpecialSyntaxMap
@@ -195,16 +211,10 @@ data SemanticSpecialSyntax
     | SpecialSyntaxCallfun
     deriving (Show, Eq)
 
-data SpecialSyntaxRule = SpecialSyntaxRule
-    SemanticType
-    SemanticSpecialSyntax
-    [AccessBlockOrRule]
-    deriving (Show)
-
 data EnvironmentAccessRule = EnvironmentAccessRule
     (Maybe SemanticType)
     [SyntaxAccessBlock]
-    deriving (Show)
+    deriving (Show, Eq)
 
 type AccessBlockOr a = Either SyntaxAccessBlock a
 
@@ -215,9 +225,9 @@ type AccessBlockOrSpecial = AccessBlockOr SpecialSyntaxRule
 data SyntaxAccessBlock = SyntaxAccessBlock
     NonTerminal
     SyntaxAccessor
-    deriving (Show)
+    deriving (Show, Eq)
 
-newtype SyntaxAccessor = SyntaxAccessor Integer deriving (Show)
+newtype SyntaxAccessor = SyntaxAccessor Integer deriving (Show, Eq)
 
 type SyntaxAccessList = [SyntaxAccessBlock]
 
@@ -229,24 +239,23 @@ data SemanticEvaluation = SemanticEvaluation
     SemanticType
     SemanticIdentifier
     AccessBlockOrSpecial
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticTruth = SemanticTruth
     SemanticType
     SemanticIdentifier
     NonTerminal
-    deriving (Show)
+    deriving (Show, Eq)
 
 newtype SemanticOperationList = SemanticOperationList
     [SemanticOperationAssignment] -- Sep by ','
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticOperationAssignment = SemanticOperationAssignment
     SemanticIdentifier
     SemanticOperation
-    deriving (Show)
+    deriving (Show, Eq)
 
--- TODO update real grammar to reflect this
 data SemanticOperation
     = Variable SemanticIdentifier
     | VariableAccess SemanticIdentifier [Integer]
@@ -255,19 +264,19 @@ data SemanticOperation
     | PrefixExpr PrefixSemanticUnaryOperator SemanticOperation
     | PostfixExpr PostfixSemanticUnaryOperator SemanticOperation
     | InfixExpr SemanticBinaryOperator SemanticOperation SemanticOperation
-    deriving (Show)
+    deriving (Show, Eq)
 
 data PrefixSemanticUnaryOperator
     = Not
     | Negate
     | PreIncrement
     | PreDecrement
-    deriving (Show)
+    deriving (Show, Eq)
 
 data PostfixSemanticUnaryOperator
     = PostIncrement
     | PostDecrement
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticBinaryOperator
     = Plus
@@ -287,11 +296,11 @@ data SemanticBinaryOperator
     | GreaterThan
     | LEQ
     | GEQ
-    deriving (Show)
+    deriving (Show, Eq)
 
 newtype SemanticRestrictionList = SemanticRestrictionList
     [SemanticRestriction]
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticRestriction
     = SemVariable SemanticIdentifier
@@ -300,7 +309,7 @@ data SemanticRestriction
         SemanticRestrictionOperator
         SemanticRestriction
         SemanticRestriction
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticValue
     = SemanticText String
@@ -308,7 +317,7 @@ data SemanticValue
     | SemanticBoolean Bool
     | SemanticListLiteral [String]
     | SemanticMatrixLiteral [[String]]
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SemanticRestrictionOperator
     = SemEquals
@@ -317,4 +326,4 @@ data SemanticRestrictionOperator
     | SemGT
     | SemLEQ
     | SemGEQ
-    deriving (Show)
+    deriving (Show, Eq)

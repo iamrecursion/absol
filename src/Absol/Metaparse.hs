@@ -40,13 +40,11 @@ import           Text.Megaparsec.Expr
 -- 
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned. 
--- parseMetaspecFile :: Text -> String -> Either (ParseError)
 parseMetaspecFile 
     :: String 
     -> Text 
     -> Either (ParseError Char Dec) (Metaspec, MetaState)
-parseMetaspecFile filename input = 
-    runParser (runStateT parseMetaspec initParserState) filename input
+parseMetaspecFile = runParser (runStateT parseMetaspec initParserState)
 
 -- | Parses the top-level metaspec language definition.
 parseMetaspec :: ParserST Metaspec
@@ -291,7 +289,7 @@ nonTerminal = do
 languageRuleSemantics :: ParserST (Maybe LanguageRuleSemantics)
 languageRuleSemantics = do
     void semanticBehavesAs
-    rules <- semanticBlock $ semanticRule `sepBy1` multilineAlternative
+    rules <- semanticBlock semanticRule
     return (Just $ LanguageRuleSemantics rules)
 
 -- | Parses a semantic evaluation rule.
@@ -299,11 +297,8 @@ languageRuleSemantics = do
 -- As the rules diverge only after consuming some portion of syntax, this parser
 -- utilises the ability for infinite-lookahead backtracking to parse these 
 -- productions.
--- 
--- TODO can I factor out the type checks? Nasty errors because of 'try' right
--- now.
 semanticRule :: ParserST SemanticRule
-semanticRule = try semanticEvaluationRule 
+semanticRule = try semanticEvaluationRuleList
     <|> try environmentInputRule
     <|> try environmentAccessRuleProxy
     <|> specialSyntaxRuleProxy
@@ -346,11 +341,16 @@ environmentAccessRule = do
     accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
     return (EnvironmentAccessRule semType accessBlocks)
 
+semanticEvaluationRuleList :: ParserST SemanticRule
+semanticEvaluationRuleList = do
+    rules <- semanticEvaluationRule `sepBy` multilineAlternative
+    return $ SemanticEvaluationRuleList rules
+
 -- | Parses a semantic evaluation rule.
 -- 
 -- These are the rules that are checked directly by the proof mechanism, and
 -- they are restricted to being defined in a certain form.
-semanticEvaluationRule :: ParserST SemanticRule
+semanticEvaluationRule :: ParserST SemanticEvaluationRule
 semanticEvaluationRule = do
     exprType <- semanticType
     semIdentifier <- semanticIdentifier
@@ -534,9 +534,9 @@ semanticOperatorTable =
 
 -- | Parses the semantic special syntax expressions.
 semanticSpecialSyntax :: ParserST SemanticSpecialSyntax
-semanticSpecialSyntax = checkSpecialSyntaxAvailable parse
+semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
     where
-        parse = SpecialSyntaxMap <$ specialSyntaxString "map"
+        parseExpr = SpecialSyntaxMap <$ specialSyntaxString "map"
             <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
             <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
             <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
@@ -595,17 +595,17 @@ semanticValue = semanticText
 -- | Parses a list literal of the form [a, b, ...] or [].
 semanticListLiteral :: ParserST SemanticValue
 semanticListLiteral = 
-    SemanticListLiteral <$> between (terminal "[") (terminal "]") parse
+    SemanticListLiteral <$> between (terminal "[") (terminal "]") parseExpr
     where
-        parse = (some nonSpace) `sepBy` multilineListSep
+        parseExpr = some nonSpace `sepBy` multilineListSep
 
 -- | Parses a matrix literal of the form |a, b; c, d| or ||.
 semanticMatrixLiteral :: ParserST SemanticValue
 semanticMatrixLiteral = 
     SemanticMatrixLiteral <$> between (terminal "|") (terminal "|") matrixValues
     where
-        matrixValues = matrixRow `sepBy` (terminal ";")
-        matrixRow = (some nonSpace) `sepBy` multilineListSep
+        matrixValues = matrixRow `sepBy` terminal ";"
+        matrixRow = some nonSpace `sepBy` multilineListSep
 
 -- | Parses a piece of constant semantic text.
 semanticText :: ParserST SemanticValue

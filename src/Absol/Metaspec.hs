@@ -9,7 +9,26 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- A module for working with metaspec language features.
+-- A module for working with metaspec language features. It is currently used to
+-- re-export functions from Absol.Metaspec.Special.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaspec where
+module Absol.Metaspec 
+    (
+        getTypes,
+        getNonTerminals,
+        getSpecialSyntax,
+        providesNonTerminal,
+        providesType,
+        toFeatureName,
+        findFeatureForNT,
+        findFeatureForType,
+        findFeatureForSpecial,
+        extractNTIString,
+        toTypeString,
+        availableNonTerminals,
+        availableTypes,
+        toSpecialSyntaxName
+    ) where
+
+import Absol.Metaspec.Special

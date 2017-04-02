@@ -21,7 +21,6 @@ module Absol.Metaparse.Utilities
     ) where
 
 import           Absol.Metalex
-import           Absol.Metaparse.Grammar
 import           Absol.Metaparse.Parser
 import           Control.Monad (void)
 

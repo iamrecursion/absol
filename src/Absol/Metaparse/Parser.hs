@@ -37,7 +37,6 @@ import           Absol.Metaparse.Grammar
 import           Absol.Metaspec.Special
 import           Control.Monad.State.Lazy
 import           Data.List                (foldl', intercalate)
-import           Data.Maybe               (fromJust)
 import qualified Data.Set                 as S
 import           Text.Megaparsec.Text     (Parser)
 
@@ -62,8 +61,6 @@ initParserState :: MetaState
 initParserState = MetaState [] [] S.empty [] [] None
 
 -- | Updates the list of imported features in the parser state.
--- 
--- TODO bring things into scope as this is updated.
 updateImportedFeatures :: [MetaspecFeature] -> MetaState -> MetaState
 updateImportedFeatures list st = st {
         importedFeatures = list,
@@ -131,10 +128,12 @@ checkNTNotDefined ident = do
     unpackedId <- ident
     definedIdentifiers <- gets definedNTs
     parsePos <- gets parserPosition
+
+    -- Check definition of the current NT.
     case (unpackedId `elem` definedIdentifiers, parsePos) of
         (_, None)     -> return unpackedId
         (False, Head) -> return unpackedId
-        (True, Head)  -> failExpr $ unpackedId
+        (True, Head)  -> failExpr unpackedId
         (_, Body)     -> return unpackedId
     where
         failExpr nt@(NonTerminalIdentifier x) = 
@@ -144,7 +143,7 @@ checkNTNotDefined ident = do
             Nothing -> "Defined elsewhere in document."
             Just xs -> "Defined by language feature(s): " ++ feats xs ++ "."
             where
-                feats x = intercalate ", " $ toFeatureName <$> x
+                feats y = intercalate ", " $ toFeatureName <$> y
 
 -- | Checks if a given type is defined in the current language context.
 -- 
@@ -154,12 +153,11 @@ checkTypeDefined :: ParserST SemanticType -> ParserST SemanticType
 checkTypeDefined t = do
     semType <- t
     scopeTypes <- gets importedTypes
-    case semType `elem` scopeTypes of
-        True -> return semType
-        False -> failExpr semType
+    if semType `elem` scopeTypes then return semType else
+        failExpr semType
         where
             failExpr x = fail $ failStr x
-            failStr x = "Type \"" ++ (toTypeString x) ++ "\" not in scope. "
+            failStr x = "Type \"" ++ toTypeString x ++ "\" not in scope. " 
                 ++ suggest x
             suggest x = case findFeatureForType x of
                 Nothing -> "Does not exist."
@@ -175,9 +173,8 @@ checkSpecialSyntaxAvailable
 checkSpecialSyntaxAvailable parser = do
     specialSyntax <- parser
     scopeSyntax <- gets importedSpecialSyntax
-    case specialSyntax `elem` scopeSyntax of
-        True -> return specialSyntax
-        False -> failExpr specialSyntax
+    if specialSyntax `elem` scopeSyntax then return specialSyntax else
+        failExpr specialSyntax
     where
         failExpr x = fail $ failStr x
         failStr x = "Special Syntax \"" ++ toSpecialSyntaxName x
@@ -186,4 +183,3 @@ checkSpecialSyntaxAvailable parser = do
             Nothing -> "Feature does not exist."
             Just f -> "Please import one of the following: " ++ feats f ++ "."
         feats x = intercalate ", " $ toFeatureName <$> x
-
