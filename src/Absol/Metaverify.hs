@@ -522,16 +522,21 @@ verifyNonTerminal nt = do
     let ntRule = M.lookup nonTerminal prodMap
     modify (pushProductionFrame nonTerminal)
     prodTrace <- gets productionTrace
-    modify (updateRuleTag Touched nonTerminal)
     termResult <- case ntRule of
             Nothing -> checkTruthsForTermination nt
-            Just (tag, body) ->
-                if nonTerminal `elem` tail prodTrace then
-                    return tag
-                else do
-                    ntTag <- verifyRule $ return body
-                    modify (updateRuleTag ntTag nonTerminal)
-                    return ntTag
+            Just (tag, body) -> do
+                case tag of 
+                    Terminates -> return tag
+                    (DoesNotTerminate _) -> return tag
+                    -- Only process if there is no termination tag assigned
+                    _ -> do 
+                        modify (updateRuleTag Touched nonTerminal)
+                        if nonTerminal `elem` tail prodTrace then
+                            return tag
+                        else do
+                            ntTag <- verifyRule $ return body
+                            modify (updateRuleTag ntTag nonTerminal)
+                            return ntTag
     modify popProductionFrame
     case termResult of
         (DoesNotTerminate xs) -> 
