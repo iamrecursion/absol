@@ -42,6 +42,7 @@ data NonTerminationType
     = Diverges
     | Incomplete
     | IncompleteGuards
+    | MalformedGuards
     | IncorrectEvaluationForm
     | NonExistentSubterms
     | UnableToInfer

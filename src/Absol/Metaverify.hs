@@ -25,10 +25,12 @@ import           Absol.Metaverify.Collate
 import           Absol.Metaverify.Diagnostics
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
-import           Data.Either                  (rights)
+import           Data.Either                  (lefts, rights)
 import qualified Data.List                    as L (delete, nub)
 import qualified Data.Map                     as M
 import           Data.Maybe                   (fromJust, isJust)
+
+import Debug.Trace
 
 -- TODO Refactor guard checker code to have less duplication
 
@@ -162,7 +164,7 @@ verifyEnvironmentInputRule input = do
             if null result then
                 return $ Terminates `tagPlus` subResult
             else
-                return $ (DoesNotTerminate $ resultToErr <$> result) 
+                return $ (DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result) 
                     `tagPlus` subResult
         _ -> return Terminates
 
@@ -201,7 +203,8 @@ verifySpecialSyntaxRule input = do
     if null result then
         return $ Terminates `tagPlus` subResult
     else
-        return $ (DoesNotTerminate $ resultToErr <$> result) `tagPlus` subResult
+        return $ (DoesNotTerminate $ 
+            resultToErr NonExistentSubterms <$> result) `tagPlus` subResult
 
 -- | Gets the non-terminals from syntax access blocks or env access rules.
 getNTsFromAccessBlockOrRule :: AccessBlockOrRule -> Maybe (NonTerminal, Integer)
@@ -330,11 +333,14 @@ verifySemanticForm input = do
     if null result then
         return Terminates
     else
-        return $ DoesNotTerminate $ resultToErr <$> result
+        return $ DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result
 
--- | Converts an error string into a non-termination result.
-resultToErr :: String -> (NonTerminationType, [NonTerminal], String)
-resultToErr str = (NonExistentSubterms, [], str)
+-- | Converts an error string into a non-termination result with given type.
+resultToErr 
+    :: NonTerminationType
+    -> String 
+    -> (NonTerminationType, [NonTerminal], String)
+resultToErr ntType str = (ntType, [], str)
 
 -- | Checks if a non-terminal is defined in the syntax properly.
 checkNT :: NTCountMap -> (NonTerminal, Integer) -> Either Bool String
@@ -379,10 +385,15 @@ verifyGuardsComplete :: VState SemanticEvaluationRuleList -> VState RuleTag
 verifyGuardsComplete input = do
     rules <- input
     let guards = extractGuards <$> rules
-        -- processedGuards = normaliseGuard <$> guards
-    -- traceShowM guards
-    -- traceShowM processedGuards
-    return Terminates
+        normGuardTemp = ((fmap normaliseGuard)) <$> guards
+        errors = lefts $ concat normGuardTemp
+        normGuards = concat . rights <$> normGuardTemp
+    traceShowM normGuards
+    traceShowM errors
+    if not $ null errors then
+        return $ DoesNotTerminate $ resultToErr MalformedGuards <$> errors
+    else
+        return Terminates
 
 -- | Normalises a guard into a standard form. 
 -- 
@@ -390,7 +401,23 @@ verifyGuardsComplete input = do
 -- 
 -- This form is a guard with a single operator, and any constant on the right
 normaliseGuard :: SemanticRestriction -> Either String [SemanticRestriction]
-normaliseGuard guard = undefined
+normaliseGuard (SemVariable _) = 
+    Left "A variable alone is not a semantic restriction."
+normaliseGuard (SemConstant _) = 
+    Left "A constant alone is not a semantic restriction."
+normaliseGuard (SemInfixExpr _ (SemInfixExpr _ _ _) _) = 
+    Left "Semantic restrictions may not contain multiple operators."
+normaliseGuard (SemInfixExpr _ _ (SemInfixExpr _ _ _)) = 
+    Left "Semantic restrictions may not contain multiple operators."
+normaliseGuard x@(SemInfixExpr op v1 v2) = case op of
+    SemEquals -> Right [x]
+    SemNEquals -> Right [mkInfixExpr SemLT, mkInfixExpr SemGT]
+    SemLT -> Right [x]
+    SemGT -> Right [x]
+    SemLEQ -> Right [mkInfixExpr SemLT, mkInfixExpr SemEquals]
+    SemGEQ -> Right [mkInfixExpr SemGT, mkInfixExpr SemEquals]
+    where
+        mkInfixExpr newOp = SemInfixExpr newOp v1 v2
 
 -- | Checks that the pattern guards rely only on appropriate variables.
 -- 
@@ -486,6 +513,8 @@ verifySyntaxPrimary primary = do
 -- 
 -- Uses the 'Touched' value constructor and stack value checks to ensure that 
 -- any mutually-recursive productions can be verified correctly. 
+-- 
+-- TODO prevent double-entry for known terminating productions.
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
@@ -493,7 +522,6 @@ verifyNonTerminal nt = do
     let ntRule = M.lookup nonTerminal prodMap
     modify (pushProductionFrame nonTerminal)
     prodTrace <- gets productionTrace
-    -- traceM $ "Nt: " ++ show nonTerminal ++ " Trace: " ++ show prodTrace
     modify (updateRuleTag Touched nonTerminal)
     termResult <- case ntRule of
             Nothing -> checkTruthsForTermination nt
