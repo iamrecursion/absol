@@ -42,6 +42,7 @@ printNonTerminationItem (nonTermType, ntTrace, str) = let
             Diverges -> "Production diverges."
             Incomplete -> "Production incomplete."
             IncompleteGuards -> "Guards incomplete."
+            MalformedGuards -> "Guards malformed."
             IncorrectEvaluationForm -> "Incorrect Semantic Form."
             NonExistentSubterms -> "Refers to non-existent subterms."
             UnableToInfer -> "Unable to infer semantics for rule."

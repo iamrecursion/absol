@@ -297,6 +297,19 @@ It would suffice to add an additional restriction that there either must be a
 complete set for each 'kind' of restriction, or that there must be catch-all
 hole. 
 
+This appears like it might be doubly exponential in the number of variables and
+singly exponential in the number of equations. 
+
+To this end, the best solution for the scope of the project appears to be the 
+enforcement of a catch-all clause. While this guarantees that the guards are 
+complete over their domain, it is particularly inelegant as it requires the 
+language designers to write semantics for a clause that may never be executed.
+
+Consider the example of the if statement, where this restriction emerges as a
+significant flaw of the verification engine. It should be noted, however, that
+this is not a flaw of the language Metaspec itself, and so future work could 
+certainly attempt to impose a more rigorous checking methodology. 
+
 ## Typechecking
 While this is, for the most part, deferred until language compile time, rather
 than metalanguage check time, it may be possible to perform some type-related

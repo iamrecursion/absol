@@ -25,10 +25,14 @@ import           Absol.Metaverify.Collate
 import           Absol.Metaverify.Diagnostics
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
-import           Data.Either                  (rights)
-import qualified Data.List                    as L (delete, nub)
+import           Data.Either                  (lefts, rights)
+import qualified Data.List                    as L 
+    (delete, find, nub, permutations)
 import qualified Data.Map                     as M
 import           Data.Maybe                   (fromJust, isJust)
+import qualified Data.Set                     as S
+
+import Debug.Trace
 
 -- TODO Refactor guard checker code to have less duplication
 
@@ -162,7 +166,7 @@ verifyEnvironmentInputRule input = do
             if null result then
                 return $ Terminates `tagPlus` subResult
             else
-                return $ (DoesNotTerminate $ resultToErr <$> result) 
+                return $ (DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result) 
                     `tagPlus` subResult
         _ -> return Terminates
 
@@ -201,7 +205,8 @@ verifySpecialSyntaxRule input = do
     if null result then
         return $ Terminates `tagPlus` subResult
     else
-        return $ (DoesNotTerminate $ resultToErr <$> result) `tagPlus` subResult
+        return $ (DoesNotTerminate $ 
+            resultToErr NonExistentSubterms <$> result) `tagPlus` subResult
 
 -- | Gets the non-terminals from syntax access blocks or env access rules.
 getNTsFromAccessBlockOrRule :: AccessBlockOrRule -> Maybe (NonTerminal, Integer)
@@ -330,11 +335,14 @@ verifySemanticForm input = do
     if null result then
         return Terminates
     else
-        return $ DoesNotTerminate $ resultToErr <$> result
+        return $ DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result
 
--- | Converts an error string into a non-termination result.
-resultToErr :: String -> (NonTerminationType, [NonTerminal], String)
-resultToErr str = (NonExistentSubterms, [], str)
+-- | Converts an error string into a non-termination result with given type.
+resultToErr 
+    :: NonTerminationType
+    -> String 
+    -> (NonTerminationType, [NonTerminal], String)
+resultToErr ntType str = (ntType, [], str)
 
 -- | Checks if a non-terminal is defined in the syntax properly.
 checkNT :: NTCountMap -> (NonTerminal, Integer) -> Either Bool String
@@ -374,23 +382,20 @@ verifyGuards input = do
 
 -- | Verifies that the patterns in the guards are complete over the domain.
 -- 
--- This means that all potential values of the variables must be accounted for.
+-- As this problem is actually 
 verifyGuardsComplete :: VState SemanticEvaluationRuleList -> VState RuleTag
 verifyGuardsComplete input = do
     rules <- input
     let guards = extractGuards <$> rules
-        -- processedGuards = normaliseGuard <$> guards
-    -- traceShowM guards
-    -- traceShowM processedGuards
-    return Terminates
-
--- | Normalises a guard into a standard form. 
--- 
--- It will return an error in the case where guards aren't allowable.
--- 
--- This form is a guard with a single operator, and any constant on the right
-normaliseGuard :: SemanticRestriction -> Either String [SemanticRestriction]
-normaliseGuard guard = undefined
+        containsCatchallGuard = L.find null guards
+    case containsCatchallGuard of
+        Nothing -> return $ DoesNotTerminate [
+                (
+                    IncompleteGuards, 
+                    [], 
+                    "Guards must contain a catch-all clause.")
+            ]
+        Just _ -> return Terminates
 
 -- | Checks that the pattern guards rely only on appropriate variables.
 -- 
@@ -469,7 +474,6 @@ verifySyntaxFactor factor = do
     verifySyntaxPrimary $ return primary
 
 -- | Verifies a syntax primary.
--- TODO diagnostic information
 verifySyntaxPrimary :: VState SyntaxPrimary -> VState RuleTag
 verifySyntaxPrimary primary = do
     syntaxPrimary <- primary
@@ -491,19 +495,25 @@ verifyNonTerminal nt = do
     nonTerminal <- nt
     prodMap <- gets productions
     let ntRule = M.lookup nonTerminal prodMap
+
+    -- Production stack frame
     modify (pushProductionFrame nonTerminal)
     prodTrace <- gets productionTrace
-    -- traceM $ "Nt: " ++ show nonTerminal ++ " Trace: " ++ show prodTrace
-    modify (updateRuleTag Touched nonTerminal)
     termResult <- case ntRule of
-            Nothing -> checkTruthsForTermination nt
-            Just (tag, body) ->
-                if nonTerminal `elem` tail prodTrace then
-                    return tag
-                else do
-                    ntTag <- verifyRule $ return body
-                    modify (updateRuleTag ntTag nonTerminal)
-                    return ntTag
+        Nothing -> checkTruthsForTermination nt
+        Just (tag, body) -> do
+            case tag of 
+                Terminates -> return tag
+                (DoesNotTerminate _) -> return tag
+                -- Only process if there is no termination tag assigned
+                _ -> do 
+                    modify (updateRuleTag Touched nonTerminal)
+                    if nonTerminal `elem` tail prodTrace then
+                        return tag
+                    else do
+                        ntTag <- verifyRule $ return body
+                        modify (updateRuleTag ntTag nonTerminal)
+                        return ntTag
     modify popProductionFrame
     case termResult of
         (DoesNotTerminate xs) -> 

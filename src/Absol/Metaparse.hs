@@ -50,6 +50,7 @@ parseMetaspecFile = runParser (runStateT parseMetaspec initParserState)
 parseMetaspec :: ParserST Metaspec
 parseMetaspec = between spaceConsumer eof metaspec >>= check
     where
+        -- Checks whether all used non-terminals have been defined. Errs if not.
         check x = do
             result <- checkNTsInLang
             case result of
@@ -87,19 +88,23 @@ metaspec = Metaspec <$> traverse (<* ruleTerminationSymbol) blocks
 -- 
 -- It strips whitespace from the start and end of the provided name in the file.
 nameDefblock :: ParserST MetaspecDefblock
-nameDefblock = do
-    keywordWhere "name"
-    name <- some nonSemicolon
-    return (NameDefblock $ trimString name)
+nameDefblock = basicDefblock "name" NameDefblock
 
 -- | Parses the language version definition block.
 -- 
 -- It strips whitespace from the start and end of the provided version string. 
 versionDefblock :: ParserST MetaspecDefblock
-versionDefblock = do
-    keywordWhere "version"
-    version <- some nonSemicolon
-    return (VersionDefblock $ trimString version)
+versionDefblock = basicDefblock "version" VersionDefblock
+
+-- | Parses a basic defblock. 
+basicDefblock 
+    :: String 
+    -> (String -> MetaspecDefblock) 
+    -> ParserST MetaspecDefblock 
+basicDefblock str constructor = do
+    keywordWhere str
+    param <- some nonSemicolon
+    return (constructor $ trimString param)
 
 -- | Parses the using definition block for language features.
 --
@@ -112,6 +117,9 @@ usingDefblock = do
     return (UsingDefblock items)
 
 -- | Parses a language feature.
+-- 
+-- This list of features only includes those which are currently implemented in
+-- metaspec. In future, this list would be expanded for additional utility.
 metaspecFeature :: ParserST MetaspecFeature
 metaspecFeature = FeatureBase <$ terminal "base"
     <|> FeatureNumber <$ terminal "number"
