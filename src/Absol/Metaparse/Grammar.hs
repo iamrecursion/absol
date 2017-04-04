@@ -302,6 +302,7 @@ newtype SemanticRestrictionList = SemanticRestrictionList
     [SemanticRestriction]
     deriving (Show, Eq)
 
+-- This portion of the grammar is technically under-constrained.
 data SemanticRestriction
     = SemVariable SemanticIdentifier
     | SemConstant SemanticValue
@@ -309,7 +310,7 @@ data SemanticRestriction
         SemanticRestrictionOperator
         SemanticRestriction
         SemanticRestriction
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 data SemanticValue
     = SemanticText String
@@ -317,7 +318,7 @@ data SemanticValue
     | SemanticBoolean Bool
     | SemanticListLiteral [String]
     | SemanticMatrixLiteral [[String]]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 data SemanticRestrictionOperator
     = SemEquals
@@ -326,4 +327,4 @@ data SemanticRestrictionOperator
     | SemGT
     | SemLEQ
     | SemGEQ
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)

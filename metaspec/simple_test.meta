@@ -48,13 +48,13 @@ language : {
 //             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
 //     } |
     <arith-expr> "^" <arith-expr> <foo> --> {
-        // number n : {n = 1}(n1 == 1) :
-        //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        number n : {n = n1 * n1}(n2 == 2) :
+        number n : {n = 1}(n1 == 1) :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        // number n : {n = n1 * n1}(n2 == 2) :
+        //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
         // number n : {n = n1 ^ n2}(n2 < 2, n2 > 2) :
         //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        number n : {n = n1 ^ n3, n3 = n2 ^ 1}(n2 != 2, n1 == 2) :
+        number n : {n = n1 ^ n3, n3 = n2 ^ 1}() :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
     };
 

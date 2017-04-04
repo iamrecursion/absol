@@ -26,9 +26,11 @@ import           Absol.Metaverify.Diagnostics
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
 import           Data.Either                  (lefts, rights)
-import qualified Data.List                    as L (delete, nub)
+import qualified Data.List                    as L 
+    (delete, find, nub, permutations)
 import qualified Data.Map                     as M
 import           Data.Maybe                   (fromJust, isJust)
+import qualified Data.Set                     as S
 
 import Debug.Trace
 
@@ -380,44 +382,20 @@ verifyGuards input = do
 
 -- | Verifies that the patterns in the guards are complete over the domain.
 -- 
--- This means that all potential values of the variables must be accounted for.
+-- As this problem is actually 
 verifyGuardsComplete :: VState SemanticEvaluationRuleList -> VState RuleTag
 verifyGuardsComplete input = do
     rules <- input
     let guards = extractGuards <$> rules
-        normGuardTemp = ((fmap normaliseGuard)) <$> guards
-        errors = lefts $ concat normGuardTemp
-        normGuards = concat . rights <$> normGuardTemp
-    traceShowM normGuards
-    traceShowM errors
-    if not $ null errors then
-        return $ DoesNotTerminate $ resultToErr MalformedGuards <$> errors
-    else
-        return Terminates
-
--- | Normalises a guard into a standard form. 
--- 
--- It will return an error in the case where guards aren't allowable.
--- 
--- This form is a guard with a single operator, and any constant on the right
-normaliseGuard :: SemanticRestriction -> Either String [SemanticRestriction]
-normaliseGuard (SemVariable _) = 
-    Left "A variable alone is not a semantic restriction."
-normaliseGuard (SemConstant _) = 
-    Left "A constant alone is not a semantic restriction."
-normaliseGuard (SemInfixExpr _ (SemInfixExpr _ _ _) _) = 
-    Left "Semantic restrictions may not contain multiple operators."
-normaliseGuard (SemInfixExpr _ _ (SemInfixExpr _ _ _)) = 
-    Left "Semantic restrictions may not contain multiple operators."
-normaliseGuard x@(SemInfixExpr op v1 v2) = case op of
-    SemEquals -> Right [x]
-    SemNEquals -> Right [mkInfixExpr SemLT, mkInfixExpr SemGT]
-    SemLT -> Right [x]
-    SemGT -> Right [x]
-    SemLEQ -> Right [mkInfixExpr SemLT, mkInfixExpr SemEquals]
-    SemGEQ -> Right [mkInfixExpr SemGT, mkInfixExpr SemEquals]
-    where
-        mkInfixExpr newOp = SemInfixExpr newOp v1 v2
+        containsCatchallGuard = L.find null guards
+    case containsCatchallGuard of
+        Nothing -> return $ DoesNotTerminate [
+                (
+                    IncompleteGuards, 
+                    [], 
+                    "Guards must contain a catch-all clause.")
+            ]
+        Just _ -> return Terminates
 
 -- | Checks that the pattern guards rely only on appropriate variables.
 -- 
@@ -496,7 +474,6 @@ verifySyntaxFactor factor = do
     verifySyntaxPrimary $ return primary
 
 -- | Verifies a syntax primary.
--- TODO diagnostic information
 verifySyntaxPrimary :: VState SyntaxPrimary -> VState RuleTag
 verifySyntaxPrimary primary = do
     syntaxPrimary <- primary
@@ -513,30 +490,30 @@ verifySyntaxPrimary primary = do
 -- 
 -- Uses the 'Touched' value constructor and stack value checks to ensure that 
 -- any mutually-recursive productions can be verified correctly. 
--- 
--- TODO prevent double-entry for known terminating productions.
 verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
     prodMap <- gets productions
     let ntRule = M.lookup nonTerminal prodMap
+
+    -- Production stack frame
     modify (pushProductionFrame nonTerminal)
     prodTrace <- gets productionTrace
     termResult <- case ntRule of
-            Nothing -> checkTruthsForTermination nt
-            Just (tag, body) -> do
-                case tag of 
-                    Terminates -> return tag
-                    (DoesNotTerminate _) -> return tag
-                    -- Only process if there is no termination tag assigned
-                    _ -> do 
-                        modify (updateRuleTag Touched nonTerminal)
-                        if nonTerminal `elem` tail prodTrace then
-                            return tag
-                        else do
-                            ntTag <- verifyRule $ return body
-                            modify (updateRuleTag ntTag nonTerminal)
-                            return ntTag
+        Nothing -> checkTruthsForTermination nt
+        Just (tag, body) -> do
+            case tag of 
+                Terminates -> return tag
+                (DoesNotTerminate _) -> return tag
+                -- Only process if there is no termination tag assigned
+                _ -> do 
+                    modify (updateRuleTag Touched nonTerminal)
+                    if nonTerminal `elem` tail prodTrace then
+                        return tag
+                    else do
+                        ntTag <- verifyRule $ return body
+                        modify (updateRuleTag ntTag nonTerminal)
+                        return ntTag
     modify popProductionFrame
     case termResult of
         (DoesNotTerminate xs) -> 
