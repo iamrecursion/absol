@@ -103,6 +103,8 @@
     \end{longtable}
 }
 
+\input{resources/bath_dissertation_definitions.tex}
+
 %Various Definitions
 \setcounter{tocdepth}{2}
 \definecolor{light-gray}{gray}{0.5}
@@ -113,12 +115,12 @@
     {10pt}              % separation
     {\huge\it}          % before-code
 
-\pagestyle{fancy}
-\lhead{\color{light-gray}Ara Adkins}
-\rhead{\color{light-gray}ABSOL}
-\cfoot{\thepage}
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
+% \pagestyle{fancy}
+% \lhead{\color{light-gray}Ara Adkins}
+% \rhead{\color{light-gray}ABSOL}
+% \cfoot{\thepage}
+% \renewcommand{\headrulewidth}{0pt}
+% \renewcommand{\footrulewidth}{0pt}
 
 \setlength{\parindent}{0pt}
 \setlength{\headheight}{14pt}
@@ -177,39 +179,45 @@
 %     \end{center}
 % }
 
-\title{ABSOL: Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
+\newcommand{\titletext}{ABSOL: Specification and Formal Verification of Domain-Specific Languages through Automatic Compiler Generation in Haskell}
+
+\title{\titletext}
 \author{Ara Adkins}
-\date{\today}
+\date{BSc Computer Science (Hons)\\The University of Bath\\\today}
 
 % Glossaries
 \makeglossaries
 \include{resources/glossary}
 \glsaddall % add all items to the glossaries
 
-% Marking Criteria
-% Demonstrate ability to learn independently, apply research skills, critically evaluate the work of others.
-% Search Phase: Identification of appropriate previous work, note key ideas, theories, directions and concepts that are revealed. 
-% Review Phase: A structured summary and critique of the reading you have done. Use the project idea to identify ideas and threads of development, and relate ideas that may have not previously been related. REFINE THE HYPOTHESIS
-% Should tell a story that should identify the idea development as the literature and technology search was constructed. 
-% 
-% THINGS TO DO:
-% - Consideration of the key texts based on the projcted ideas, with a CRITICAL EVALUATION of these texts.
-% - Gather disparate sources into a coherent whole with a structured argument.
-% - What are the 'clear conclusions' to be made --- that the project is useful
-% - Covers a lot of ground with a tight focus (a lot of literature in a limited area)
-% - Selective use of references, quotations, illustrations and results --- DO NOT DISRUPT THE WRITING
-% - Professional, lucid and concise writing style with a high level of consistency. 
-% TODO Want examples of things and code examples throughout, where relevant
-
 %Document
 \begin{document}
 
+% Title
 \maketitle
+\newpage
 
+% Dissertation Consultation Prohibition
+\consultation{0}
+\newpage
+
+% Declaration
+\declaration{\titletext}{Ara Adkins}
+\newpage
+
+% Contents
 \tableofcontents
-
+\listoffigures
+\listoftables
+\listofalgorithms
 \printglossaries
 
+% Abtract Text
+\input{resources/abstract.tex}
+
+% Acknowledgements
+
+% Actual Chapters
 \include{resources/introduction}
 \include{resources/literature_survey}
 
