@@ -1,9 +1,9 @@
 \chapter{Literature and Technology Survey} % (fold)
 \label{cha:literature_and_technology_survey}
-Absol has proposed the investigation and development of a toolchain for the development of provably-correct Domain-Specific Languages. 
-Even within such a well-defined scope, such a project draws on a significant breadth of disciplines within Computer Science, necessitating a broad knowledge-base.\\
+As the project has proposed the investigation and development of a toolchain for the creation of provably-correct \glspl{dsl}.
+Even with the scope constrained to the creation of \glspl{dsl} alone, such a project draws on a significant breadth of disciplines within Computer Science, necessitating a broad knowledge-base. \\
 
-This project exists at the intersection of the study of Domain-Specific Languages, programming language development and formalisations of program semantics. 
+This project exists at the intersection of the study of \glspl{dsl}, programming language development and formalisations of program semantics. 
 As such, it is important to understand the relevant work in these domains. 
 While each of these fields is large in its own right, this review aims to distil the relevant bodies of knowledge. \\
 
@@ -88,7 +88,7 @@ It proposes further axes for classification, the most important of which are hig
         \begin{lstlisting}
 =SUM(COUNTIF(A3:A24, 0))
         \end{lstlisting}
-        \item Inputs to applications with a declarative character and less well-defined execution semantics (e.g. ATMOL, a DSL for the specification of atmospheric models, example from \citep{a2001atmol}).
+        \item Inputs to applications with a declarative character and less well-defined execution semantics (e.g. ATMOL, a DSL for the specification of atmospheric models, example from \citet{a2001atmol}).
         \begin{lstlisting}
 p :: float(0..107000) dim ``Pa''
     field (x(grid), y(grid), z(grid))
@@ -263,7 +263,7 @@ The choice of implementation strategy and design for a DSL should hence be made 
 
 \section{Metalanguages} % (fold)
 \label{sec:metalanguages}
-\defblock{10.5cm}{Metalanguage}{A metalanguage is a language that is, itself, used to describe aspects of a language \citep{jakobson1980metalanguage}.}
+\defblock{10.5cm}{\Glsname{metalanguage}}{\glsdesc*{metalanguage}}
 
 As implementing verifiable DSLs requires formal descriptions of both the syntax and semantics of a DSL, it necessarily involves the use of one or more metalanguages. \\
 
@@ -355,11 +355,9 @@ These extensions can be used to specify meta-rules about the productions of the 
 
 \subsubsection{Abstract Syntax} % (fold)
 \label{ssub:abstract_syntax}
-\defblock{12cm}{AST}{
-    An Abstract Syntax Tree (AST) is a tree-based representation of the syntactic structure of the source code of a program, without any of the extraneous information required for parsing.
-}
+\defblock{12cm}{\acrshort{ast}}{\glsdesc*{gls-ast}}
 
-While the EBNF definition of a programming language is sometimes referred to as the \textit{concrete syntax} of the language, the language's structure can be expressed in a simplified form as an \textit{Abstract Syntax Tree (AST)}.
+While the EBNF definition of a programming language is sometimes referred to as the \textit{concrete syntax} of the language, the language's structure can be expressed in a simplified form as an \textit{\gls{ast}}.
 This is produced from a derivation tree (a tree showing the parsed result of a program expression) by removing any information only required by the parser.\\
 
 This simplification enables the abstract syntax to communicate the structure of phrases in terms of their semantics in the programming language, and the rules for producing an AST are similar to the EBNF grammar for the language \citep{slonneger1995formal}.
@@ -809,7 +807,7 @@ While traditional parser generators such as YACC use event-based parsing, combin
 The main downside of Parsec is that it provides no guarantees about left-recursion in grammars, which has the potential to cause the parser to hang at runtime. 
 Furthermore it does not perform as well as some traditional parsers due to the additional state maintained for error reporting, as evidenced by the existence of Attoparsec \citep{gummelt2011hindsight}. \\
 
-While Parsec is much faster than many parser combinator libraries, it is still to slow for real-time use or efficient parsing of very complex grammars. 
+While Parsec is much faster than many parser combinator libraries, it is still too slow for real-time use or efficient parsing of very complex grammars. 
 Attoparsec, however, sacrifices readability of error messages for performance, meaning that Parsec itself is still a more sensible choice for the implementation of user-facing compilers. \\
 
 Haskell's library support also provides Alex, a tool for generating lexical analysers. 

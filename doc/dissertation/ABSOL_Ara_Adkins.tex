@@ -18,7 +18,7 @@
 \usepackage{float} %better float control
 \usepackage[utf8]{inputenc} %for font encoding
 \usepackage{framed} %For frames around blocks
-\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=3cm]{geometry} %Fix page margins
+\usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3cm]{geometry} %Fix page margins
 \usepackage[hidelinks]{hyperref} %For URL formleatting (makes clickable links)
 \usepackage[toc, xindy, acronym, nonumberlist, nopostdot]{glossaries}
 \usepackage{graphicx} %For including images, etc.
@@ -69,6 +69,10 @@
 \newcommand{\eval}{\Downarrow}
 \newcommand{\goesto}[0]{\MVRightarrow}
 \newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
+
+% \newcommand{\requirement}[3]{
+    
+% }
 
 % New Table Column Types
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
@@ -151,7 +155,7 @@
     belowcaptionskip=1\baselineskip,
     % Colors
     backgroundcolor=\color{sol-base3},
-    basicstyle=\color{sol-base0}\ttfamily,
+    basicstyle=\color{sol-base0}\tiny\ttfamily,
     keywordstyle=\color{sol-cyan},
     commentstyle=\color{sol-base01},
     stringstyle=\color{sol-blue},
@@ -183,7 +187,7 @@
 
 \title{\titletext}
 \author{Ara Adkins}
-\date{BSc Computer Science (Hons)\\The University of Bath\\\today}
+\date{Bachelor of Science, Computer Science with Honours\\The University of Bath\\\today}
 
 % Glossaries
 \makeglossaries
@@ -198,34 +202,49 @@
 \newpage
 
 % Dissertation Consultation Prohibition
-\consultation{0}
+\consultation{100}
 \newpage
 
 % Declaration
 \declaration{\titletext}{Ara Adkins}
 \newpage
 
-% Contents
-\tableofcontents
-\listoffigures
-\listoftables
-\listofalgorithms
-\printglossaries
-
 % Abtract Text
 \input{resources/abstract.tex}
 
-% Acknowledgements
+% Contents
+\tableofcontents
 
-% Actual Chapters
+\listoffigures
+
+\listoftables
+
+\listofalgorithms
+\addcontentsline{toc}{chapter}{List of algorithms}
+
+\printglossaries
+
+% Acknowledgements
+\include{resources/acknowledgements}
+
+% Chapters
 \include{resources/introduction}
 \include{resources/literature_survey}
+\include{resources/elucidation_requirements}
+\include{resources/architecture_and_algorithms}
+\include{resources/implementation}
+\include{resources/testing}
+\include{resources/evaluation}
+\include{resources/conclusion}
 
 % Bibliography
 \bibliographystyle{abbrvnat}
 \bibliography{resources/bibliography}
 
 \begin{appendix}
+
+\include{resources/software_readme}
+\include{resources/metaspec_grammar}
 
 \end{appendix}
 

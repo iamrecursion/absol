@@ -1,0 +1,86 @@
+\newdualentry{dsl}{DSL}{Domain-Specific Language}{
+    An abstraction of the problem domain in the form of a `small' programming language that provides appropriate notations and expressive power focused on a particular problem domain. 
+}
+
+\newglossaryentry{semantics}{
+    name=Semantics,
+    text=semantics,
+    description={
+        The definition of meaning of syntactically valid (see \gls{syntax}) strings in a language.
+        This meaning defines how these programs \textit{behave} when executed, or as the \textit{effect} of executing these programs.
+    }
+}
+
+\newglossaryentry{syntax}{
+    name=Syntax,
+    text=syntax,
+    description={
+        The ways in which the terminal symbols of a programming language may be combined to create programs that are well-formed in the language.
+    }
+}
+
+\newdualentry{absol}{ABSOL}{Automatic Builder for Semantically Oriented Languages}{
+    The metacompiler program and toolchain that performs language analysis and verification.
+}
+
+\newglossaryentry{halting_problem}{
+    name=Halting Problem,
+    description={
+        The Halting Problem describes the problem of determining, from a description of an arbitrary computer program ($\delta$), for a Turing-Machine or equivalent, and an arbitrary input $x$ whether $\delta$ will complete execution or continue to run forever (diverge) \citep{boyer1984mechanical}. 
+    }
+}
+
+\newglossaryentry{declarative}{
+    name=Declarative,
+    text=declarative,
+    description={
+        A style of programming language that allows the user to express the logic of a computation without expressing the exact set of steps to be executed. 
+        Examples include some portions of Haskell, and Prolog. 
+    }
+}
+
+\newacronym{avopt}{AVOPT}{Analysis, Verification, Optimisation, Parallelisation and Transformation}
+
+\newglossaryentry{transpilation}{
+    name=Transpilation,
+    text=transpilation,
+    description={
+        The transformation of one high level language $L_1$ into another $L_2$ via the \gls{ast} created from parsing $L_1$. 
+        The \gls{ast} is used to generate code in the \textit{target} language ($L_2$), aiming to preserve the semantics of $L_1$ as accurately as possible. 
+    }
+}
+
+\newdualentry{ast}{AST}{Abstract Syntax Tree}{
+    An Abstract Syntax Tree (AST) is a tree-based representation of the syntactic structure of the source code of a program or other unit in some language, without any of the extraneous information required for parsing.
+    It is the ideal form for programmatic manipulation of the language unit.
+}
+
+\newglossaryentry{source_map}{
+    name=Source Map,
+    text=source map,
+    description={
+        A predefined mapping of debug symbols in the target language back to the debug symbols in the source language \citep{kulkarnitranspiler}.
+    }
+}
+
+\newacronym{bnf}{BNF}{Backus-Naur Form}
+
+\newacronym{ebnf}{EBNF}{Extended Backus-Naur Form}
+
+\newacronym{ffi}{FFI}{Foreign-Function Interface}
+
+\newglossaryentry{metaspec}{
+    name=Metaspec,
+    description={
+        The \gls{metalanguage} designed as part of the \acrshort{absol} project. 
+        It is capable of describing both \gls{syntax} and \gls{semantics} of the target DSL with one unified syntax. 
+    }
+}
+
+\newglossaryentry{metalanguage}{
+    name=Metalanguage,
+    text=metalanguage,
+    description={
+        A metalanguage is a language that is, itself, used to describe aspects of another language \citep{jakobson1980metalanguage}. 
+    }
+}

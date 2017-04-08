@@ -53,6 +53,9 @@ cabal.project.local
 *.glo
 *.gls
 *.xdy
+*.loa
+*.lot
+*.lof
 
 # Misc
 *.fuse*

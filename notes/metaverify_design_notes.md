@@ -401,3 +401,10 @@ the stack of productions, without any interference by the value 'touched'.
 This only works because the language itself is necessarily finite (and would
 not parse), which means that there is always a concrete set of syntax, and hence
 a concrete set of semantics associated with it. 
+
+## Misc
+It has been more limiting than expected to focus on verification at the language
+level. It means that it is generally impossible to have function calls, as the
+semantics of these still needs to be verified at the program level. This has 
+been included in order to make the DSLs defined by ABSOL useful, but complicates
+the approach taken...
