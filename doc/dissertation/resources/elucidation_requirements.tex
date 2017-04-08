@@ -1,10 +1,12 @@
+% Identification of the requirements capture process
+% Explanation of why the chosen technique was utilised over other potential competitors.
+% Identify and discuss key requirements, with a focus on areas of challenge, difficulty or conflict.
+% Be sure to show appropriate scoping. 
+% Identify the areas of requirements analysis and specification that were particularly successful
+% Be critical of areas where compromises were required. 
+
 \chapter{Elucidation} % (fold)
 \label{cha:elucidation}
-% This section will:
-% \begin{itemize}
-%     \item \textbf{Conclude with Requirements:} The section will conclude with a high-level requirements specification for the project.
-% \end{itemize}
-
 With a necessarily broad body of work examined in the literature and technology survey (see Chapter~\ref{cha:literature_and_technology_survey}), it is necessary to consolidate this information as it applies to the project. 
 This section aims to provide a concrete understanding of which portions of the research will apply directly to the project, fill in any gaps in the research and provide a high-level specification for the project as a whole.
 
@@ -250,47 +252,98 @@ This method was selected due to the lack of any \textit{real} stakeholder, thus 
 \subsection{Requirements for the Metalanguage} % (fold)
 \label{sub:requirements_for_the_metalanguage}
 The first of the main project components is the metalanguage, Metaspec. 
-It has the following requirements imposed upon it.
+It has the following requirements imposed upon it.\\
 
-% \requirement{}{}{}
+\requirement{Specify Language Syntax}{Functional}{
+    The metalanguage must provide a flexible and intuitive way for the user to specify the syntax of the DSL.
+}
 
+\requirement{Specify Language Semantics}{Functional}{
+    The metalanguage must provide an intuitive method for the user to specify thes language semantics in the general case, and also provide special-case semantics for things that cannot be proved by the proof mechanism.
+}
 
+\requirement{Semantic Typing}{Functional}{
+    Language types should be enforced at the semantic level.
+    The reasoning for this is twofold:
+    \begin{enumerate}
+        \item DSLs often have concise and clear syntax, and cluttering this with syntax-level typing compromises this goal somewhat.
+        \item It is difficult to provide an extensible mechanism for language designers to add syntax-level typing.
+    \end{enumerate}
 
+    Combined, it is clear that the semantic level is the most appropriate place to enforce language types. 
+}
 
-\begin{itemize}
-    \item \textbf{Specify Language Syntax:} The metalanguage must provide a flexible and intuitive way of specifying the syntax of the DSL.
-    \item \textbf{Specify Language Semantics:} The metalanguage must provide an intuitive method for the specification of language semantics in the general case, and also provide special-case semantics for things that cannot be proved by the proof mechanism.
-    \item \textbf{Data Types:} The metalanguage must provide a useful set of data-types to allow for useful computation to be performed. 
+\requirement{Integrated Syntax and Semantic Specification}{Non-Functional}{
+    The forms of specification for both syntax (see Requirement~\reqref{req:SpecifyLanguageSyntax}) and semantics (see Requirement~\reqref{req:SpecifyLanguageSemantics}) should be integrated together in an intuitive fashion.
+}
+
+\requirement{Data Types}{Functional}{
+    The metalanguage must provide a useful set of data-types to allow for useful computation to be performed. 
     These must include integer and floating point types, as well as list and matrix container types.
-    \item \textbf{Function Calls:} The metalanguage must provide the ability to define procedures callable from host languages, and subroutines callable internally.
+}
+
+\requirement{Function Calls}{Functional}{
+    The metalanguage must provide the ability to define procedures callable from host languages, and subroutines callable internally.
     The way in which these routines are defined and called should be congruent with being able to prove that the language semantics terminate.
-    \item \textbf{Data Traversal:} The metalanguage should provide mechanisms for traversing the data types it defines, so as to avoid the need to allow general recursion.
-    \item \textbf{Ground Truth Semantics:} The metalanguage should provide a way to specify ground-truth semantics for non-terminals. 
+}
+
+\requirement{Data Traversal}{Functional}{
+    The metalanguage should provide mechanisms for traversing the data types it defines, so as to avoid the need to allow general recursion.
+}
+
+\requirement{Ground-Truth Semantics}{Functional}{
+    The metalanguage should provide a way to specify ground-truth semantics for non-terminals. 
     These are things that can be trivially assumed to terminate by the proof mechanism.
-    \item \textbf{Extension Mechanisms:} The metalanguage should provide a set of `language features' that can be imported into scope for use by the DSL designer. 
-    These should provide useful language constructs (e.g. non-terminals, special semantics) to aid in the construction of both syntax and semantics.
-\end{itemize}
+}
+
+\requirement{Extension Mechanisms}{Functional}{
+    The metalanguage should provide a set of `language features' that can be imported into scope for use by the DSL designer. 
+    These should provide useful language constructs (e.g. non-terminals, special semantics) to aid in the construction of both syntax and semantics for the DSL.
+}
 
 % subsection requirements_for_the_metalanguage (end)
 
 \subsection{Requirements for the Metacompiler} % (fold)
 \label{sub:requirements_for_the_metacompiler}
 The second major component of the project is the metacompiler, \gls{absol}.
-It must conform with the following set of requirements:
-\begin{itemize}
-    \item \textbf{Parse Metaspec:} The metacompiler must be capable of both lexing and parsing a metaspec file into an appropriate AST data structure. 
-    \item \textbf{Verify Language Construction:} The metacompiler must be capable of verifying that all used non-terminal symbols are defined, and that no non-terminal is defined more than once.
+It must conform with the following set of requirements.\\
+
+\requirement{Parse Metaspec}{Functional}{
+    The metacompiler must be capable of both lexing and parsing a metaspec file into an appropriate AST data structure. 
+}
+
+\requirement{Verify Language Construction}{Functional}{
+    The metacompiler must be capable of verifying that all used non-terminal symbols are defined, and that no non-terminal is defined more than once.
     These are pre-requisites for the verification engine.
-    \item \textbf{Verify Semantic Form:} The metacompiler must be capable of verifying that all semantic rules match their appropriate forms.
+}
+
+\requirement{Verify Semantic Form}{Functional}{
+    The metacompiler must be capable of verifying that all semantic rules match their appropriate forms.
     This includes all types of special semantic rules, as well as the user-defined operational-style semantics.
-    \item \textbf{Verify Semantic Guards:} The metacompiler must be capable of verifying that there is a complete set of guards for the user-defined semantics in every production.
-    \item \textbf{Generation of Verification Reports:} In the case where the metacompiler is unable to verify an input language, it should generate detailed diagnostics that indicate the reason(s) why the language failed to verify.
+}
+
+\requirement{Verify Semantic Guards}{Functional}{
+    The metacompiler must be capable of verifying that all semantic rules match their appropriate forms.
+    This includes all types of special semantic rules, as well as the user-defined operational-style semantics.
+}
+
+\requirement{Generation of Verification Reports}{Functional}{
+    In the case where the metacompiler is unable to verify an input language, it should generate detailed diagnostics that indicate the reason(s) why the language failed to verify.
     These diagnostics should provide a trace (from the start symbol of the language) to help the language developer determine the location of the error. 
-    \item \textbf{Defer Typechecking:} The metacompiler does not deal with semantic type checking, as type holes cannot be inferred at the language level. 
-    \item \textbf{Prevention of Arbitrary Recursion:} The metacompiler should check that languages do not enable arbitrary recursion over data, as this would make termination impossible to show at the language level. 
-    \item \textbf{Extensibility:} The metacompiler should be designed in such a fashion that it can easily be extended in the future to accommodate further developments on the way to productisation. 
+}
+
+\requirement{Defer Typechecking}{Functional}{
+    The metacompiler does not deal with semantic type checking, as type holes cannot be inferred at the language level. 
+}
+
+\requirement{Prevention of Arbitrary Recursion}{Functional}{
+    The metacompiler should check that languages do not enable arbitrary recursion over data, as this would make termination impossible to show at the language level. 
+}
+
+\requirement{Extensibility}{Non-Functional}{
+    The metacompiler should be designed in such a fashion that it can easily be extended in the future to accommodate further developments on the way to productisation. 
     This means that it must be modular. 
-\end{itemize}
+}
 
 % subsection requirements_for_the_metacompiler (end)
 
@@ -302,15 +355,27 @@ The main casualty of these time restrictions was the creation of a complete meta
 While it is a shame that the project will not result in a complete `product', this is less of a problem than it may initially seem.
 The \textit{novel} work of the project is concentrated in the metacompiler front end, which ingests, parses and verifies the language. 
 Any further code-generation from the defined language has already seen significant exploration, particularly by \citet{diehl1996semantics}.
-To this end, the following requirements have been moved out of scope:
-\begin{itemize}
-    \item \textbf{DSL Compiler Generation:} While an important part of `productising' this toolchain, the generation of the DSL compiler from the metaspec AST is out-of-scope.
-    This is because it is not novel work, and yet constitutes a significant amount of implementation effort. 
-    As it doesn't really contribute much to the state of the art, it is not considered as part of this project.
-    \item \textbf{Full Semantic Guard Checking:} As discussed in Section~\ref{sub:guard_completeness_checking}, it is possible to develop a sophisticated mechanism for checking the completeness of the guards.
-    However, the significant development effort this would require is unlikely to be achievable within the project time-frame, and is hence ruled as out of scope. 
-    As mentioned in Section~\ref{sub:requirements_for_the_metacompiler} this doesn't, however, absolve the metacompiler of needing to check guard completeness. 
-\end{itemize}
+To this end, the following requirements have been moved out of scope.\\
+
+\requirement{DSL Compiler Generation}{Functional}{
+    Generation of a compiler for the DSL specified in the input file from both the syntax and semantics contained therein.
+    This DSL compiler must be capable of taking programs in the specified DSL and transpiling them to Haskell code.
+    This resultant Haskell code should be ready for use via the C \gls{ffi}.
+}
+
+While an important part of `productising' this toolchain, the generation of the DSL compiler from the metaspec AST is out-of-scope.
+This is because it is not novel work, and yet constitutes a significant amount of implementation effort. 
+As it doesn't really contribute much to the state of the art, it is not considered as part of this project.\\
+
+\requirement{Full Semantic Guard Checking}{Functional}{
+    The metacompiler verification stage must ensure that all sets of guards for user-specified semantics are complete. 
+    \textit{Complete} means that there is no set of values that the program can create which will not satisfy \textit{at least one} of the extant guards.
+    This helps to ensure that the program always has defined semantics.
+}
+
+As discussed in Section~\ref{sub:guard_completeness_checking}, it is possible to develop a sophisticated mechanism for checking the completeness of the guards.
+However, the significant development effort this would require is unlikely to be achievable within the project time-frame, and is hence ruled as out of scope. 
+As mentioned in Section~\ref{sub:requirements_for_the_metacompiler} this doesn't, however, absolve the metacompiler of needing to check guard completeness. 
 
 % subsection out_of_scope_requirements (end)
 

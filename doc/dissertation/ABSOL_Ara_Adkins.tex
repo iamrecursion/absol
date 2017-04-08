@@ -16,6 +16,7 @@
 \usepackage{enumerate} %For lists
 \usepackage{fancyhdr}
 \usepackage{float} %better float control
+\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc} %for font encoding
 \usepackage{framed} %For frames around blocks
 \usepackage[top=3cm, bottom=3cm, left=3.5cm, right=3cm]{geometry} %Fix page margins
@@ -41,10 +42,12 @@
 \usepackage{ulem}
 \usepackage{xcolor}
 \usepackage{xparse}
+\usepackage{xstring}
 \usepackage{textcomp}
 \usepackage[prefix=sol-]{xcolor-solarized}
 \usepackage[]{marvosym}
 \usepackage{microtype}
+\usepackage{lmodern}
 
 \usepackage{relsize}
 
@@ -70,9 +73,22 @@
 \newcommand{\goesto}[0]{\MVRightarrow}
 \newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
 
-% \newcommand{\requirement}[3]{
-    
-% }
+\newcounter{requirementcounter}
+\newcommand*{\reqlabel}[1]{R\refstepcounter{requirementcounter}\therequirementcounter\label{#1}}
+\newcommand*{\reqref}[1]{R\ref{#1}}
+
+\newcommand*{\mklabelcase}[1]{\lowercase{\StrSubstitute[0]{#1}{ }{\_}}}
+
+\newcommand{\requirement}[3]{
+    \StrSubstitute[0]{#1}{ }{}[\labelname]
+    \textbf{Requirement \reqlabel{req:\labelname}}
+    \begin{addmargin}[1em]{0em}
+        \textbf{Name:} #1\\ 
+        \textbf{Type:} #2\\
+        \textbf{Description:}\\
+        #3\\
+    \end{addmargin}
+}
 
 % New Table Column Types
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
@@ -155,7 +171,7 @@
     belowcaptionskip=1\baselineskip,
     % Colors
     backgroundcolor=\color{sol-base3},
-    basicstyle=\color{sol-base0}\tiny\ttfamily,
+    basicstyle=\color{sol-base0}\footnotesize\ttfamily,
     keywordstyle=\color{sol-cyan},
     commentstyle=\color{sol-base01},
     stringstyle=\color{sol-blue},
@@ -172,7 +188,8 @@
     rulecolor=\color{sol-base01},
     aboveskip=2em,
     belowskip=2em,
-    upquote=true
+    upquote=true,
+    basewidth={0.5em,0.5em}
 }
 
 % Title
