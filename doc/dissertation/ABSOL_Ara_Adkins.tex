@@ -2,6 +2,7 @@
 \documentclass[a4paper,11pt]{report}
 
 %Additional Packages
+\usepackage{floatrow}
 \usepackage{scrextend} %for variable indentation
 \usepackage{algorithm} %For algorithms
 \usepackage{algpseudocode} %For algorithms
@@ -15,7 +16,7 @@
 \usepackage{color} %Colour stuff (mostly for the highlight custom command)
 \usepackage{enumerate} %For lists
 \usepackage{fancyhdr}
-\usepackage{float} %better float control
+% \usepackage{float} %better float control
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc} %for font encoding
 \usepackage{framed} %For frames around blocks
@@ -48,6 +49,7 @@
 \usepackage[]{marvosym}
 \usepackage{microtype}
 \usepackage{lmodern}
+\usepackage{minted}
 
 \usepackage{relsize}
 
@@ -191,6 +193,23 @@
     upquote=true,
     basewidth={0.5em,0.5em}
 }
+
+\setminted{
+    autogobble=true, % remove common leading whitespace
+    breakanywhere=true,
+    breakautoindent=true,
+    fontsize=\footnotesize,
+    numbers=left,
+    mathescape=true, % allow maths symbols
+    stripnl=false,
+    tabsize=4,
+    texcomments=true,
+    resetmargins=true
+    % xleftmargin=1cm
+}
+
+\newcommand{\listingautorefname}{Listing}
+\newcommand{\algorithmautorefname}{Algorithm}
 
 % Title
 % \pretitle{

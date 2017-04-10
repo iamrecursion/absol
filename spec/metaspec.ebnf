@@ -160,10 +160,16 @@ metaspec-defblock =
     truths-defblock, rule-termination-symbol, 
     language-defblock, rule-termination-symbol;
 
-(* names can be arbitrary *)
+(* 
+    Names can be arbitrary, parses to from first to last non-whitespace character
+    before the `;`.
+*)
 name-defblock = "name", where-symbol, { utf-8-char }-,;
 
-(* Version strings can be alphanumeric *)
+(* 
+    Version strings can be arbitrary, parses to from first to last 
+    non-whitespace character before the `;`.
+*)
 version-defblock = "version", where-symbol, { utf-8-char }-,;
 
 using-defblock =

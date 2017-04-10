@@ -57,6 +57,7 @@ cabal.project.local
 *.lot
 *.lof
 *.lol
+*minted*
 
 # Misc
 *.fuse*

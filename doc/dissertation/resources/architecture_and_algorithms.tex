@@ -46,15 +46,77 @@ The same notation will be used throughout this section of the document.
 The top-level structure of a Metaspec file consists of a series of ordered top-level definitions.
 The presence of these definitions emerged from the seemingly disparate nature of a number of the requirements placed upon the language.
 They are as follows:
-\begin{itemize}
+\begin{enumerate}
     \item The language name (Requirement~\reqref{req:LanguageMetadata})
     \item The language version (Requirement~\reqref{req:LanguageMetadata})
     \item Language feature imports (Requirement~\reqref{req:ExtensionMechanisms})
     \item Ground truths for the proof engine (Requirement~\reqref{req:Ground-TruthSemantics})
     \item The language itself (Requirement~\reqref{req:IntegratedSyntaxandSemanticSpecification})
-\end{itemize}
+\end{enumerate}
 
-As these requirements are 
+Tying these somewhat disparate areas together is the requirement for language definition files to read in an ``intuitive'' fashion (Requirement~\reqref{req:IntuitiveFileStructure}). 
+This provided an initial sense for the ordering of the language definitions, as each block assisted in providing the contextual foundation for the language definition itself. \\
+
+To this end, the decision was made to enforce the ordering of these in the language grammar itself (as seen in Listing~\ref{lst:top_level_metaspec_definition_blocks}, with the ordering as above.
+\begin{lstlisting}[caption={Top-Level Metaspec Definition Blocks}, label={lst:top_level_metaspec_definition_blocks}, firstnumber=156]
+metaspec-defblock = 
+    name-defblock, rule-termination-symbol, 
+    version-defblock, rule-termination-symbol, 
+    using-defblock, rule-termination-symbol, 
+    truths-defblock, rule-termination-symbol, 
+    language-defblock, rule-termination-symbol;
+\end{lstlisting}
+
+Placing the metadata fields first was a natural way to provide some initial context as to the language and version, and also assists with at-a-glance determining the language version in a \gls{vcs}.
+As the extensions import list, the \lstinline{using-defblock}, can contain dependencies of the other two blocks, it made a significant amount of sense to put this next, as it aids in establishing context for the next two blocks.\\
+
+The ordering of the termination truths (\lstinline{truths-defblock}) and the language definition itself (\lstinline{language-defblock}) was similarly natural. 
+While the truths are mainly depended upon by the termination proof mechanism (see Section~\ref{sub:the_verification_engine}), they can also act as a guide to the language designer to indicate where they will be required to provide semantics for a language production. 
+This quite clearly indicates that the termination truths should come before the language definition itself, as they provide additional context for the language designer.\\
+
+While one might argue for the separation of these top-level elements, particularly the metadata, into multiple files, it seems far more natural to combine them all under one umbrella.
+This means that each language definition is a self-contained unit with all the context required to understand it. 
+While this single-file requirement does mean that definitions for large DSl
+
+Each of these top-level blocks have fairly distinct forms, and each was designed very carefully to aid the language designer's understanding of the file.
+
+\subsubsection{The Metadata Blocks} % (fold)
+\label{ssub:the_metadata_blocks}
+These two blocks, defining the language name and language version are almost trivial to define. 
+However, care was taken not to enforce any particular naming or version scheme on the users of Metaspec.
+\citet{raemaekers2014semantic} found that the semantics of a version string vary dramatically among software projects, and so it made little sense to impose a particular scheme in this case. \\
+
+To this end, both the name and version strings for the language consist of a string of utf-8 characters.
+They are parsed from the first non-whitespace character to the last that occurs before the rule termination symbol (\lstinline{;}), as seen in Listing~\ref{lst:metadata_block_definitions}.
+This ensures the maximum flexibility for the users of Metaspec. 
+
+\begin{lstlisting}[numbers=none, caption={Metadata Block Definitions}, label={lst:metadata_block_definitions}]
+name-defblock = "name", where-symbol, { utf-8-char }-,;
+version-defblock = "version", where-symbol, { utf-8-char }-,;
+\end{lstlisting}
+
+% subsubsection the_metadata_blocks (end)
+
+\subsubsection{The Imports Definition Block} % (fold)
+\label{ssub:the_imports_definition_block}
+In defining the style of imports for the language extension features (Requirement~\reqref{req:ExtensionMechanisms}) there were two main forms considered for use in Metaspec.\\
+
+The first style of import declaration that was considered was what the project terms the `one-line-per-import' style. 
+This is seen in myriad programming languages, and has each import as a single statement. 
+This does feature benefits for user parsing, as well as complicated import statements possibly being easier to read. 
+Such a style can be seen in \autoref{lst:haskell_import_style} below.
+
+\begin{listing}
+\begin{minted}[numbers=none]{haskell}
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromJust, isJust)
+import qualified Data.Set                     as S
+\end{minted}
+\caption{Haskell Import Style}
+\label{lst:haskell_import_style}
+\end{listing}
+
+% subsubsection the_imports_definition_block (end)
 
 \subsubsection{Comments in Metaspec} % (fold)
 \label{ssub:comments_in_metaspec}
