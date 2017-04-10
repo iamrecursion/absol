@@ -36,11 +36,56 @@ Finally, it concludes with the design of both the core algorithms and special la
 \gls{metaspec} is the metalanguage for the \gls{absol} project, allowing the language designers to specify both the syntax and semantics of their DSL, as well as associated metadata, in a unified form. 
 The final syntax for Metaspec is the result of significant design work, and consequentially the syntax discussed below has been through some evolution. \\
 
+Metaspec is, in itself, a \gls{dsl}, and hence its design process was an interesting insight into how people might use the language to design their own \glspl{dsl}. \\
+
 The complete grammar for Metaspec can be found in Appendix~\ref{cha:the_metaspec_grammar}, and is written in standard \gls{ebnf} notation. 
 The same notation will be used throughout this section of the document. 
 
 \subsection{The Top-Level Definitions} % (fold)
 \label{sub:the_top_level_definitions}
+The top-level structure of a Metaspec file consists of a series of ordered top-level definitions.
+The presence of these definitions emerged from the seemingly disparate nature of a number of the requirements placed upon the language.
+They are as follows:
+\begin{itemize}
+    \item The language name (Requirement~\reqref{req:LanguageMetadata})
+    \item The language version (Requirement~\reqref{req:LanguageMetadata})
+    \item Language feature imports (Requirement~\reqref{req:ExtensionMechanisms})
+    \item Ground truths for the proof engine (Requirement~\reqref{req:Ground-TruthSemantics})
+    \item The language itself (Requirement~\reqref{req:IntegratedSyntaxandSemanticSpecification})
+\end{itemize}
+
+As these requirements are 
+
+\subsubsection{Comments in Metaspec} % (fold)
+\label{ssub:comments_in_metaspec}
+During the consideration of the high-level structure of the metalanguage, it was important to determine the appearance of comments in the language.
+Comments are crucial in any programming or specification language, and hence had to be included in Metaspec. \\
+
+Requirement~\reqref{req:Comments} states that these comments need not have any semantic meaning in the language (contrasted with Python Docstrings, which are compiled with their functions \citep{python_docstrings}).
+This meant that the commenting syntax could be very simple, allowing the parser to strip them directly, rather than be parsed.
+To this end, it is stated in the language specification that all comments are removed in a preprocessing step. \\
+
+Comments themselves are defined as follows, and both a line comment and block comment style are provided:
+\begin{lstlisting}[caption={Comments in Metaspec}, label={lst:comments_in_metaspec}, firstnumber=149]
+metaspec-comment =
+    line-comment-start-symbol, { utf-8-char }, eol-symbol |
+    block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
+\end{lstlisting}
+
+The choice of \lstinline{line-comment-start-symbol}, \lstinline{block-comment-start-symbol} and \lstinline{block-comment-end-symbol} was effectively arbitrary.
+The block comment style was taken directly from \gls{ebnf}, as specified in \cite{standard1996ebnf}, but there was no line comment style to go on as EBNF does not provide one. \\
+
+While block comments can be used on a single line they contribute additional visual noise with their end-delimiter, and hence it seemed appropriate to include a line-comment style as well.
+With no prior reference to go on, the C-style line comment operator was chosen as it has been adopted my many programming languages. \\
+
+As a result, the comment symbols are defined in Metaspec as follows.
+\begin{lstlisting}[caption={Metaspec Comment Symbols}, label={lst:metaspec_comment_symbols}, numbers=none]
+line-comment-start-symbol = "//";
+block-comment-start-symbol = "(*";
+block-comment-end-symbol = "*)";
+\end{lstlisting}
+
+% subsubsection comments_in_metaspec (end)
 
 % subsection the_top_level_definitions (end)
 
@@ -74,6 +119,7 @@ The same notation will be used throughout this section of the document.
 % TODO Verifier: Different Verification Modules, talk about the recursive nature. Preprocessor.
 % Use this same style of architectural overview in the development section. 
 % Architectural overview focuses on system components, not code-level components.
+% Suitability of a pipeline-style architecture for the system as a whole. 
 
 As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. \\
 

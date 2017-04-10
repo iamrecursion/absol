@@ -306,6 +306,22 @@ It has the following requirements imposed upon it.\\
     This is required to support DSL creators defining their own function definitions and other such constructs in the DSL. 
 }
 
+\requirement{Language Metadata}{Functional}{
+    The metalanguage should provide syntactic constructs for managing metadata about the language itself.
+    These must include the language name and the language version.
+}
+
+\requirement{Intuitive File Structure}{Non-Functional}{
+    The structure of a file in the metalanguage should have an intuitive structure.
+    This means that the file should establish all prerequisites to the definition of the language before the language itself is defined. 
+    This means that all the necessary context to understand the language definition is provided.
+}
+
+\requirement{Comments}{Functional}{
+    The metalanguage must provide both line and block comments to allow for annotating language specifications.
+    These comments may have no semantic meaning in the language and may be stripped at parse time. 
+}
+
 % subsection requirements_for_the_metalanguage (end)
 
 \subsection{Requirements for the Metacompiler} % (fold)
