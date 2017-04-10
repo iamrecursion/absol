@@ -1,0 +1,160 @@
+% How the problem is analysed to create the solution.
+% Overall architecture of the design.
+% Examine the design approaches taken.
+% Identification of areas of the design that account for the requirements and resolve potential conflicts. 
+% 
+
+\chapter{Architecture and Algorithms} % (fold)
+\label{cha:architecture_and_algorithms}
+% This section will contain:
+% \begin{itemize}
+%     \item \textbf{Architectural Overview:} An overview of the system architecture, linked to the high-level requirements.
+%     This will touch on the portions of the system that were ruled out of scope later on, and why.
+%     \item \textbf{System Component Examination:} An examination of the design of each of the system components in detail.
+%     \item \textbf{The Development of Metaspec:} The process of developing the metaspec language itself, as well as some syntax examples and full syntax description. 
+%     \item \textbf{Algorithmic Descriptions:} The verification engine in particular is very heavy on algorithmic work. 
+%     These algorithms will be explained here, accompanied by any additional proof work that they require. 
+%     This will include proofs for the special form semantics.
+%     It will also look at initial or discarded algorithmic designs as part of the process. 
+% \end{itemize}
+
+As a project, \gls{absol} has had a very heavy research bent. 
+The experimental nature of the toolchain resulted in a heavy up-front design load and, combined with the highly theoretical nature of the language verification algorithms, this meant that design and algorithmic development dominated the time spent on the project.\\
+
+This section aims to illustrate the significant design work that was put into all facets of the project.
+It first explores the design process for the metalanguage, \gls{metaspec}, demonstrating the careful thought that went into the final result. 
+It then provides a high-level overview of the architecture of the toolchain, showing the main system components and tying them to the overarching system requirements.
+Finally, it concludes with the design of both the core algorithms and special language features that are integral to the operation of \gls{absol}. 
+
+\section{Designing the Metalanguage --- Metaspec} % (fold)
+\label{sec:designing_the_metalanguage_metaspec}
+% Careful consideration of why each bit of syntax looks like it does, what it allows the user to do. 
+% Design for intuition and flexibility.
+% Look like the source kind of semantics -> provide examples. 
+% Consideration of where the semantics needed to be placed in the syntax for it to make real sense. 
+
+\gls{metaspec} is the metalanguage for the \gls{absol} project, allowing the language designers to specify both the syntax and semantics of their DSL, as well as associated metadata, in a unified form. 
+The final syntax for Metaspec is the result of significant design work, and consequentially the syntax discussed below has been through some evolution. \\
+
+The complete grammar for Metaspec can be found in Appendix~\ref{cha:the_metaspec_grammar}, and is written in standard \gls{ebnf} notation. 
+The same notation will be used throughout this section of the document. 
+
+\subsection{The Top-Level Definitions} % (fold)
+\label{sub:the_top_level_definitions}
+
+% subsection the_top_level_definitions (end)
+
+\subsection{Specifying the Language Syntax} % (fold)
+\label{sub:specifying_the_language_syntax}
+% Why were the changes from EBNF made? 
+% Removal of empty syntax
+
+% subsection specifying_the_language_syntax (end)
+
+\subsection{Specifying the Language Semantics} % (fold)
+\label{sub:specifying_the_language_semantics}
+% Semantics and the unspecified cases. 
+
+% subsection specifying_the_language_semantics (end)
+
+\subsection{Combining Syntax and Semantics} % (fold)
+\label{sub:combining_syntax_and_semantics}
+% Challenges choosing the combination point
+% Initially at the production level, but this was nonsensical
+% What does having it at the alternation level allow users to do?
+% Why the particular form was chosen: --> {};
+
+% subsection combining_syntax_and_semantics (end)
+
+% section designing_the_metalanguage_metaspec (end)
+
+\section{Designing the Metacompiler --- ABSOL} % (fold)
+\label{sec:designing_the_metacompiler_absol}
+% TODO Parser: Lexer, Parser, Etc.
+% TODO Verifier: Different Verification Modules, talk about the recursive nature. Preprocessor.
+% Use this same style of architectural overview in the development section. 
+% Architectural overview focuses on system components, not code-level components.
+
+As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. \\
+
+\gls{absol}, the metacompiler system 
+
+\subsection{Lexing and Parsing} % (fold)
+\label{sub:lexing_and_parsing}
+% Talk about the design for the lexer and parser, informed by the use of Megaparsec.
+% Talk about the process and use of datatypes to represent a very strongly typed AST
+
+% subsection lexing_and_parsing (end)
+
+\subsection{The Verification Engine} % (fold)
+\label{sub:the_verification_engine}
+% Talk about the different modules, the verification preprocessor, the recursive nature of the algorithm for traversing the metaspec AST.
+
+% subsection the_verification_engine (end)
+
+% section designing_the_metacompiler_absol (end)
+
+\section{The Core Algorithms} % (fold)
+\label{sec:the_core_algorithms}
+% Talk about the design of each of the core algorithms in detail.
+
+\subsection{Verifier Traversal} % (fold)
+\label{sub:verifier_traversal}
+
+% subsection verifier_traversal (end)
+
+\subsection{Semantic Form Verification} % (fold)
+\label{sub:semantic_form_verification}
+% All three criteria (evals, subterms, etc)
+
+% subsection semantic_form_verification (end)
+
+\subsection{Guard Checking} % (fold)
+\label{sub:guard_checking}
+
+% subsection guard_checking (end)
+
+% section the_core_algorithms (end)
+
+\section{Special Language Features} % (fold)
+\label{sec:special_language_features}
+% Talk about the design of each of the language features, and prove the required termination properties here.
+
+\subsection{Feature --- \texttt{base}} % (fold)
+\label{sub:feature_base}
+
+% subsection feature_base (end)
+
+\subsection{Feature --- \texttt{number}} % (fold)
+\label{sub:feature_number}
+
+% subsection feature_number (end)
+
+\subsection{Feature --- \texttt{string}} % (fold)
+\label{sub:feature_string}
+
+% subsection feature_string (end)
+
+\subsection{Feature --- \texttt{list}} % (fold)
+\label{sub:feature_list}
+
+% subsection feature_list (end)
+
+\subsection{Feature --- \texttt{matrix}} % (fold)
+\label{sub:feature_matrix}
+
+% subsection feature_matrix (end)
+
+\subsection{Feature --- \texttt{traverse}} % (fold)
+\label{sub:feature_traverse}
+
+% subsection feature_traverse (end)
+
+\subsection{Feature --- \texttt{funcall}} % (fold)
+\label{sub:feature_funcall}
+
+% subsection feature_funcall (end)
+
+% section special_language_features (end)
+
+% chapter architecture_and_algorithms (end)

@@ -1,0 +1,408 @@
+\chapter{The Metaspec Grammar} % (fold)
+\label{cha:the_metaspec_grammar}
+Metaspec, as a language, has a fairly complex syntactic structure. 
+The syntax for the language is represented using \gls{ebnf}, and is included in its entirety below. \\
+
+For an overview of standard \gls{ebnf} syntax, please see the official standard for the metasyntactic notation published in \citet{standard1996ebnf}.
+
+\begin{lstlisting}
+(*
+    This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
+
+    It uses the EBNF syntax defined in Sections 4 and 5 of the ISO-14977 EBNF
+    standard.
+
+    The grammar does not care about whitespace except in the case of single-line
+    comments which are ended by an EOL character (\n, \r, \r\n), in a
+    platform-specific manner.
+
+    Comments, defined by the metaspec-comment grammar element, are stripped 
+    before parsing.
+*)
+
+(*
+    This section defines literals useful in the definition of the language.
+    The UTF-8 literal is defined as all graphemes that can be represented by the
+    UTF-8 transformation format as defined in RFC 3629.
+    For reference, the special symbols have the following meaning:
+
+        *       repetition
+        -       except
+        ,       concatenate
+        |       disjunction / definition separator
+        =       defining
+        ;       rule terminator
+        []      optional
+        {}      repetition
+        ()      group
+        ? ?     special sequence
+*)
+
+utf-8-char = ? all-utf-8-glyphs ?;
+text = { utf-8-char }-;
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+natural-number = { digit }-,;
+integer = [ "+" | "-" ], natural-number;
+floating-point-number = natural-number, [ ".", natural-number ];
+number = natural-number | integer | floating-point-number;
+textual-glyph = utf-8-char - digit;
+eol-symbol = ? EOL ?;
+literal-quote = ? ASCII-double-quote-symbol ?;
+newline = ? \n and \r ?
+
+(*
+    This section defines the terminal symbols of the language itself, including:
+    - Symbols for grammar definition
+    - Symbols for comments in the language
+*)
+
+(* Terminals used for defining the grammar *)
+
+repeat-count-symbol = "*";
+except-symbol = "-";
+disjunction-symbol = "|";
+defining-symbol = "::=";
+rule-termination-symbol = ";";
+
+optional-start-symbol = "[";
+optional-end-symbol = "]";
+group-start-symbol = "(";
+group-end-symbol = ")";
+repeat-start-symbol = "{";
+repeat-end-symbol = "}";
+
+special-sequence-start-symbol = "<?";
+special-sequence-end-symbol = "?>";
+
+start-symbol-start = "<<";
+start-symbol-end = ">>";
+non-terminal-start = "<";
+non-terminal-end = ">";
+
+(* Comment Symbols *)
+
+line-comment-start-symbol = "//";
+block-comment-start-symbol = "(*";
+block-comment-end-symbol = "*)";
+
+(* Semantic Definition Symbols *)
+
+semantic-behaves-as = "-->";
+evaluates-to = "<=";
+where-symbol = ":";
+semantic-and = ",";
+semantic-assign = "=";
+
+semantic-environment-symbol = "e";
+semantic-environment-input-symbol = "<--"
+environment-access-symbol = ".";
+environment-defines-symbol = ":";
+semantic-list-delimiter = ",";
+semantic-disjunction = "|";
+
+semantic-block-start = "{";
+semantic-block-end = "}";
+restriction-block-start = "(";
+restriction-block-end = ")";
+
+syntax-access-start-symbol = "[";
+syntax-access-end-symbol = "]";
+
+special-syntax-start = "(";
+special-syntax-end = ")";
+
+(*
+    This section defines the allowed types of identifiers in metaspec.
+*)
+
+non-terminal-identifier = 
+    textual-glyph, { textual-glyph | natural-number | "-" | "_"};
+terminal-string =  { utf-8-char - newline };
+semantic-identifier = 
+    (textual-glyph, { textual-glyph | natural-number | "-" | "_"})
+    - (semantic-type | metaspec-feature | semantic-special-syntax);
+string-literal = literal-quote, text, literal-quote;
+semantic-type
+    = "any"
+    | "none"
+    | "bool" 
+    | "natural"
+    | "integer"
+    | "int32"
+    | "int64"
+    | "uint32"
+    | "uint64"
+    | "float"
+    | "double"
+    | "integral"
+    | "floating"
+    | "number"
+    | "string"
+    | "list"
+    | "matrix" ;
+
+(*
+    This section defines the grammar of metaspec itself.
+    The start symbol is 'metaspec'.
+*)
+
+metaspec = { metaspec-def | metaspec-comment }-,; (* file cannot be empty *)
+
+metaspec-comment =
+    line-comment-start-symbol, { utf-8-char }, eol-symbol |
+    block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
+
+comment-list = { metaspec-comment };
+
+metaspec-def = metaspec-defblock, rule-termination-symbol;
+
+(* 
+    All of these blocks must be defined once in order.
+*)
+metaspec-defblock = 
+    name-defblock, 
+    version-defblock, 
+    using-defblock, 
+    truths-defblock,
+    language-defblock ;
+
+(* names can be arbitrary *)
+name-defblock = "name", where-symbol, { utf-8-char }-,;
+
+(* Version strings can be alphanumeric *)
+version-defblock = "version", where-symbol, { utf-8-char }-,;
+
+using-defblock =
+    "using",
+    where-symbol,
+    semantic-block-start,
+    [ metaspec-feature, { semantic-list-delimiter, metaspec-feature }]
+    semantic-block-end;
+
+truths-defblock =
+    "truths",
+    where-symbol, 
+    semantic-block-start,
+    semantic-evaluation,
+    { ", ", semantic-evaluation },
+    semantic-block-end;
+
+(* For defining the language itself *)
+language-defblock =
+    "language",
+    where-symbol,
+    semantic-block-start,
+    language-definition,
+    semantic-block-end;
+
+(* 
+    These features import language features into scope.
+
+    The syntax and usage of these features is tbc, and they appear in semantic
+    portions of the defined language.
+*)
+metaspec-feature
+    = "base"
+    | "number"
+    | "string"
+    | "list"
+    | "matrix"
+    | "traverse"
+    | "funcall" ;
+
+(*
+    The language described by the metalanguage is defined in terms of rules 
+    that combine syntax definitions and semantics.
+
+    The start symbol must be defined first, followed by the productions of the
+    language.
+*)
+language-definition = start-rule, { language-rule };
+
+non-terminal = non-terminal-start, non-terminal-identifier, non-terminal-end;
+terminal = literal-quote, terminal-string, literal-quote;
+start-symbol = start-symbol-start, non-terminal-identifier, start-symbol-end;
+
+start-rule = start-symbol, defining-symbol, language-rule-body;
+
+language-rule = non-terminal, defining-symbol, language-rule-body;
+
+language-rule-body = 
+    syntax-expression,
+    rule-termination-symbol;
+
+(* These NTs use definitions adapted directly from ISO 14977 - EBNF *)
+syntax-expression = 
+    syntax-alternative, { disjunction-symbol, syntax-alternative };
+
+syntax-alternative = syntax-term, { syntax-term }, [ language-rule-semantics ];
+
+syntax-term = syntax-factor, [ except-symbol, syntax-exception ];
+
+syntax-exception = 
+    ? a syntax-factor that can be replaced by one containing no NT symbols ?;
+
+syntax-factor = [ integer, repeat-count-symbol ], syntax-primary;
+
+syntax-primary = 
+    syntax-optional | 
+    syntax-repeated |
+    syntax-grouped |
+    syntax-special |
+    non-terminal |
+    terminal;
+
+syntax-optional = optional-start-symbol, syntax-expression, optional-end-symbol;
+
+syntax-repeated = repeat-start-symbol, syntax-expression, repeat-end-symbol;
+
+syntax-grouped = group-start-symbol, syntax-expression, group-end-symbol;
+
+syntax-special =
+    special-sequence-start-symbol,
+    text,
+    special-sequence-end-symbol;
+
+(* These productions define the syntax of the semantic definition blocks *)
+language-rule-semantics = 
+    semantic-behaves-as,
+    semantic-block-start,
+    semantic-rule,
+    semantic-block-end;
+
+semantic-rule = 
+    environment-input-rule |
+    environment-access-rule |
+    special-syntax-rule |
+    semantic-evaluation-rule-list;
+
+environment-input-rule =
+    semantic-type, 
+    semantic-environment-symbol,
+    semantic-environment-input-symbol,
+    syntax-access-block, (* key *)
+    environment-defines-symbol,
+    syntax-access-list;
+
+syntax-access-block = non-terminal, syntax-accessor;
+
+syntax-accessor = 
+    syntax-access-start-symbol,
+    natural-number,
+    syntax-access-end-symbol;
+
+syntax-access-list = 
+    syntax-access-block, { semantic-list-delimiter, syntax-access-block };
+
+environment-access-rule = 
+    semantic-environment-symbol,
+    environment-access-symbol,
+    syntax-access-block,
+    { environment-access-symbol, syntax-access-block };
+
+special-syntax-rule = 
+    semantic-special-syntax,
+    special-syntax-start,
+    [ syntax-access-block | environment-access-rule ],
+    { semantic-list-delimiter, (syntax-access-block|environment-access-rule) },
+    special-syntax-end;
+
+semantic-evaluation-rule-list = 
+    semantic-evaluation-rule,
+    { semantic-disjunction, semantic-evaluation-rule };
+
+semantic-evaluation-rule = 
+    semantic-type,
+    semantic-identifier,
+    where-symbol,
+    semantic-operation-list,
+    semantic-restiction-list,
+    where-symbol, 
+    semantic-eveluation-list;
+
+semantic-eveluation-list = 
+    semantic-evaluation,
+    { semantic-list-delimiter, semantic-evaluation };
+
+semantic-evaluation = 
+    semantic-block-start
+    semantic-type, 
+    semantic-identifier,
+    evaluates-to,
+    [ syntax-access-block | special-syntax-rule ],
+    semantic-block-end;
+
+semantic-operation-list = 
+    semantic-block-start,
+    semantic-operation-assignment
+    { semantic-list-delimiter, semantic-operation-assignment },
+    semantic-block-end;
+
+semantic-operation-assignment =
+    semantic-identifier,
+    semantic-assign,
+    semantic-operation;
+
+// Revise this section in response to live code changes
+semantic-operation 
+    = semantic-identifier
+    | semantic-value
+    | semantic-identifier-access
+    | "(", semantic-operation, ")"
+    | prefix-semantic-unary-operator, semantic-operation
+    | semantic-operation, postfix-semantic-unary-operator
+    | semantic-operation, semantic-binary-operator, semantic-operation;
+
+semantic-identifier-access = 
+    semantic-identifier, "|", natural-number, "|" | "[", natural-number, "]";
+
+semantic-restriction-list = 
+    restriction-block-start
+    semantic-restriction,
+    { semantic-list-delimiter, semantic-restriction },
+    restriction-block-end;
+
+semantic-restriction = semantic-identifier, semantic-restriction-check-operator,
+    semantic-value | identifier;
+
+(* The symbols here are dependent on the language using imports *)
+semantic-restriction-check-operator = "==" | "!=" | "<" | ">" | "<=" | ">=";
+
+semantic-value = string-literal | number | semantic-boolean;
+
+semantic-boolean = "true" | "false";
+
+semantic-binary-operator = 
+    "+" |
+    "-" |
+    "*" |
+    "/" |
+    "%" |
+    ":" |
+    "^" |
+    "|" |
+    "||" |
+    "&&" |
+    "&" |
+    "==" |
+    "!=" |
+    "<" |
+    ">" |
+    "<=" |
+    ">=";
+
+prefix-semantic-unary-operator = "!" | "-" | "++" | "--";
+
+postfix-semantic-unary-operator = "--" | "++";
+
+semantic-special-syntax 
+    = "map"
+    | "fold"
+    | "filter"
+    | "defproc"
+    | "deffun"
+    | "callproc"
+    | "callfun"
+\end{lstlisting}
+
+% chapter the_metaspec_grammar (end)

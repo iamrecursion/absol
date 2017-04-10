@@ -34,8 +34,6 @@ import qualified Data.Set                     as S
 
 import Debug.Trace
 
--- TODO Refactor guard checker code to have less duplication
-
 -- | A type for storing the non-terminals defined in a syntax expression.
 type NTCountMap = M.Map NonTerminal Integer
 
