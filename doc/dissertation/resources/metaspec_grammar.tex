@@ -5,7 +5,7 @@ The syntax for the language is represented using \gls{ebnf}, and is included in 
 
 For an overview of standard \gls{ebnf} syntax, please see the official standard for the metasyntactic notation published in \citet{standard1996ebnf}.
 
-\begin{minted}{text}
+\begin{minted}[fontsize=\blockfont]{text}
 
 (*
     This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
@@ -168,10 +168,16 @@ metaspec-defblock =
     truths-defblock, rule-termination-symbol, 
     language-defblock, rule-termination-symbol;
 
-(* names can be arbitrary *)
+(* 
+    Names can be arbitrary, parses to from first to last non-whitespace character
+    before the `;`.
+*)
 name-defblock = "name", where-symbol, { utf-8-char }-,;
 
-(* Version strings can be alphanumeric *)
+(* 
+    Version strings can be arbitrary, parses to from first to last 
+    non-whitespace character before the `;`.
+*)
 version-defblock = "version", where-symbol, { utf-8-char }-,;
 
 using-defblock =
