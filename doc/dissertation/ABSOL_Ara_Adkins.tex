@@ -2,8 +2,9 @@
 \documentclass[a4paper,11pt]{report}
 
 %Additional Packages
+\usepackage{floatrow}
 \usepackage{scrextend} %for variable indentation
-\usepackage{algorithm} %For algorithms
+\usepackage[chapter]{algorithm} %For algorithms
 \usepackage{algpseudocode} %For algorithms
 \usepackage[]{array}
 \usepackage{amsmath} %Extra formula-writing functionality
@@ -15,7 +16,7 @@
 \usepackage{color} %Colour stuff (mostly for the highlight custom command)
 \usepackage{enumerate} %For lists
 \usepackage{fancyhdr}
-\usepackage{float} %better float control
+% \usepackage{float} %better float control
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc} %for font encoding
 \usepackage{framed} %For frames around blocks
@@ -48,6 +49,7 @@
 \usepackage[]{marvosym}
 \usepackage{microtype}
 \usepackage{lmodern}
+\usepackage[chapter]{minted}
 
 \usepackage{relsize}
 
@@ -72,6 +74,8 @@
 \newcommand{\eval}{\Downarrow}
 \newcommand{\goesto}[0]{\MVRightarrow}
 \newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
 
 \newcounter{requirementcounter}
 \newcommand*{\reqlabel}[1]{R\refstepcounter{requirementcounter}\therequirementcounter\label{#1}}
@@ -81,7 +85,7 @@
 
 \newcommand{\requirement}[3]{
     \StrSubstitute[0]{#1}{ }{}[\labelname]
-    \textbf{Requirement \reqlabel{req:\labelname}}
+    \hspace{-1.5em}\textbf{Requirement \reqlabel{req:\labelname}}
     \begin{addmargin}[1em]{0em}
         \textbf{Name:} #1\\ 
         \textbf{Type:} #2\\
@@ -142,8 +146,8 @@
 % \renewcommand{\headrulewidth}{0pt}
 % \renewcommand{\footrulewidth}{0pt}
 
-\setlength{\parindent}{0pt}
-\setlength{\headheight}{14pt}
+% \setlength{\parindent}{0pt}
+% \setlength{\headheight}{14pt}
 
 \hypersetup{
     colorlinks,
@@ -192,6 +196,30 @@
     basewidth={0.5em,0.5em}
 }
 
+\floatsetup[listing]{style=plain}
+\newenvironment{longlisting}{\captionsetup{type=listing}}{}
+\setminted{
+    autogobble=true, % remove common leading whitespace
+    breakanywhere=true,
+    breakautoindent=true,
+    numbers=left,
+    mathescape=true, % allow maths symbols
+    stripnl=false,
+    tabsize=4,
+    texcomments=true,
+    resetmargins=true,
+    xleftmargin=\parindent
+}
+
+\newcommand{\blockfont}{\footnotesize}
+
+\newcommand{\listingautorefname}{Listing}
+\newcommand{\algorithmautorefname}{Algorithm}
+\renewcommand{\chapterautorefname}{Chapter}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Subsection}
+\renewcommand{\subsubsectionautorefname}{Subsection}
+
 % Title
 % \pretitle{
 % 	\begin{center}
@@ -239,6 +267,9 @@
 \listofalgorithms
 \addcontentsline{toc}{chapter}{List of algorithms}
 
+\lstlistoflistings
+\addcontentsline{toc}{chapter}{Listings}
+
 \printglossaries
 
 % Acknowledgements
@@ -248,6 +279,7 @@
 \include{resources/introduction}
 \include{resources/literature_survey}
 \include{resources/elucidation_requirements}
+\include{resources/designing_the_metalanguage}
 \include{resources/architecture_and_algorithms}
 \include{resources/implementation}
 \include{resources/testing}

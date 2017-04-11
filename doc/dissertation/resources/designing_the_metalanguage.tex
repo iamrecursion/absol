@@ -1,0 +1,814 @@
+\chapter{Designing the Metalanguage} % (fold)
+\label{cha:designing_the_metalanguage}
+As a project, \gls{absol} has had a very heavy research bent. 
+The experimental nature of the toolchain resulted in a heavy up-front design load and, combined with the highly theoretical nature of the language verification algorithms, this meant that language design and algorithmic development dominated the time spent on the project.
+This section aims to illustrate the significant design work that was put into the first of the two main project components: the metalanguage --- \gls{metaspec}. \\
+
+\gls{metaspec} is the metalanguage for the \gls{absol} project, allowing the language designers to specify both the syntax and semantics of their DSL, as well as associated metadata, in a unified form. 
+The final syntax for Metaspec is the result of significant design work, and consequentially the syntax discussed below has been through some evolution. \\
+
+Metaspec is, in itself, a \gls{dsl}, and hence its design process was an interesting insight into how people might use the language to design their own \glspl{dsl}. 
+The complete grammar for Metaspec can be found in Appendix~\ref{cha:the_metaspec_grammar}, and is written in standard \gls{ebnf} notation. 
+The same notation will be used throughout this section of the document. 
+
+\section{The Top-Level Definitions} % (fold)
+\label{sec:the_top_level_definitions}
+The top-level structure of a Metaspec file consists of a series of ordered top-level definitions.
+The presence of these definitions emerged from the seemingly disparate nature of a number of the requirements placed upon the language.
+They are as follows:
+\begin{enumerate}
+    \item The language name (Requirement~\reqref{req:LanguageMetadata})
+    \item The language version (Requirement~\reqref{req:LanguageMetadata})
+    \item Language feature imports (Requirement~\reqref{req:ExtensionMechanisms})
+    \item Ground truths for the proof engine (Requirement~\reqref{req:Ground-TruthSemantics})
+    \item The language itself (Requirement~\reqref{req:IntegratedSyntaxandSemanticSpecification})
+\end{enumerate}
+
+Tying these somewhat disparate areas together is the requirement for language definition files to read in an ``intuitive'' fashion (Requirement~\reqref{req:IntuitiveFileStructure}). 
+This provided an initial sense for the ordering of the language definitions, as each block assisted in providing the contextual foundation for the language definition itself. \\
+
+To this end, the decision was made to enforce the ordering of these in the language grammar itself (as seen in Listing~\ref{lst:top_level_metaspec_definition_blocks}, with the ordering as above.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=156]{text}
+metaspec-defblock = 
+    name-defblock, rule-termination-symbol, 
+    version-defblock, rule-termination-symbol, 
+    using-defblock, rule-termination-symbol, 
+    truths-defblock, rule-termination-symbol, 
+    language-defblock, rule-termination-symbol;
+\end{minted}
+\caption{Top-Level Metaspec Definition Blocks}
+\label{lst:top_level_metaspec_definition_blocks}
+\end{listing}
+
+Placing the metadata fields first was a natural way to provide some initial context as to the language and version, and also assists with at-a-glance determining the language version in a \gls{vcs}.
+As the extensions import list, the \mintinline{text}{using-defblock}, can contain dependencies of the other two blocks, it made a significant amount of sense to put this next, as it aids in establishing context for the next two blocks.\\
+
+The ordering of the termination truths (\mintinline{text}{truths-defblock}) and the language definition itself (\mintinline{text}{language-defblock}) was similarly natural. 
+While the truths are mainly depended upon by the termination proof mechanism (see Section~\ref{sub:the_verification_engine}), they can also act as a guide to the language designer to indicate where they will be required to provide semantics for a language production. 
+This quite clearly indicates that the termination truths should come before the language definition itself, as they provide additional context for the language designer.\\
+
+While one might argue for the separation of these top-level elements, particularly the metadata, into multiple files, it seems far more natural to combine them all under one umbrella.
+This means that each language definition is a self-contained unit with all the context required to understand it. 
+While this single-file requirement does mean that definitions for large DSl
+
+Each of these top-level blocks have fairly distinct forms, and each was designed very carefully to aid the language designer's understanding of the file.
+
+\subsection{The Metadata Blocks} % (fold)
+\label{sub:the_metadata_blocks}
+These two blocks, defining the language name and language version are almost trivial to define. 
+However, care was taken not to enforce any particular naming or version scheme on the users of Metaspec.
+\citet{raemaekers2014semantic} found that the semantics of a version string vary dramatically among software projects, and so it made little sense to impose a particular scheme in this case. \\
+
+To this end, both the name and version strings for the language consist of a string of utf-8 characters.
+They are parsed from the first non-whitespace character to the last that occurs before the rule termination symbol (\mintinline{text}{;}), as seen in Listing~\ref{lst:metadata_block_definitions}.
+This ensures the maximum flexibility for the users of Metaspec. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=156]{text}
+name-defblock = "name", where-symbol, { utf-8-char }-,;
+version-defblock = "version", where-symbol, { utf-8-char }-,;
+\end{minted}
+\caption{Metadata Block Definitions}
+\label{lst:metadata_block_definitions}
+\end{listing}
+
+% subsection the_metadata_blocks (end)
+
+\subsection{The Imports Definition Block} % (fold)
+\label{sub:the_imports_definition_block}
+In defining the style of imports for the language extension features (Requirement~\reqref{req:ExtensionMechanisms}) there were two main forms considered for use in Metaspec.\\
+
+The first style of import declaration that was considered was what the project terms the `one-line-per-import' style. 
+This is seen in myriad programming languages, and has each import as a single statement. 
+Such a style can be seen in \autoref{lst:haskell_import_style} below.
+This does have the benefit of possibly making complicated import statements easier to understand for the user, but in the context of Metaspec it doesn't belong from a stylistic standpoint.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromJust, isJust)
+import qualified Data.Set                     as S
+\end{minted}
+\caption{Haskell Import Style}
+\label{lst:haskell_import_style}
+\end{listing}
+
+The alternative style is to have imports declared as a comma-separated list. 
+This is conceptually simpler, but has the downside of making it more complex to have variants of import statements (as can be seen in \autoref{lst:haskell_import_style}).
+In the case of Metaspec, however, imports are simply keywords. 
+As a result, the list format was chosen as it both simplifies the form of the statement, and is a better stylistic fit with the other elements of the metaspec syntax. \\
+
+To that end, the \mintinline{text}{using} definition block is defined as a simple comma-separated list of feature keywords.
+This definition can be seen in \autoref{lst:the_using_definition_block} below.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=175]{text}
+using-defblock =
+    "using",
+    where-symbol,
+    semantic-block-start,
+    [ metaspec-feature, { semantic-list-delimiter, metaspec-feature }]
+    semantic-block-end;
+\end{minted}
+\caption{The Using Definition Block}
+\label{lst:the_using_definition_block}
+\end{listing}
+
+% subsection the_imports_definition_block (end)
+
+\subsection{The Language Truths Block} % (fold)
+\label{sub:the_language_truths_block}
+Another key part of the setup to understanding a language defined in Metaspec is to understand the termination truths.
+These are the trivial `base-cases' that can be assumed to terminate by the termination proof engine.\\
+
+Initially, there was some consideration given to having these be automatic, with only those given by the language features available.
+This was dismissed quickly, however, as it would remove significant flexibility from the language. 
+All the usefulness of metaspec comes from allowing users to specify the semantics exactly as they want to, and having these base-cases automated went against that.
+Thus, the truths are specified directly by the user, even for non-terminal symbols that they did not provide. 
+This ensures the maximum amount of flexibility in the termination base-cases for the language.\\
+
+The format of the truths themselves is taken almost directly from the language semantics (see Section~\ref{sec:specifying_the_language_semantics} for a discussion on the design of this form).
+The main reason for this is to allow a kind of `visual pattern matching' on behalf of the language designer. 
+The hope is that it easily allows them to find the termination truths for language elements visually, and hence aid in writing the language semantics.\\
+
+As a result, truths are basically given as a list of evaluation blocks for non-terminals in the language, the semantics of each meaning ``this evaluation always terminates''. 
+The exact syntactic specification for the truths definition block can be seen in \autoref{lst:the_truths_definition_block}. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=182]{text}
+truths-defblock =
+    "truths",
+    where-symbol, 
+    semantic-block-start,
+    semantic-evaluation,
+    { ", ", semantic-evaluation },
+    semantic-block-end;
+\end{minted}
+\caption{The Truths Definition Block}
+\label{lst:the_truths_definition_block}
+\end{listing}
+
+% subsection the_language_truths_block (end)
+
+\subsection{The Language Definition Block} % (fold)
+\label{sub:the_language_definition_block}
+The language definition block is simple, and required very little thought. 
+It does nothing but act as a container for the productions of the language.
+The form of these productions arises from the design work explored in Sections~\ref{sec:specifying_the_language_syntax} and~\ref{sec:specifying_the_language_semantics}, and is the result of combining the two as discussed in Section~\ref{sec:combining_syntax_and_semantics}.\\
+
+The definition block is effectively a container for the language definitions, and has the syntactic form shown in \autoref{sub:the_language_definition_block} below.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=191]{text}
+language-defblock =
+    "language",
+    where-symbol,
+    semantic-block-start,
+    language-definition,
+    semantic-block-end;
+\end{minted}
+\caption{The Language Definition Block}
+\label{lst:the_language_definition_block}
+\end{listing}
+
+% subsection the_language_definition_block (end)
+
+\subsection{Comments in Metaspec} % (fold)
+\label{sub:comments_in_metaspec}
+During the consideration of the high-level structure of the metalanguage, it was important to determine the appearance of comments in the language.
+Comments are crucial in any programming or specification language, and hence had to be included in Metaspec. \\
+
+Requirement~\reqref{req:Comments} states that these comments need not have any semantic meaning in the language (contrasted with Python Docstrings, which are compiled with their functions \citep{python_docstrings}).
+This meant that the commenting syntax could be very simple, allowing the parser to strip them directly, rather than be parsed.
+To this end, it is stated in the language specification that all comments are removed in a preprocessing step. \\
+
+The choice of \mintinline{text}{line-comment-start-symbol}, \mintinline{text}{block-comment-start-symbol} and \mintinline{text}{block-comment-end-symbol} was effectively arbitrary.
+The block comment style was taken directly from \gls{ebnf}, as specified in \cite{standard1996ebnf}, but there was no line comment style to go on as EBNF does not provide one. 
+As a result, comments themselves are defined as follows, with both a line comment and block comment style provided:
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=156]{text}
+metaspec-comment =
+    line-comment-start-symbol, { utf-8-char }, eol-symbol |
+    block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
+\end{minted}
+\caption{Comments in Metaspec}
+\label{lst:comments_in_metaspec}
+\end{listing}
+
+While block comments can be used on a single line they contribute additional visual noise with their end-delimiter, and hence it seemed appropriate to include a line-comment style as well.
+With no prior reference to go on, the C-style line comment operator was chosen as it has been adopted my many programming languages.
+As a result, the comment symbols are defined in Metaspec as follows.
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=156]{text}
+line-comment-start-symbol = "//";
+block-comment-start-symbol = "(*";
+block-comment-end-symbol = "*)";
+\end{minted}
+\caption{Metaspec Comment Symbols}
+\label{lst:metaspec_comment_symbols}
+\end{listing}
+
+% subsection comments_in_metaspec (end)
+
+% section the_top_level_definitions (end)
+
+\section{Specifying the Language Syntax} % (fold)
+\label{sec:specifying_the_language_syntax}
+% How does the syntax interact with the semantics?
+Metaspec, as a hybrid metalanguage, needed to have the ability to specify the syntax of the language it describes. 
+As discussed in \autoref{sub:choosing_a_syntactic_form}, the predominant notation for specifying language syntax that is used today is \gls{ebnf}.
+Metaspec adapts the \gls{ebnf} syntactic specification language, taking the set of definitions for specifying productions almost directly.
+This decision was made for a few main reasons:
+\begin{itemize}
+    \item \textbf{Flexibility of Syntactic Definition:} \gls{ebnf} is already capable of representing both context-free and context-sensitive language grammars.
+    Furthermore, \gls{ebnf} places \textit{no restriction} on the format of the terminals of the language, which is important for allowing \glspl{dsl} to get as close to the domain notation as possible. 
+    Any form of syntactic specification that would be devised as part of this project would likely be flawed in some way, shape or form, or not be as flexible as the extant notation in the form of \gls{ebnf}. 
+    \item \textbf{User Familiarity:} Due to the prevalent use of \gls{ebnf} in the programming language community and its standardised nature, it was felt that providing a syntactic notation that the users would be familiar with would ease use of Metaspec. 
+    \item \textbf{Correctness:} Adaptation of a pre-defined and well-studied metasyntax notation is far less likely to result in errors than implementing a new notation from scratch.
+\end{itemize}
+
+That is not to suggest, however, that the \gls{ebnf} productions were taken entirely as-is. 
+As part of adapting the long-standing metasyntactic notation, there were a few changes made to its syntax.
+These changes were in aid of providing better operation with other portions of the toolchain, as well as fixing some of the less-intuitive elements of the \gls{ebnf} grammar. 
+
+\subsection{Adapting the Form of Non-Terminals} % (fold)
+\label{sub:adapting_the_form_of_non_terminals}
+In standard \gls{ebnf}, a non-terminal is represented (approximately) by any string of textual characters, including spaces. 
+This means that they can be difficult to visually identify at first glance for a reader of the grammar, and also that concatenation of terminals and non-terminals has to be defined using an operator (\mintinline{text}{,}).
+This was found to be quite inelegant, and hence the metasyntactic notation used by \gls{metaspec} adapts this. \\
+
+Instead of using an explicit term concatenation operator, Metaspec chooses to delimit the non-terminal symbols of the language, using the symbols shown in \autoref{lst:non_terminals_in_metaspec}.
+The use of the distinctive angle brackets both helps to visually distinguish the non-terminals of the language, and syntactically delimit the non-terminals.
+As a result, there is no need for an explicit concatenation operator, reducing visual noise in the Metaspec definitions.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+non-terminal-start = "<";
+non-terminal-end = ">";
+non-terminal-identifier = 
+    textual-glyph, { textual-glyph | natural-number | "-" | "_"};
+non-terminal = non-terminal-start, non-terminal-identifier, non-terminal-end;
+\end{minted}
+\caption{Non-Terminals in Metaspec}
+\label{lst:non_terminals_in_metaspec}
+\end{listing}
+
+Further visual distinction was provided through a restriction of the kinds of symbols used to name a non-terminal.
+As \autoref{lst:non_terminals_in_metaspec} shows, the names of non-terminals are textual characters, numbers, hyphens and underscores. \\
+
+This altered syntax for non-terminals also brings benefits when it comes to parsing the semantics. 
+The semantics of a language defined in metaspec may contain variable identifiers (as discussed in REFERENCE), but also require access to elements of the syntax (see \autoref{sub:accessing_syntax_from_the_semantics}).
+These identifiers look much like standard \gls{ebnf} non-terminal names, and so the alterations made for \gls{metaspec} provide some additional ability to disambiguate at the parser level. 
+
+% subsection adapting_the_form_of_non_terminals (end)
+
+\subsection{Specification of the Language Start Rule} % (fold)
+\label{sub:specification_of_the_language_start_rule}
+One of the things that \gls{ebnf} lacks is an explicit method of representing the `start rule' of a grammar. 
+The start rule (or start symbol) in any grammar is the place from which a parse either \textit{starts}, or where a parse will \textit{end} \cite{slonneger1995formal}.
+For automated tools working with syntax, this is clearly important to define. \\
+
+Beyond the requirement to use the grammar portion of the specification for parser generation, the notion of a start symbol is also useful when it comes to verifying the language semantics.
+The start symbol can act as the point from which the verification starts, and thus brings the ability to check for other criteria on the language (unused productions, syntax-only productions, etc). \\
+
+While it could be simple as to provide a metadata field specifying the name of the start symbol for the \gls{dsl}, that seemed inelegant. 
+Instead, a special type of non-terminal declaration was added; where non-terminals are enclosed in angle brackets --- \mintinline{text}{<nt>} --- the start symbol is enclosed in a set of double angle brackets: \mintinline{text}{<<start>>}. 
+This means that it can be trivially identified during the parsing stage, and used as needed. 
+The start symbol and start rule (the production associated with the start symbol) are hence defined as in \autoref{lst:the_start_symbol_and_start_rule_for_metaspec}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+start-symbol-start = "<<";
+start-symbol-end = ">>";
+start-symbol = start-symbol-start, non-terminal-identifier, start-symbol-end;
+start-rule = start-symbol, defining-symbol, language-rule-body;
+\end{minted}
+\caption{The Start Symbol and Start Rule for Metaspec}
+\label{lst:the_start_symbol_and_start_rule_for_metaspec}
+\end{listing}
+
+% subsection specification_of_the_language_start_rule (end)
+
+\subsection{Removal of the Empty Syntax} % (fold)
+\label{sub:removal_of_the_empty_syntax}
+As part of its syntactic specification, \gls{ebnf} provides the notion of an `empty syntax'.
+This is a piece of syntax that can exist when there is no actual syntax in a place where some would otherwise be expected. 
+As one might imagine, this poses some significant difficulties to parsers, and hence has been removed in Metaspec for practical purposes. \\
+
+There were some concerns that this would compromise the expressive power of the metasyntactic notation used in Metaspec, but careful examination of the \gls{ebnf} standard only showed one case where the empty syntax was used. 
+\gls{ebnf} provides facilities for a syntactic exception, and this can be combined with the repetition notation and empty syntax to ensure that at least one repetition exists: \mintinline{text}{prod = {some-term}-;}.
+While not allowing this notation does compromise the \textit{conciseness} of certain productions in Metaspec, it does not prevent representation of such terms --- the above can be represented as \mintinline{text}{prod = some-term, {some-term};}.
+
+% subsection removal_of_the_empty_syntax (end)
+
+\subsection{Altering the Assignment Operator} % (fold)
+\label{sub:altering_the_assignment_operator}
+One of the other changes that \gls{metaspec} makes to the standard \gls{ebnf} notation for language productions is to alter the assignment symbol.
+Where \gls{ebnf} uses \mintinline{text}{=}, \gls{metaspec} uses \mintinline{text}{::=}.\\
+
+The reasoning behind this is similar to some of the reasoning for redefining the form of non-terminals: it provides a more significant visual cue to the language designer. 
+As the \mintinline{text}{=} symbol often appears in programming languages as some form of assignment, it is not unlikely that a \gls{dsl} designer would want to use it as such.
+This means that it would have to occur in a production as \mintinline{text}{"="}. 
+The \mintinline{text}{::=} as chosen by \gls{metaspec} is far less common, and this should help to improve the readability of the syntactic notation at a glance. 
+
+% subsection altering_the_assignment_operator (end)
+
+\subsection{The Final Language Syntax} % (fold)
+\label{sub:the_final_language_syntax}
+As a result, the final syntactic metalanguage for \gls{metaspec} is very similar to that of \gls{ebnf}.
+Including the changes mentioned in the preceding sections, it is capable of the specification of flexible syntactic rules containing the following syntactic features:
+\begin{itemize}
+    \item Optionality of syntax.
+    \item Grouping of syntax.
+    \item Alternation of syntax terms.
+    \item Repetition, in both the multiplicative (\mintinline{text}{3 * <nt>}) and repeated-group (\mintinline{text}{{<nt>}}) forms, for syntax terms.
+    \item Syntactic exceptions (\mintinline{text}{<nt1> - <nt2>}).
+    \item Arbitrary non-terminals and terminals.
+\end{itemize}
+
+Overall, this provides an excellent metasyntactic foundation for the metalanguage, and lets users describe a wide-set of possible languages.
+Hence, it allows \gls{dsl} designers to get as close to their intended domain-specific notation as possible. 
+
+% subsection the_final_language_syntax (end)
+
+% section specifying_the_language_syntax (end)
+
+\section{Specifying the Language Semantics} % (fold)
+\label{sec:specifying_the_language_semantics}
+% Semantics and the unspecified cases. 
+% Talking about typing here, rather than at a syntactic level
+% Access into the syntax.
+% Issues with the final form of the semantics
+% Ability to omit semantics in certain cases -> terminals?
+% Need to talk about the kinds of semantics here: env access, env store, normal and special.
+% How does typing work at the semantic level?
+% Determining which productions have semantics? 
+% Worked example of the transformation
+
+While \gls{metaspec} now had a way of specifying language syntax, its hybrid nature meant that it also needed a way to specify the language semantics. 
+As discussed in \autoref{sub:choosing_a_semantic_form}, the basic semantic descriptions in metaspec are based on big-step operational semantics (see Subsection~\ref{ssub:operational_semantics}). 
+However, requirements dictated that the language support other forms of semantics, including environment accesses (Requirement~\reqref{req:EnvironmentAccesses}) and special-case semantic rules (Requirement~\reqref{req:SpecifyLanguageSemantics}).\\
+
+As a result, the metalanguage has four different kinds of semantic rules, each of which is explored below:
+\begin{itemize}
+    \item \textbf{Standard Semantics:} These are an adaptation of the big-step operational semantics form.
+    They provide restrictions and evaluation control, and are the main method for specifying language semantics.
+    \item \textbf{Special-Case Semantics:} These special rules have a distinct syntactic form, and provide semantics that cannot be proved by the standard mechanism.
+    \item \textbf{Environment Accesses:} Accesses to items stored in the global environment, akin to a key-value store.
+    \item \textbf{Environment Stores:} The ability to store values in the global environment under a key. 
+\end{itemize}
+
+The following sections aim to explain the design process that the syntax for the semantic forms underwent, broadly grouping them into the categories of ``User-Defined Semantics'' (\autoref{sub:user_defined_semantics}), which took the most design effort, and ``Special-Case Semantics'' (\autoref{sub:special_case_semantics}).
+
+\subsection{Accessing Syntax from the Semantics} % (fold)
+\label{sub:accessing_syntax_from_the_semantics}
+One of the first things to notice about the form of a big-step operational semantics rule (see \autoref{eq:example_of_big_step_operational_semantics_if} for an example) is that the sub-evaluations (those above the evaluation line) usually contain sub-terms of the main expression (below the line).
+It should be noted that, in general, these sub-evaluations do not \textit{have} to be purely sub-terms of the main expression. 
+
+\begin{equation}
+    [\text{if}] : \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \text{true}
+    \label{eq:example_of_big_step_operational_semantics_if}
+\end{equation}
+
+In a basic sense, every piece of syntax in Metaspec has some kind of semantics associated with it.
+As a result, the syntax often defines the `main expression' of the semantic rule.
+Given this fact, \gls{metaspec} needs a way for the semantic rules to `access' the syntax, that is: refer directly to portions of the syntax of a given production. \\
+
+As has been established in \autoref{sec:specifying_the_language_syntax}, \gls{metaspec} supports a flexible notation for defining productions of the DSL. 
+However, the important thing to recognise is that the only terms that one would need to refer to in the semantics are the non-terminals of the language. 
+Any syntactic production decomposes to a set of terminals and non-terminals, and as terminals are fixed they can be explicitly written into the semantics where required. \\
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+<example> ::= <foo> "(" <bar> "," <bar> ")"
+\end{minted}
+\caption{An Example Production for Syntax Access}
+\label{lst:an_example_production_for_syntax_access}
+\end{listing}
+
+Consider an example production of the form seen in \autoref{lst:an_example_production_for_syntax_access}. 
+The most intuitive way to access the syntax is to refer directly to the non-terminals directly.
+This means that \mintinline{text}{<foo>} in the semantics would refer to the first instance of the non-terminal in the syntax, and similarly for \mintinline{text}{<bar>}.
+However, this positional argument-based nature is a non-intuitive way to access the syntax, as it forces the \gls{dsl} designer to formulate their semantics in the order of the syntax. 
+This would impose significant restrictions in the case of semantic special syntax (which have fixed argument positions), and was hence seen as undesirable.\\
+
+As the above situation was deemed unsatisfactory, the final access form for \gls{metaspec} takes inspiration from array accesses in other programming languages, using the square-bracket notation (\mintinline{text}{[]}) for familiarity.
+Each access into the syntax must hence specify the (zero-indexed) \textit{position} of the specific non-terminal to which it refers: \mintinline{text}{<bar>[1]} refers to the second instance of the non-terminal, for example.
+These positions must hence be checked at language verification time (see \autoref{sub:basic_semantic_form_verification} for details).\\
+
+This provides an intuitive way to access syntactic elements within the semantics, without restricting the form in which the semantics can be written. 
+
+% subsection accessing_syntax_from_the_semantics (end)
+
+\subsection{Semantic Typing} % (fold)
+\label{sub:semantic_typing}
+The semantics are the location where the notion of data types was designed into \gls{metaspec} with each semantic rule carrying some type information. 
+This was imposed upon the language by Requirement~\reqref{req:SemanticTyping} for two main reasons:
+\begin{itemize}
+    \item \textbf{Conciseness:} A common feature of \glspl{dsl} is that they have a clear and concise syntax that matches the domain representation of knowledge as closely as possible (\autoref{sec:domain_specific_languages}). 
+    As a result, having typing imposed at the syntactic level would add unnecessary visual clutter to the \gls{dsl} syntax. 
+    \item \textbf{Clarity of Language Implementation:} It would likely introduce significant complexity to the form of the language semantics to introduce a method for providing syntactic typing to the language designer.
+    Furthermore, the provision of such a feature would likely require alterations to the verification algorithm, and hence potentially impact correctness. 
+\end{itemize}
+
+To this end, it was decided to impose types at the semantic level.
+In this case, each semantic expression (where the type could not be inferred) is required to have a result type, where the types may be one of the types allowed by the current language context. 
+These types are expressions as part of the language grammar, and are contextually checked to be in scope at parse time (see \autoref{sub:lexing_and_parsing}).\\
+
+For information on the checking of types in the language specification, please see \autoref{sub:type_checking} on \autopageref{sub:type_checking}. 
+
+% subsection semantic_typing (end)
+
+\subsection{User-Defined Semantics} % (fold)
+\label{sub:user_defined_semantics}
+% Have subsubs in here to break it up, there's a lot to talk about
+% Analysing the form of the semantics, have examples of non-representable rules? Or is that better suited for the verification step?
+% Talk about the omission of the 'bottom' row of the rule as it is effecitvely the syntax production itself. 
+
+While \textit{all} semantics for a language designed in \gls{metaspec} are technically user-defined, this section focuses on the examination of the main form of the semantics --- those based upon big-step operational semantics. 
+These semantic rules form core of languages written in \gls{metaspec}, as they provide a flexible way to specify the behaviour of the language. 
+
+\subsubsection{Examining the form of Big-Step Operational Semantics} % (fold)
+\label{ssub:examining_the_form_of_big_step_operational_semantics}
+\begin{equation}
+    [\text{if}] : \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true} 
+    \label{eq:a_basic_big_step_operational_semantics_rule}
+\end{equation}
+
+A big-step operational rule such as the one seen in \autoref{eq:a_basic_big_step_operational_semantics_rule} can be broken down into a number of components:
+\begin{itemize}
+    \item \textbf{The Primary Expression:} This is the portion of the syntax to be evaluated below the line, to the left of the evaluation arrow.
+    Here, this is $\langle \text{if } b \text{ then } S_1 \text{ else } S_2$.
+    \item \textbf{The Evaluation Result:} The result of evaluating the primary expression, this is found to the right of the evaluation arrow below the line.
+    Here it is $s'$. 
+    \item \textbf{The Restriction:} A restriction placed on the evaluation of this rule, such that the rule is only evaluated if the restriction holds. 
+    Here, this is $\text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true}$.
+    \item \textbf{The Sub-Evaluation:} A specification of how each component of the primary expression is evaluated, located above the line.
+    Here, this is $\langle S_1, s \rangle \to s'$. 
+\end{itemize}
+
+\begin{equation}
+    [+] : \frac{\langle A_1, s_0\rangle \to \langle n_1, s_1\rangle \;\;\;\; \langle A_2, s_1 \rangle \to \langle n_2, s_2\rangle}{\langle A_1 + A_2, s_0 \rangle \to \langle n, s_2 \rangle}\;\; n = n_1 + n_2
+    \label{eq:an_alternate_big_step_operational_semantics_rule}
+\end{equation}
+
+There are further components that are not indicated in such a rule. 
+Consider the rule shown in \autoref{eq:an_alternate_big_step_operational_semantics_rule}.
+This exhibits an additional set of components as follows:
+\begin{itemize}
+    \item \textbf{The Semantic Evaluation:} This is a portion of the rule that specifies how the result of the semantics is calculated, located to the right of the evaluation rule. 
+    Here, it is $n = n_1 + n_2$.
+    \item \textbf{Multiple Sub-Evaluations:} This rule also illustrates that it is possible to have multiple sub-evaluations taking place as part of a given semantic rule. 
+    The importance of this is the \textit{order} in which they are executed, as this may impact the results of computations. 
+\end{itemize}
+
+Each of these components must be accounted for in the semantic form that represents these semantic rules, and have been incorporated into the metasyntax for the semantics as discussed in \autoref{ssub:the_final_form_of_the_user_defined_semantics}.
+
+% subsubsection examining_the_form_of_big_step_operational_semantics (end)
+
+\subsubsection{Transforming Big-Step Operational Semantics} % (fold)
+\label{ssub:transforming_big_step_operational_semantics}
+% Adding the types
+
+Having identified the key portions of the big-step semantic rules, the next task was to represent these components effectively in a textual format. 
+The working assumption for designing this syntactic representation is that these \gls{metaspec} language specifications would be written with nothing but a text editor, as specified by Requirement~\reqref{req:TextEditorReady}.
+To this end, the notation should be simplistic and not require complex formatting (thus also simplifying the parsing process). \\
+
+In one sense, semantics represent a flow of information or a \textit{pipeline} of evaluation. 
+Semantically, each portion of the evaluation is predicated on the next portion of the evaluation, so they can be separated by what is effectively a \textit{where} clause. 
+For the purposes of these semantic rules, the \mintinline{text}{:} operator was chosen to represent this.
+To this end, the portions of the semantic rules discussed in \autoref{ssub:examining_the_form_of_big_step_operational_semantics} can be represented in order as follows:
+\begin{enumerate}
+    \item \textbf{The Output Variable:} A variable identifier and associated type (as discussed in \autoref{sub:semantic_typing}) as the leftmost portion of the rule: \mintinline{text}{<type> <identifier>}.
+    This variable defines the final result of the semantic evaluations.
+    \item \textbf{The Semantic Operations:} A list of operations that define how the results of the sub-evaluations are combined: \mintinline{text}{(<eval> {"," <eval>})}.
+    These operations are defined in terms of an allowed set of semantic operations defined by metaspec. % do I want to talk about these?
+    \item \textbf{The Semantic Restrictions:} A list of restrictions that constrain the circumstances under which this semantic rule can operate.
+    These are restrictions on the results of the sub-evaluations that act as boolean conditions, and hence look like a list of standard conditions: \mintinline{text}{([<key> <op> <key>] {"," <key> <op> <key>})}.
+    Restrictions do not have to exist, however, and hence it is perfectly valid to have an empty restriction block.
+    \item \textbf{The Semantic Evaluations:} These define evaluations on sub-terms of the syntax, with each sub-term addressing non-terminals as discussed in \autoref{sub:accessing_syntax_from_the_semantics}. 
+    Each of these terms must define a result type and variable for use in the semantic operations section: \mintinline{text}{<type> <identifier> "<=" <syntax-access>}.
+    As there can be multiple of these, they are given as a list.
+\end{enumerate}
+
+It is apparent at this point that the \textit{primary expression} identified in appears to have been ignored.
+While it was initially included as a component in the semantic rule it was quickly noticed that the syntax of the language production itself suffices as the primary expression.
+It was hence omitted from the semantics directly, with the syntax accesses sufficing to combine the two. 
+The final basic form of the syntax for these semantic rules can be seen in \autoref{lst:the_semantic_evaluation_rule_grammar}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=314]{text}
+semantic-evaluation-rule = 
+    semantic-type,
+    semantic-identifier,
+    where-symbol,
+    semantic-operation-list,
+    semantic-restiction-list,
+    where-symbol, 
+    semantic-eveluation-list;
+\end{minted}
+\caption{The Semantic Evaluation Rule Grammar}
+\label{lst:the_semantic_evaluation_rule_grammar}
+\end{listing}
+
+Combining these elements provides the form for a single evaluation rule.
+A single rule is, however, not sufficient to represent a defined set of semantics for a given production. 
+As a result, the grammar was expanded to accommodate a `semantic alternation', with multiple semantic rules separated by \mintinline{text}{|}, appearing as a logical disjunction.
+This notion perfectly represents the concept, as only one semantic rule will evaluated based upon the evaluation of the guards. 
+This is represented in the concept of the evaluation list, as defined in \autoref{lst:the_semantic_evaluation_rule_list}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=310]
+semantic-evaluation-rule-list = 
+    semantic-evaluation-rule,
+    { semantic-disjunction, semantic-evaluation-rule };
+\end{minted}
+\caption{The Semantic Evaluation Rule List}
+\label{lst:the_semantic_evaluation_rule_list}
+\end{listing}
+
+Multiple portions of this syntax are required to match a certain form for verification to be able to occur. 
+These restrictions are discussed in detail in \autoref{sub:basic_semantic_form_verification}, and are crucial to the ability of \gls{absol} to verify the language semantics.
+
+% subsubsection transforming_big_step_operational_semantics (end)
+
+\subsection{An Example of User-Defined Semantics} % (fold)
+\label{sub:an_example_of_user_defined_semantics}
+Having established the form of the semantics as above, it is now possible to formulate an example of the transformation from standard big-step operational semantics to the \gls{metaspec} syntax for the same.
+Consider the rules for exponentiation as described in Equations~\ref{eq:big_step_exponentiation_special_case} and~\ref{eq:big_step_exponentiation_base_case} below.
+These rules have a special case for illustrative purposes. 
+
+\begin{align}
+    [\string^] &: \frac{\la A_2, s_0 \ra \to \la n_2, s_1 \ra}
+    {\la A_1 \string^ A_2, s_0 \ra \to \la n, s_1 \ra} n = 1 \text{ where } n_2 == 0 \label{eq:big_step_exponentiation_special_case} \\
+    [\string^] &: \frac{\la A_2, s_0 \ra \to \la n_2, s_1 \ra \la A_1, s_1 \ra \to \la n_1, s_2 \ra}{\la A_1 \string^ A_2, s_0 \ra \to \la n, s_2 \ra} n = n_1^{n_2} \label{eq:big_step_exponentiation_base_case}
+\end{align}
+
+Working through the special-case rule in \autoref{eq:big_step_exponentiation_special_case} it is possible to compose the equivalent \gls{metaspec} expression as follows (assuming types and that $A_1, A_2$ are the same non-terminal): 
+\begin{enumerate}
+    \item \textbf{Determine the Output Variable:} In this case it is clear that it is $n$. 
+    The expression is hence initially:
+    \begin{minted}[xleftmargin=2cm, numbers=none]{text}
+        number n : 
+    \end{minted}
+    \item \textbf{Determine the Evaluation Rule:} This is also clear as $n = 1$, in the presence of a restriction.
+    The Metaspec rule is hence:
+    \begin{minted}[xleftmargin=2cm, numbers=none]{text}
+        number n : {n = 1}
+    \end{minted}
+    \item \textbf{Determine any Restrictions:} This rule has a restriction, and so this can also be found and added. 
+    It is $n_2 == 0$, making the Metaspec rule into:
+    \begin{minted}[xleftmargin=2cm, numbers=none]{text}
+        number n : {n = 1}(n2 == 0) : 
+    \end{minted}
+    \item \textbf{Write the Sub-Evaluations:} This rule only has a single sub-evaluation as follows: $\la A_2, s_0 \ra \to \la n_2, s_1 \ra$.
+    This is transformed into Metaspec, giving the resultant rule (as it is the \textit{second} instance of that `non-terminal' in the rule):
+    \begin{minted}[xleftmargin=2cm, numbers=none]{text}
+        number n : {n = 1}(n2 == 0) : {number n2 <= <a-nt>[1]}
+    \end{minted}
+\end{enumerate}
+
+Performing the same process for the generic exponentiation rule in \autoref{eq:big_step_exponentiation_base_case} and combining using an alternation (as discussed in \autoref{ssub:transforming_big_step_operational_semantics}), the final semantic expression can be found.
+This is seen in \autoref{lst:metaspec_semantic_rules_for_exponentiation}, and can be assumed to be linked to a syntactic rule of the form \mintinline{text}{<exp> ::= <a-nt> "^" <a-nt>;} (or similar).
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+number n : {n = 1}(n2 == 0) : {number n2 <= <a-nt>[1]} |
+number n : {n = n1 ^ n2}() : 
+    {number n2 <= <a-nt[1]}, {number n1 <= <a-nt>[0]}
+\end{minted}
+\caption{Metaspec Semantic Rules for Exponentiation}
+\label{lst:metaspec_semantic_rules_for_exponentiation}
+\end{listing}
+
+% the user is able to decide which evaluations to make, and in which order
+
+% subsection an_example_of_user_defined_semantics (end)
+
+\subsubsection{The Final Form of the User-Defined Semantics} % (fold)
+\label{ssub:the_final_form_of_the_user_defined_semantics}
+At this point, the syntax for defining language semantics is concise and clear.
+However, it has not yet been established exactly how one of these operations is evaluated.
+Much like the big-step operational semantics from which they are derived, the evaluation semantics are crucial to understanding these expressions. \\
+
+As a result, it is important to formalise the evaluation semantics of the metaspec expressions. 
+A metaspec semantic rule is evaluated according to the algorithm given in \autoref{alg:metaspec_semantic_evaluation_algorithm}, taking an alternation of metaspec semantic rules as input.
+Assume that \textbf{evaluate} is a function that evaluates the provided evaluation or computation, and that \textbf{checkRestriction} is a function that returns true if the restrictions are all true.
+With formalised execution order, this ensures that the \gls{dsl} creators are provided with full control over the execution semantics of their language.
+
+\begin{algorithm}
+\begin{algorithmic}
+\State rules $\gets$ the alternation of semantic rules
+\State
+\ForAll{rule $\in$ rules}
+    \State evals $\gets$ sub-evaluations in rule
+    \State computations $\gets$ semantic evaluations in rule
+    \State restrictions $\gets$ restrictions in rule
+    \State 
+    \ForAll {eval $\in$ evals}
+        \State \textbf{evaluate}(eval)
+    \EndFor
+    \State
+    \If{\textbf{checkRestrictions}(restrictions)}
+        \ForAll {computation $\in$ computations}
+            \State \textbf{evaluate}(computation)
+        \EndFor
+        \State
+        \State output the result
+        \State \textbf{terminate}
+    \Else
+        \State \textbf{continue}
+    \EndIf
+\EndFor
+\end{algorithmic}
+\caption{Metaspec Semantic Evaluation Algorithm}
+\label{alg:metaspec_semantic_evaluation_algorithm}
+\end{algorithm}
+
+% subsubsection the_final_form_of_the_user_defined_semantics (end)
+
+% subsection user_defined_semantics (end)
+
+\subsection{Special-Case Semantics} % (fold)
+\label{sub:special_case_semantics}
+In addition to the user-defined semantics based upon the big-step operational semantics, Requirements~\reqref{req:EnvironmentAccesses} and~\reqref{req:ExtensionMechanisms} mean that other kinds of semantics must be defined.
+These include the special-case semantics for providing language features that cannot be proved by the termination mechanism, and semantic rules for environment accesses and stores.
+The below sections explore the design of these additional semantic features.
+
+\subsubsection{Semantic Special Syntax} % (fold)
+\label{ssub:semantic_special_syntax}
+% Look like library functions as the best analogy for them.
+% Why these can occur in the user-defined semantics (to allow complex operations). 
+
+The semantic \glspl{ssr} are a method for \gls{metaspec} to provide additional, useful language features that cannot be proven by the usual termination proof mechanism. 
+While they might technically be able to be expressed in big-step operational semantics, the restrictions placed on the standard semantic form (\autoref{sub:user_defined_semantics}) mean that they cannot be expressed in metaspec.
+This includes features like data traversal and function calls. \\
+
+The syntactic design for these pieces of special syntax was inspired by the notion of `library functions' in other languages.
+Much like Haskell has \mintinline{haskell}{fmap fn s}, these pieces of special syntax provide advanced functionality to the user for little effort on their part.
+As a result, the syntax was designed to look like a function call: \mintinline{text}{<ssr> "("[<arg>] {"," <arg>} ")"}.\\
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=303, fontsize=\blockfont]{text}
+special-syntax-rule = 
+    semantic-special-syntax,
+    special-syntax-start,
+    [ syntax-access-block | environment-access-rule ],
+    { semantic-list-delimiter, (syntax-access-block|environment-access-rule) },
+    special-syntax-end;
+\end{minted}
+\caption{Semantic Special Syntax}
+\label{lst:semantic_special_syntax}
+\end{listing}
+
+Syntactically, they consist of a language keyword and an argument list, and the exact semantics of each is defined in \autoref{sec:special_language_features}.
+The argument list may consist of syntax accesses (see \autoref{sub:accessing_syntax_from_the_semantics} or environment accesses (see \autoref{ssub:environment_access_rules}), the latter of which allow them to retrieve values from the environment.
+They are described by the \gls{ebnf} expression in \autoref{lst:semantic_special_syntax} and are subject to verification as described in \autoref{ssub:verification_of_special_syntax_rules}.\\
+
+These \glspl{ssr} can occur inside the user-defined semantics (\autoref{sub:user_defined_semantics}) as they can provide useful functionality for defining the semantics of more complex expressions.
+In allowing them to be nested in such expressions, it removes the need to indirect through another non-terminal where these might occur. 
+This brings no additional complexity to the proof mechanism, but makes removes the potential for complexity in the language specification.
+This is likely to reduce the potential for bugs somewhat. 
+
+% subsubsection semantic_special_syntax (end)
+
+\subsubsection{Environment Input Rules} % (fold)
+\label{ssub:environment_input_rules}
+Environment input rules are intended to provide mechanisms for \gls{dsl} designers to store and retrieve values in the environment. 
+The environment was conceptualised as an unscoped key-value store to allow for variable definitions, function definitions and any other use that the user can come up with. \\
+
+Syntactically, the environment was represented by a special reserved symbol in \gls{metaspec}, \mintinline{text}{e}. 
+The notion behind this was to ensure that all environment stores and accesses could be found at a glance by the user, aiding their understanding of any stateful behaviour in the language semantics. 
+Unfortunately this has turned out to not be entirely true, as some special syntax calls define elements in the environment without direct use of the symbol.\\
+
+Beyond that, the store into the environment uses a newly introduced operator \mintinline{text}{<--}. 
+This operator was designed to visually mimic the \mintinline{haskell}{<-} monadic extraction operator, and aims to imply getting something out of the syntax and storing it somewhere else. 
+Stores in the environment operate in a key-value function, with the key and value separated by the \mintinline{text}{:} (defining) symbol.
+In short: \mintinline{text}{e <-- <key>[n] : <values...>}, for some arbitrary non-terminals \mintinline{text}{<key>} and \mintinline{text}{<values>}.
+Environment input rules are hence defined by the \gls{ebnf} expression given in \autoref{lst:environment_input_rules}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=279]{text}
+environment-input-rule =
+    semantic-type, 
+    semantic-environment-symbol,
+    semantic-environment-input-symbol,
+    syntax-access-block, (* key *)
+    environment-defines-symbol,
+    syntax-access-list;
+\end{minted}
+\caption{Environment Input Rules}
+\label{lst:environment_input_rules}
+\end{listing}
+
+% subsubsection environment_input_rules (end)
+
+\subsubsection{Environment Access Rules} % (fold)
+\label{ssub:environment_access_rules}
+Much like for environment inputs, environment accesses also took syntactic inspiration from features of common programming languages. 
+Initial syntax for the environment accesses treated it much like a dictionary, where a key was given to retrieve a value: \mintinline{text}{e[<key>]}.
+However, it is possible that certain structures in the environment have properties of their own, and it was immediately apparent that it could be syntactically awkward to access these.\\
+
+To remove this awkwardness, the final syntax in \gls{metaspec} defines \mintinline{text}{.} as the environment access symbol, taking inspiration from object property access in most C++ derived languages.
+The idea behind this is that it can be chained in a visually pleasing way, accessing properties in the environment and the environment's children: \mintinline{text}{e.<nt-1>.<nt-2> ...}
+These accesses are based on the syntax of the triggering rule, and hence the \gls{ebnf} expression for such productions is as in \autoref{lst:environment_access_rules}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=297]{text}
+environment-access-rule = 
+    semantic-environment-symbol,
+    environment-access-symbol,
+    syntax-access-block,
+    { environment-access-symbol, syntax-access-block }; 
+\end{minted}
+\caption{Environment Access Rules}
+\label{lst:environment_access_rules}
+\end{listing}
+
+% subsubsection environment_access_rules (end)
+
+% subsection special_case_semantics (end)
+
+% section specifying_the_language_semantics (end)
+
+\section{Combining Syntax and Semantics} % (fold)
+\label{sec:combining_syntax_and_semantics}
+With a robust metasyntactic format for both syntax and semantics in \gls{metaspec}, the remaining design challenge of the metalanguage was to combine the two. 
+This combination is crucial to the design of the language, as stated in Requirement~\reqref{req:IntegratedSyntaxandSemanticSpecification}.
+The combination of the two had to admit all of the four categories of semantic rule (see \autoref{sec:specifying_the_language_semantics}), and associate them with a syntactic production, and hence the choice of both \textit{syntax} and the \textit{combination point} was important. 
+
+\subsection{Choosing the Combination Syntax} % (fold)
+\label{sub:choosing_the_combination_syntax}
+As the marriage of syntax and semantic specification is at the crux of \gls{metaspec} itself, the syntax for combining the two metasyntactic notations had some significance. \\
+
+The initial inspiration for the syntax came from the notion of logical implication: that the syntax implied a given behaviour. 
+There were concerns, however, about this being too literal an idea, and hence rather than \mintinline{text}{->}, the extended arrow operator (\mintinline{text}{-->}) was used. 
+This was coupled with a block syntax, wrapping all the semantics for a given production up in braces (\mintinline{text}{{}}) to act as a visual delimiter.
+The resultant \gls{ebnf} production can be seen in \autoref{lst:language_rule_semantics}. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=267]{text}
+language-rule-semantics = 
+    semantic-behaves-as,
+    semantic-block-start,
+    semantic-rule,
+    semantic-block-end;
+\end{minted}
+\caption{Language Rule Semantics}
+\label{lst:language_rule_semantics}
+\end{listing}
+
+% subsection choosing_the_combination_syntax (end)
+
+\subsection{Determining the Combination Point} % (fold)
+\label{sub:determining_the_combination_point}
+Just as important as the combination syntax was the choice of where to combine the syntactic and semantic descriptions.\\
+
+The initial choice of the connection point went somewhat awry, with the grammar specifying that the semantics came directly after the full syntactic specification: \mintinline{text}{production, "-->", "{", semantics, "}"}.
+For some fairly obvious reasons, this did not work.
+All of these boil down to one essential fact: syntactic productions contain alternations:
+\begin{itemize}
+    \item It is trivial to imagine a production where a non-terminal \mintinline{text}{<a>} occurs in the first alternation and is referred to in the semantics, but does not occur in the second alternation. 
+    \item It is just as simple to imagine each alternations containing different terminal symbols (e.g. \mintinline{text}{<a> "+" <a> | <a> "-" <a>}) which may want to result in different behaviour. 
+\end{itemize}
+
+Clearly, the semantics should instead be specified at the level of the alternation instead: \mintinline{text}{<a> --> {} | <b> --> {} | ...} and so on.
+This provides the maximum amount of flexibility to the language designers, allowing them to specify more complex productions that are logically grouped. An example of this is the `arithmetic operation' production shown in \autoref{lst:arithmetic_operations_in_metaspec}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text} 
+<arith-op> ::=
+    <arith-expr> "+" <arith-expr> --> {
+        num n : {n = n1 + n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
+    } |
+    <arith-expr> "-" <arith-expr> --> {
+        num n : {n = n1 - n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
+    } |
+    <arith-expr> "*" <arith-expr> --> {
+        num n : {n = n1 * n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
+    } |
+    <arith-expr> "/" <arith-expr> --> {
+        num n : {n = n1 / n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
+    } |
+    <arith-expr> "^" <arith-expr> --> {
+        num n : {n = n1 ^ n2}() :
+            {num n1 <= <arith-expr>[0]}, {num n2 <= <arith-expr>[1]}
+    };
+\end{minted}
+\caption{Arithmetic Operations in Metaspec}
+\label{lst:arithmetic_operations_in_metaspec}
+\end{listing}
+
+It is hence clear that the decision to associate semantics with each block in a top-level alternation is the most flexible choice for \gls{metaspec} and affords the \gls{dsl} designers the most flexibility without creating an overly convoluted syntax. 
+
+% subsection determining_the_combination_point (end)
+
+% section combining_syntax_and_semantics (end)
+
+% chapter designing_the_metalanguage (end)

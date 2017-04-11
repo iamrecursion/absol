@@ -386,9 +386,9 @@ However, most common semantic description methods are inadequate for describing 
 This inadequacy is compounded by an almost complete lack of tooling to support the formal semantic definition of programming languages \citep{Binsbergen:2016:TSC:2892664.2893464}.\\
 
 As the parser is a program that maps syntactically valid strings to an AST, program semantics can be modelled by semantic functions: expressions that map the abstract syntax of a program to the semantic entity that represents the program behaviour \citep{mosses1992action}:
-\begin{equation*}
+\begin{equation}
     f_s(\text{abstract syntax}) \mathgoesto \text{semantics}
-\end{equation*}
+\end{equation}
 
 \citet{mosses1992action} defines two semantic functions to be equivalent at a given level of decomposition if two phrases of program syntax are interchangeable without altering the meaning of the program. 
 Consider, for example, the following Haskell code:
@@ -431,9 +431,9 @@ Structural operational semantics (also known as small-step operational semantics
 
 Such semantics have seen wide use in program analysis due to their fine-grained nature, but this granularity has the potential for detail overload in the definition of programming languages. 
 An example of such semantics can be seen in the following equation:
-\begin{equation*}
+\begin{equation}
     [\text{asgn}_\text{sos}]: \langle x := \alpha, s \rangle \rightarrow s[x \mapsto \mathbb{A} \llbracket \alpha \rrbracket s]
-\end{equation*}
+\end{equation}
 
 This equation defines a rule for assignment, stating that assigning the value of $\alpha$ to the variable $x$ in state $s$ results in a new state $\mathbb{A}\llbracket \alpha \rrbracket s$ where the value of $x$ is $\alpha$.\\
 
@@ -445,13 +445,13 @@ Natural semantics (also known as big-step operational semantics) exists as an al
 
 While natural semantics has seen ``extensive'' use in the definition of programming languages, it is not suitable for describing concurrent or interleaved execution due to the lack of intermediate states \citep{Zhang:2004:SSD:981009.981013}.
 An example of such semantics can be seen in the following equation:
-\begin{equation*}
+\begin{equation}
     [\text{if}^\text{ tt}_\text{ ns}]: 
     \frac
     {\langle S_1, s \rangle \rightarrow s'}
     {\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s \rangle \rightarrow s'} 
     \text{ if } \mathbb{B}\llbracket b \rrbracket s = {tt}
-\end{equation*}
+\end{equation}
 
 This semantic description defines the rule for an `if' statement, evaluating statement $S_1$ if the value of $b \in s$ evaluates to $tt$, else evaluating $S2$.\\ 
 
@@ -473,9 +473,9 @@ Denotational semantics model the behaviour of program phrases through use of \te
 
 While such semantics provide a high-level overview of the computational semantics, they may not provide enough computational detail for use in a metacompiler system.
 An example of denotational semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
-\begin{equation*}
+\begin{equation}
     S_{ds} \llbracket x := a \rrbracket = \lambda s.s [x \mapsto \mathbb{A}\llbracket a \rrbracket s]
-\end{equation*}
+\end{equation}
 
 This semantic definition also defines a rule for assigning the value $\alpha$ to the variable $x$ in the state $s$. \\
 
@@ -493,14 +493,14 @@ These constraints are known as \textit{assertions}, and were initially developed
 \end{itemize}
 
 An example of axiomatic semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
-\begin{equation*}
+\begin{equation}
     [if_{as}]: 
     \frac
     {\{t \lor P\} S_1 \{Q\}, \{\lnot t \lor P\} S_2 \{Q\}}
     {\{P\} \text{ if } b \text{ then } S_1 \text{ else } S_2 \{Q\}}
     \text{ where }
     t = \mathbb{B}\llbracket b \rrbracket 
-\end{equation*}
+\end{equation}
 
 Much akin to the rule shown for the natural semantics, this axiomatic rule defines the properties of an `if' expression. 
 It states that if the expression $t$, which has the value of evaluating the boolean expression $b$ is true, then expression $S_1$ is evaluated producing a state $Q$, otherwise the expression $S_2$ is evaluated, also producing a new state $Q$. 
@@ -521,9 +521,9 @@ Action semantics recognised the inability of the traditional semantic descriptio
 \end{itemize}
 
 An example of action semantics can be seen below \citep{Zhang:2004:SSD:981009.981013}.
-\begin{equation*}
+\begin{equation}
     \textbf{execute} \llbracket x := a \rrbracket = (\text{evaluate } a \textbf{ then } \text{store the primitive value in the cell bound } x)
-\end{equation*}
+\end{equation}
 
 Action Semantics, however, is limited in that ``not all programming language concepts can be directly represented within action semantics'' \citep{wansbrough1997modular}. 
 This restriction is imposed by the set of computational constructs originally envisioned by \citet{mosses1992action}, with the system proving hard to extend.\\
@@ -581,13 +581,13 @@ This means that properties of data can be shown by well-founded induction on rec
     \item As a result, it is possible in general to prove that well-founded recursive programs will terminate, and can hence be proven correct.
     \item While it is undecidable to prove termination for general recursion (unlike primitive recursion, for which it is always provable), it is shown by \citet{nordstrom1988terminating} that it is possible to prove termination for well-founded general recursion (recursion which operates on data, not unbounded constructs). 
     This is represented by the following recursion rule, which states that well-founded general recursion can be equated to primitive recursion over the natural numbers as long as $A$ is well-founded by $\prec_A$:
-    \begin{equation*}
+    \begin{equation}
         \frac{
             \text{Wellfounded}(A, \prec_A)\;\;\;\;
             p \in A\;\;\;\;
             e(x, y) \in C(x) [x \in A, y(z) \in C(z) [z \prec_A x]]
         }{\text{rec}(e, p) \in C(p)}
-    \end{equation*}
+    \end{equation}
 \end{itemize}
 
 Dual to data is the concept of codata.
@@ -607,9 +607,9 @@ This encompasses proofs on arbitrary length, finite data structures (those that 
 This would, hopefully, allow it to be shown that all well-formed programs in the language terminate and behave according to their specification (i.e. that they are \textit{correct}.\\
 
 Such a proof requires the definition of the following relation for a program $M$ with unique configurations $s$:
-\begin{equation*}
+\begin{equation}
     s, M \rightarrow s', M'
-\end{equation*}
+\end{equation}
 where:
 \begin{itemize}
     \item A configuration $s$ refers to any additional computational state (which may include heap state, the continuation, etc).

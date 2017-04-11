@@ -18,55 +18,9 @@
 %     It will also look at initial or discarded algorithmic designs as part of the process. 
 % \end{itemize}
 
-As a project, \gls{absol} has had a very heavy research bent. 
-The experimental nature of the toolchain resulted in a heavy up-front design load and, combined with the highly theoretical nature of the language verification algorithms, this meant that design and algorithmic development dominated the time spent on the project.\\
-
-This section aims to illustrate the significant design work that was put into all facets of the project.
-It first explores the design process for the metalanguage, \gls{metaspec}, demonstrating the careful thought that went into the final result. 
-It then provides a high-level overview of the architecture of the toolchain, showing the main system components and tying them to the overarching system requirements.
-Finally, it concludes with the design of both the core algorithms and special language features that are integral to the operation of \gls{absol}. 
-
-\section{Designing the Metalanguage --- Metaspec} % (fold)
-\label{sec:designing_the_metalanguage_metaspec}
-% Careful consideration of why each bit of syntax looks like it does, what it allows the user to do. 
-% Design for intuition and flexibility.
-% Look like the source kind of semantics -> provide examples. 
-% Consideration of where the semantics needed to be placed in the syntax for it to make real sense. 
-
-\gls{metaspec} is the metalanguage for the \gls{absol} project, allowing the language designers to specify both the syntax and semantics of their DSL, as well as associated metadata, in a unified form. 
-The final syntax for Metaspec is the result of significant design work, and consequentially the syntax discussed below has been through some evolution. \\
-
-The complete grammar for Metaspec can be found in Appendix~\ref{cha:the_metaspec_grammar}, and is written in standard \gls{ebnf} notation. 
-The same notation will be used throughout this section of the document. 
-
-\subsection{The Top-Level Definitions} % (fold)
-\label{sub:the_top_level_definitions}
-
-% subsection the_top_level_definitions (end)
-
-\subsection{Specifying the Language Syntax} % (fold)
-\label{sub:specifying_the_language_syntax}
-% Why were the changes from EBNF made? 
-% Removal of empty syntax
-
-% subsection specifying_the_language_syntax (end)
-
-\subsection{Specifying the Language Semantics} % (fold)
-\label{sub:specifying_the_language_semantics}
-% Semantics and the unspecified cases. 
-
-% subsection specifying_the_language_semantics (end)
-
-\subsection{Combining Syntax and Semantics} % (fold)
-\label{sub:combining_syntax_and_semantics}
-% Challenges choosing the combination point
-% Initially at the production level, but this was nonsensical
-% What does having it at the alternation level allow users to do?
-% Why the particular form was chosen: --> {};
-
-% subsection combining_syntax_and_semantics (end)
-
-% section designing_the_metalanguage_metaspec (end)
+Following on from the design work put into the \gls{metaspec} (see \autoref{cha:designing_the_metalanguage}), significant time and effort was then invested into the design of the metacompiler toolchain itself, as well as the core algorithms and theory that it uses. 
+This chapter aims to provide a high-level overview of the \gls{absol} toolchain, showing the main system components and linking these to the high-level requirements.
+It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. 
 
 \section{Designing the Metacompiler --- ABSOL} % (fold)
 \label{sec:designing_the_metacompiler_absol}
@@ -74,6 +28,7 @@ The same notation will be used throughout this section of the document.
 % TODO Verifier: Different Verification Modules, talk about the recursive nature. Preprocessor.
 % Use this same style of architectural overview in the development section. 
 % Architectural overview focuses on system components, not code-level components.
+% Suitability of a pipeline-style architecture for the system as a whole. 
 
 As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. \\
 
@@ -83,6 +38,7 @@ As for any large system, it is important to be able to visualise the way in whic
 \label{sub:lexing_and_parsing}
 % Talk about the design for the lexer and parser, informed by the use of Megaparsec.
 % Talk about the process and use of datatypes to represent a very strongly typed AST
+% Talk about the checks that happen at parse time and reference the appropriate algorithms section.
 
 % subsection lexing_and_parsing (end)
 
@@ -92,36 +48,83 @@ As for any large system, it is important to be able to visualise the way in whic
 
 % subsection the_verification_engine (end)
 
+\subsection{Metalanguages and Execution} % (fold)
+\label{sub:metalanguages_and_execution}
+% How are resultant DSL programs intended to be executed - does this impact the design of the metacompiler at all?
+
+% subsection metalanguages_and_execution (end)
+
+\subsection{Type-Checking} % (fold)
+\label{sub:type_checking}
+% Explain the ideas behind any and none
+
+% subsection type_checking (end)
+
 % section designing_the_metacompiler_absol (end)
 
 \section{The Core Algorithms} % (fold)
 \label{sec:the_core_algorithms}
 % Talk about the design of each of the core algorithms in detail.
 
+\subsection{Verifier Precondition Validation} % (fold)
+\label{sub:verifier_precondition_validation}
+
+% subsection verifier_precondition_validation (end)
+
 \subsection{Verifier Traversal} % (fold)
 \label{sub:verifier_traversal}
 
 % subsection verifier_traversal (end)
 
-\subsection{Semantic Form Verification} % (fold)
-\label{sub:semantic_form_verification}
+\subsection{Basic Semantic Form Verification} % (fold)
+\label{sub:basic_semantic_form_verification}
 % All three criteria (evals, subterms, etc)
+% State the theorem that this algorithm works off.
+% Need to build ALL the core theory here. 
+% Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
+% Talk about the restrictions placed on the form such that it can be verified
 
-% subsection semantic_form_verification (end)
+% subsection basic_semantic_form_verification (end)
 
 \subsection{Guard Checking} % (fold)
 \label{sub:guard_checking}
 
 % subsection guard_checking (end)
 
+\subsection{Verification of Other Semantic Forms} % (fold)
+\label{sub:verification_of_other_semantic_forms}
+% The basic user-defined semantics aren't the only kind that exist in metaspec
+% Need to detail the algorithms for verification of these other semantic forms.
+
+\subsubsection{Verification of Special-Syntax Rules} % (fold)
+\label{ssub:verification_of_special_syntax_rules}
+
+% subsubsection verification_of_special_syntax_rules (end)
+
+\subsubsection{Verification of Environment Input Rules} % (fold)
+\label{ssub:verification_of_environment_input_rules}
+
+% subsubsection verification_of_environment_input_rules (end)
+
+\subsubsection{Verification of Environment Access Rules} % (fold)
+\label{ssub:verification_of_environment_access_rules}
+
+% subsubsection verification_of_environment_access_rules (end)
+
+% subsection verification_of_other_semantic_forms (end)
+
 % section the_core_algorithms (end)
 
 \section{Special Language Features} % (fold)
 \label{sec:special_language_features}
 % Talk about the design of each of the language features, and prove the required termination properties here.
+% Talk about those that were considered but not designed and WHY
 
 \subsection{Feature --- \texttt{base}} % (fold)
 \label{sub:feature_base}
+% Needs some utility functions for assesing length of productions (e.g. number of items in a syntax list)
+% Utility special syntax for environment gets (for use in normal syntactic rules).
+% Storing and retrieval of constant keys (a design issue with the grammar)
 
 % subsection feature_base (end)
 

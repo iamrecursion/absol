@@ -160,10 +160,10 @@ As, at the time of performing the literature survey, no decisions had been made 
 However, since the selection of operational semantics as the basic form of semantic representation, it is clear that some `guard'-style functionality is needed. \\
 
 Guards, in this sense, refer to restrictions on the values of the sub-evaluations of a rule, as can be seen in the following pair of operational semantic rules for a basic \texttt{if-then-else} expression:
-\begin{align*}
+\begin{align}
     [\text{if}] &: \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true} \\
     [\text{if}] &: \frac{\langle S_2, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}
-\end{align*}
+\end{align}
 
 In this case the, `$\text{if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}$' and `$\text{if }\mathbb{B}\llbracket b \rrbracket s = \textit{ true}$' are what the project terms the \textit{semantic restrictions}.\\
 
@@ -304,6 +304,28 @@ It has the following requirements imposed upon it.\\
 \requirement{Environment Accesses}{Functional}{
     The metalanguage should provide syntactic constructs for both storing and accessing values in the environment. 
     This is required to support DSL creators defining their own function definitions and other such constructs in the DSL. 
+}
+
+\requirement{Language Metadata}{Functional}{
+    The metalanguage should provide syntactic constructs for managing metadata about the language itself.
+    These must include the language name and the language version.
+}
+
+\requirement{Intuitive File Structure}{Non-Functional}{
+    The structure of a file in the metalanguage should have an intuitive structure.
+    This means that the file should establish all prerequisites to the definition of the language before the language itself is defined. 
+    This means that all the necessary context to understand the language definition is provided.
+}
+
+\requirement{Comments}{Functional}{
+    The metalanguage must provide both line and block comments to allow for annotating language specifications.
+    These comments may have no semantic meaning in the language and may be stripped at parse time. 
+}
+
+\requirement{Text Editor Ready}{Functional, Non-Functional}{
+    The metasyntax specified by the metalanguage should be representable as plaintext with no markup required. 
+    This ensures that it can be written in a standard text editor.
+    It should, however, still have support for unicode glyphs as these can assist in matching the domain environment. 
 }
 
 % subsection requirements_for_the_metalanguage (end)

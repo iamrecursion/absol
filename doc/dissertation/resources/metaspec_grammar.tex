@@ -5,7 +5,8 @@ The syntax for the language is represented using \gls{ebnf}, and is included in 
 
 For an overview of standard \gls{ebnf} syntax, please see the official standard for the metasyntactic notation published in \citet{standard1996ebnf}.
 
-\begin{lstlisting}
+\begin{minted}[fontsize=\blockfont]{text}
+
 (*
     This file defines the grammar for the Syntax of the metalanguage 'metaspec'.
 
@@ -146,30 +147,37 @@ semantic-type
     The start symbol is 'metaspec'.
 *)
 
-metaspec = { metaspec-def | metaspec-comment }-,; (* file cannot be empty *)
+metaspec = metaspec-defblock; (* file cannot be empty *)
 
+(* 
+    Comments in metaspec are defined as follows, and are removed in a 
+    preprocessing step. They are hence not represented in the rest of the 
+    language grammar in an explicit fashion. 
+*)
 metaspec-comment =
     line-comment-start-symbol, { utf-8-char }, eol-symbol |
     block-comment-start-symbol, { utf-8-char }, block-comment-end-symbol;
-
-comment-list = { metaspec-comment };
-
-metaspec-def = metaspec-defblock, rule-termination-symbol;
 
 (* 
     All of these blocks must be defined once in order.
 *)
 metaspec-defblock = 
-    name-defblock, 
-    version-defblock, 
-    using-defblock, 
-    truths-defblock,
-    language-defblock ;
+    name-defblock, rule-termination-symbol, 
+    version-defblock, rule-termination-symbol, 
+    using-defblock, rule-termination-symbol, 
+    truths-defblock, rule-termination-symbol, 
+    language-defblock, rule-termination-symbol;
 
-(* names can be arbitrary *)
+(* 
+    Names can be arbitrary, parses to from first to last non-whitespace character
+    before the `;`.
+*)
 name-defblock = "name", where-symbol, { utf-8-char }-,;
 
-(* Version strings can be alphanumeric *)
+(* 
+    Version strings can be arbitrary, parses to from first to last 
+    non-whitespace character before the `;`.
+*)
 version-defblock = "version", where-symbol, { utf-8-char }-,;
 
 using-defblock =
@@ -403,6 +411,7 @@ semantic-special-syntax
     | "deffun"
     | "callproc"
     | "callfun"
-\end{lstlisting}
+
+\end{minted}
 
 % chapter the_metaspec_grammar (end)
