@@ -30,23 +30,53 @@ It also provides a firm background to the design and development of the algorith
 % Architectural overview focuses on system components, not code-level components.
 % Suitability of a pipeline-style architecture for the system as a whole. 
 
-As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. \\
+As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. 
+\gls{absol} itself is composed at a high-level of two main modules, Metaparse and Metaverify.
+These modules form a natural segmentation of the work that the compiler has to do, and is are naturally subdivided internally.
+\gls{absol} is best visualised as a pipeline, and the arrows illustrate the flow of data through the metacompiler.
+The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.\\
 
-\gls{absol}, the metacompiler system 
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.95\textwidth]{resources/images/metacompiler_pipeline_architecture.pdf}
+    \caption{ABSOL High-Level Architectural Diagram}
+    \label{fig:absol_high_level_architectural_diagram}
+\end{figure}
 
-\subsection{Lexing and Parsing} % (fold)
-\label{sub:lexing_and_parsing}
+The main components of the metacompiler can be described as follows:
+\begin{itemize}
+    \item \textbf{Metaparse:} Responsible for the generation of an \gls{ast} from the input metaspec file and verifying some precondition properties for the verification engine. 
+    It has two main stages: lexing and parsing (which also performs precondition verification). 
+    For further description of this stage please see \autoref{sub:metaparse_ast_generation}.
+    \item \textbf{Metaverify:} Responsible for verifying the termination properties of the language.
+    It consists of three main stages: \gls{ast} preprocessing, semantic inference and semantic verification.
+    For further description of this stage please see \autoref{sub:metaverify_the_verification_engine}.
+\end{itemize}
+
+The following sections provide a detailed exploration of the design of these two main components, with a focus on the reasons behind the design choices that have been made.
+Also below is an exploration of how the eventual intention for \gls{dsl} execution and type-checking have impacted the design of the metacompiler itself. 
+
+\subsection{The Metacompiler Front-End} % (fold)
+\label{sub:the_metacompiler_front_end}
+% Brief discussion on the roles that the front end had to fulfil
+% How it acts as a harness around the actual operation of the metacompiler
+% CLI Arg parsing
+
+% subsection the_metacompiler_front_end (end)
+
+\subsection{Metaparse --- AST Generation} % (fold)
+\label{sub:metaparse_ast_generation}
 % Talk about the design for the lexer and parser, informed by the use of Megaparsec.
 % Talk about the process and use of datatypes to represent a very strongly typed AST
 % Talk about the checks that happen at parse time and reference the appropriate algorithms section.
 
-% subsection lexing_and_parsing (end)
+% subsection metaparse_ast_generation (end)
 
-\subsection{The Verification Engine} % (fold)
-\label{sub:the_verification_engine}
+\subsection{Metaverify --- The Verification Engine} % (fold)
+\label{sub:metaverify_the_verification_engine}
 % Talk about the different modules, the verification preprocessor, the recursive nature of the algorithm for traversing the metaspec AST.
 
-% subsection the_verification_engine (end)
+% subsection metaverify_the_verification_engine (end)
 
 \subsection{Metalanguages and Execution} % (fold)
 \label{sub:metalanguages_and_execution}
