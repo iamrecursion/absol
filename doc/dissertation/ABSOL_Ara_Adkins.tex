@@ -4,7 +4,7 @@
 %Additional Packages
 \usepackage{floatrow}
 \usepackage{scrextend} %for variable indentation
-\usepackage{algorithm} %For algorithms
+\usepackage[chapter]{algorithm} %For algorithms
 \usepackage{algpseudocode} %For algorithms
 \usepackage[]{array}
 \usepackage{amsmath} %Extra formula-writing functionality
@@ -74,6 +74,8 @@
 \newcommand{\eval}{\Downarrow}
 \newcommand{\goesto}[0]{\MVRightarrow}
 \newcommand{\mathgoesto}[0]{\mathord{\text{ \goesto\;}}}
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
 
 \newcounter{requirementcounter}
 \newcommand*{\reqlabel}[1]{R\refstepcounter{requirementcounter}\therequirementcounter\label{#1}}
@@ -83,7 +85,7 @@
 
 \newcommand{\requirement}[3]{
     \StrSubstitute[0]{#1}{ }{}[\labelname]
-    \textbf{Requirement \reqlabel{req:\labelname}}
+    \hspace{-1.5em}\textbf{Requirement \reqlabel{req:\labelname}}
     \begin{addmargin}[1em]{0em}
         \textbf{Name:} #1\\ 
         \textbf{Type:} #2\\
@@ -266,6 +268,7 @@
 \addcontentsline{toc}{chapter}{List of algorithms}
 
 \lstlistoflistings
+\addcontentsline{toc}{chapter}{Listings}
 
 \printglossaries
 
@@ -276,6 +279,7 @@
 \include{resources/introduction}
 \include{resources/literature_survey}
 \include{resources/elucidation_requirements}
+\include{resources/designing_the_metalanguage}
 \include{resources/architecture_and_algorithms}
 \include{resources/implementation}
 \include{resources/testing}

@@ -160,10 +160,10 @@ As, at the time of performing the literature survey, no decisions had been made 
 However, since the selection of operational semantics as the basic form of semantic representation, it is clear that some `guard'-style functionality is needed. \\
 
 Guards, in this sense, refer to restrictions on the values of the sub-evaluations of a rule, as can be seen in the following pair of operational semantic rules for a basic \texttt{if-then-else} expression:
-\begin{align*}
+\begin{align}
     [\text{if}] &: \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true} \\
     [\text{if}] &: \frac{\langle S_2, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}
-\end{align*}
+\end{align}
 
 In this case the, `$\text{if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}$' and `$\text{if }\mathbb{B}\llbracket b \rrbracket s = \textit{ true}$' are what the project terms the \textit{semantic restrictions}.\\
 
@@ -320,6 +320,12 @@ It has the following requirements imposed upon it.\\
 \requirement{Comments}{Functional}{
     The metalanguage must provide both line and block comments to allow for annotating language specifications.
     These comments may have no semantic meaning in the language and may be stripped at parse time. 
+}
+
+\requirement{Text Editor Ready}{Functional, Non-Functional}{
+    The metasyntax specified by the metalanguage should be representable as plaintext with no markup required. 
+    This ensures that it can be written in a standard text editor.
+    It should, however, still have support for unicode glyphs as these can assist in matching the domain environment. 
 }
 
 % subsection requirements_for_the_metalanguage (end)
