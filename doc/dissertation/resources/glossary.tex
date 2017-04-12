@@ -106,3 +106,20 @@
 \newacronym{ssr}{SSR}{Special-Syntax Rule}
 
 \newacronym{cli}{CLI}{Command-Line Interface}
+
+\newglossaryentry{lexer}{
+    name=Lexer,
+    text=lexer,
+    description={
+        A lexer is a program that takes a string of characters and performs a process known as \textit{lexical analysis} to generate a stream of tokens (each of which may consist of one or more characters).
+        Each of these tokens has semantic meaning in a given language.
+    }
+}
+
+\newglossaryentry{parser}{
+    name=Parser,
+    text=parser,
+    description={
+        A parser is a program that takes a string of tokens (usually from a \gls{lexer}) and builds an \acrshort{ast} for out of these tokens based on the language grammar. 
+    }
+}

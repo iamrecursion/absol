@@ -214,7 +214,8 @@ The fixes that Megaparsec applied on top of the Parsec codebase included signifi
     This removes the need for an external lexer such as Alex, and means that the parser code can be greatly simplified.
     \item Refactoring to the parsing of left-recursive expressions such as arithmetic and other binary operators. 
     Megaparsec provides an expression parser that handles all of the lookahead requirements automatically, providing the potential for further simplification to the parser code. 
-    \item General refactoring of the Parsec codebase to provide a nicer interface.
+    \item Significantly improved error messages, especially in the case of backtracking parsers. 
+    \item General improvements to the interface provided by the libraries, including more intuitive naming for certain oft-used functions.
 \end{itemize}
 
 In light of these benefits over the standard Parsec library and the fact that it retains the other benefits of parsec, Megaparsec was chosen instead. 

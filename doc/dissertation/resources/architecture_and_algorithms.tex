@@ -16,7 +16,11 @@
 
 Following on from the design work put into the \gls{metaspec} (see \autoref{cha:designing_the_metalanguage}), significant time and effort was then invested into the design of the metacompiler toolchain itself, as well as the core algorithms and theory that it uses. 
 This chapter aims to provide a high-level overview of the \gls{absol} toolchain, showing the main system components and linking these to the high-level requirements.
-It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. 
+It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. \\
+
+It should be noted that unlike \gls{metaspec}, which was designed over one consistent period, the design and implementation periods for the \gls{absol} toolchain were interleaved heavily.
+This provided the opportunity to iterate on the designs where necessary.
+Instances of this occurring will be noted throughout this chapter, but the designs presented below will be the final ones. 
 
 \section{Designing the Metacompiler --- ABSOL} % (fold)
 \label{sec:designing_the_metacompiler_absol}
@@ -97,22 +101,166 @@ The following list of options resulted:
 
 \subsection{Metaparse --- AST Generation} % (fold)
 \label{sub:metaparse_ast_generation}
-% Talk about the design for the lexer and parser, informed by the use of Megaparsec. Mention that while they were originally intended to be separated, the inetgration of megaparsec discussed in REFERENCE meant that it made more sense from a design standpoint to integrate the two
-% Talk about the process and use of datatypes to represent a very strongly typed AST
-% Talk about the checks that happen at parse time and reference the appropriate algorithms section.
-% Choice of Technology heavily informing the design
+Metaparse is the subsystem of \gls{absol} that performs generation of an \gls{ast} from the input language specification.
+This meant that it was responsible for providing both a \gls{lexer} and a \gls{parser} for \gls{metaspec}, as stated in Requirement~\reqref{req:ParseMetaspec}.
+During the design process, however, it became clear that the parser was also the most appropriate place to perform some initial precondition checking required by the verification algorithms at later stages of the pipeline. 
+The design of Metaparse was therefore heavily influenced both by its \textit{location} in the metacompiler pipeline and the \textit{data} which it was dealing with.
+The goals for the design of Metaparse were hence set out as follows:
+\begin{itemize}
+    \item \textbf{Produce an AST from a Metaspec File:} The lexing and parsing processes had to result in an AST from the input file, or in the case where the input file was incorrect, produce a helpful syntax error. 
+    \item \textbf{Verify the Preconditions for Metaverify:} As a parser, Metaparse will have had to traverse all portions of the \gls{ast}, allowing it to have all the information necessary to validate the verification preconditions.
+\end{itemize}
+
+\subsubsection{The Parser and Lexer Design} % (fold)
+\label{ssub:the_parser_and_lexer_design}
+Initial considerations for the design of Metaparse called for a two-stage design, with separate lexing and parsing stages. 
+The original intention was for the lexer to operate directly on the character stream of the \gls{metaspec} file, producing a token stream which would then be provided to the parser for the creation of an \gls{ast}. 
+This design represented a good separation of concerns, and provided an appropriate level of decoupling between the two processes. \\
+
+However, the design of Metaparse was later informed quite significantly by the choice of implementation technology. 
+Megaparsec, as discussed in \autoref{sub:megaparsec_improved_parsing}, provides a significantly improved set of utilities for creating lexing primitives for a given language. 
+This meant, from a design standpoint, that merging the lexing and parsing steps would bring significant benefits to the system design:
+\begin{itemize}
+    \item \textbf{Efficiency:} As the \gls{ast}-generation process would now only have to make one pass over the character stream, performing one process of characters $\to$ tokens (contrasted with the dual passes for characters $\to$ tokens and then tokens $\to$ \gls{ast}), this means that the process as a whole is more efficient.
+    \item \textbf{Simplicity:} Merging the two processes serves to simplify the design due to the removal of a (mostly unnecessary) boundary between lexing and parsing.
+    This is 
+    \item \textbf{Ease of Implementation:} This aforementioned simplicity will likely mean that the implementation of Metaparse is simplified.
+    On a time-constrained project this is a big boon, and a big benefit of the integrated design.
+\end{itemize}
+
+While the merging of separate processes like this is often viewed as an improper separation of concerns, it is sometimes the case that certain technologies permit a novel approach that aids significantly in simplifying the design.
+With Megaparsec, this is definitely the case as the lexing primitives it provides are \textit{intended} to be used in an integrated fashion to provide a fluid and easy to read parser. \\
+
+Using Megaparsec for the parser also brings with it additional benefits for the design of the parser. 
+Due to the provision of excellent parse-error reporting facilities, no design effort has to be dedicated to providing useful errors at parse time to the \gls{dsl} designer. 
+Additionally, its nature as a parser combinator library means that the elements of the parser are clearly readable as expressions for the language grammar. 
+
+% subsubsection the_parser_and_lexer_design (end)
+
+\subsubsection{Designing the Metaparse AST} % (fold)
+\label{ssub:designing_the_metaparse_ast}
+Megaparsec operates on a very strongly-typed set of custom \gls{ast} data-types. 
+This `tree' of types is one of the main components of the Metaparse design, and is created in accordance with the grammar for \gls{metaspec} that is outlined in \autoref{cha:designing_the_metalanguage}.
+The process of creating this set of types is more a development task than a design one, as it is an almost direct translation of the \gls{metaspec} \gls{ebnf} grammar into Haskell's data types. \\
+
+The key design element of this transformational process was to determine the level of abstraction at which it should take place:
+\begin{itemize}
+    \item \textbf{Representation of Productions:} Certain elements of the \gls{metaspec} grammar are not able to be directly represented in the form of Haskell data-types.
+    As a result, the design process had to recognise where it was not possible to provide a direct representation and perform a transformation of the grammar while still remaining semantically correct.
+    Due to the modular nature of the grammar, there were only a few instances where this was required to take place, an example of which can be seen below.
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+[ syntax-access-block | environment-access-rule ]
+    \end{minted}
+    This portion of the grammar exists within a more complex production, and representing the possibilities of this in Haskell would be difficult.
+    Instead, it was factored out into a separate type representing this alternation, seen below
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+access-block-or-rule = 
+    syntax-access-block | environment-access-rule ;
+    \end{minted}
+    \item \textbf{Indirections:} The structure of Haskell data-types (usually concerning type recursion) can preclude the representation of certain productions in \gls{ebnf}. 
+    In such cases, it is often necessary to introduce an indirect type (equivalent to a production with a single node itself) to allow proper representation in the \gls{ast}. 
+    An example of this indirection or `factoring out' can be seen below.
+    The following production cannot be directly represented as Haskell data types:
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+semantic-rule = 
+    environment-input-rule |
+    environment-access-rule |
+    special-syntax-rule |
+    semantic-evaluation-rule-list;
+    \end{minted}
+    Some of the rule cases would be factored out as follows to ensure proper representation in Haskell while still retaining the correct grammatical structure.
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+semantic-rule = 
+    environment-input-rule |
+    environment-access-rule-proxy |
+    special-syntax-rule-proxy |
+    semantic-evaluation-rule-list;
+
+environment-access-rule-proxy = environment-access-rule;
+special-syntax-rule-proxy = special-syntax-rule;
+    \end{minted}
+\end{itemize}
+
+These temporary alterations to the grammar in aid of designing the Metaparse \gls{ast} data-types were performed during implementation of the types themselves.
+This means that the temporary alterations to the grammar were not retained in any consistent format, as they did not add any additional clarity to the \gls{ebnf} representation of \gls{metaspec}.
+In most cases, they actually obscured the language grammar, which was undesirable.
+
+% subsubsection designing_the_metaparse_ast (end)
+
+\subsubsection{Precondition Verification in the Parser} % (fold)
+\label{ssub:precondition_verification_in_the_parser}
+The verification algorithms discussed in \autoref{sec:the_core_algorithms} are only correct in the presence of certain preconditions.
+For more details on why these are required for verification correctness, please see \autoref{sub:verifier_precondition_validation} on \autopageref{sub:verifier_precondition_validation}.
+These preconditions can briefly be described as follows:
+\begin{itemize}
+    \item All non-terminals that are \textit{used} must be \textit{defined} in scope (this may include non-terminals provided by language features).
+    \item All non-terminals must be \textit{defined only once}.
+    \item All used types must be \textit{in scope}.
+    \item All used special-syntax must be \textit{in scope}. 
+\end{itemize}
+
+While these preconditions could easily be verified in a separate pass over the generated \gls{ast}, the parser itself has to touch every node in the AST as it generates the data structure.
+This makes it an appropriate location to collect the necessary data to perform the verification.\\
+
+The verification of these preconditions is an inherently stateful operation, and hence required some alterations to the initial design of the parser.
+While, by default, a Megaparsec parser tracks some state (in order to provide appropriate parser error messages), this state is not accessible to the user. 
+This means that the design must incorporate some additional state to track the data required to perform this verification.
+It needs to record data as follows:
+\begin{itemize}
+    \item The non-terminals, types and special-syntax \textit{brought into scope} by the language imports.
+    \item The non-terminals \textit{defined} by the language specification.
+    \item The non-terminals \textit{used} by the language specification. 
+\end{itemize}
+
+With the parser capable of tracking this data, the verification algorithm is able to operate.
+For details of the precondition verification algorithm itself, see \autoref{sub:verifier_precondition_validation} on \autopageref{sub:verifier_precondition_validation}. 
+
+% subsubsection precondition_verification_in_the_parser (end)
+
+\subsubsection{The Final Design for Metaparse} % (fold)
+\label{ssub:the_final_design_for_metaparse}
+% Establish the final design elements for the parser as a descriptive list.
+
+Combining the results of the two-stage design process illustrated in the previous sections, the final design for Metaparse is as follows:
+\begin{itemize}
+    \item \textbf{Integrated Lexer and Parser:} The parsing process will use an integrated set of lexer primitives to allow a one-pass parse of the input \gls{metaspec} specification. 
+    \item \textbf{Full AST Data-Type Tree:} The parser will operate over a comprehensive Haskell type-level representation of the \gls{metaspec} grammar. 
+    This typed \gls{ast} will have undergone the necessary transformations so as to allow appropriate representation in Haskell while retaining grammatical correctness. 
+    \item \textbf{Integration of Parser State:} The parser will have an integrated user state that is able to track all the data defined in \autoref{ssub:precondition_verification_in_the_parser}.
+    This data will be tracked as the parse takes place. 
+    \item \textbf{Utilisation of Parser State for Precondition Validation:}
+    The parser will perform precondition validation on the tracked state using the algorithms described in \autoref{sub:verifier_precondition_validation}.
+\end{itemize}
+
+% subsubsection the_final_design_for_metaparse (end)
 
 % subsection metaparse_ast_generation (end)
 
 \subsection{Metaverify --- The Verification Engine} % (fold)
 \label{sub:metaverify_the_verification_engine}
 % Talk about the different modules, the verification preprocessor, the recursive nature of the algorithm for traversing the metaspec AST.
+% Much like Metaparse, it did not make sense to separate the two kinds of verification that had to take place.
+% Despite the fact that they are relatively disparate algorithms
+
+\subsubsection{The Verification Preprocessor} % (fold)
+\label{ssub:the_verification_preprocessor}
+While it contains all necessary data to perform verification, the \gls{ast} that is generated by Metaparse is not the most efficient structure to verify the language. 
+Simply put, this is because the verification algorithm requires some summary data, while other portions of the AST are just irrelevant.
+To rectify this, the need for a \textit{preprocessing step} was identified at the design stage. 
+
+% subsubsection the_verification_preprocessor (end)
+
+\subsubsection{Designing the Verification Engine} % (fold)
+\label{ssub:designing_the_verification_engine}
+
+% subsubsection designing_the_verification_engine (end)
 
 % subsection metaverify_the_verification_engine (end)
 
 \subsection{Metalanguages and Execution} % (fold)
 \label{sub:metalanguages_and_execution}
 % How are resultant DSL programs intended to be executed - does this impact the design of the metacompiler at all?
+% During the design process some significant thought was given to... however, as it became apparent that code generation would not be taking place in the scope of this project...
 
 % subsection metalanguages_and_execution (end)
 
@@ -146,14 +294,20 @@ While disappointing, care was taken to ensure that the novel parts of the projec
 \section{The Core Algorithms} % (fold)
 \label{sec:the_core_algorithms}
 % Talk about the design of each of the core algorithms in detail.
+The core algorithms encountered as part of...
 
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
+% Explain WHY these preconditions must hold, and the consequences for them being broken. 
+% Why they are required for verifier correctness.
+% Two stage verification - some can be done during due to the form of the metaspec file (know imports already), while others must be done at the end of the parse from the collated data. Ensure to show this in the algorithm definition. 
 
 % subsection verifier_precondition_validation (end)
 
 \subsection{Verifier Traversal} % (fold)
 \label{sub:verifier_traversal}
+% The process of traversing the preprocessed AST and the reasons for it. 
+% This section should contain details of the primary algorithm of the verifier. 
 
 % subsection verifier_traversal (end)
 
