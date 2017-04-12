@@ -20,7 +20,16 @@
 }
 
 \newdualentry{absol}{ABSOL}{Automatic Builder for Semantically Oriented Languages}{
-    The metacompiler program and toolchain that performs language analysis and verification.
+    The \gls{metacompiler} program and toolchain that performs language analysis and verification.
+}
+
+\newglossaryentry{metacompiler}{
+    name=Metacompiler,
+    text=metacompiler,
+    description={
+        A metacompiler is a program that takes in a specification and generates code for a language compiler as its output. 
+        In the case of this project, the metacompiler is responsible for the verification of the input specification, rather than code generation from it. 
+    }
 }
 
 \newglossaryentry{halting_problem}{
@@ -95,3 +104,5 @@
 }
 
 \newacronym{ssr}{SSR}{Special-Syntax Rule}
+
+\newacronym{cli}{CLI}{Command-Line Interface}

@@ -11,10 +11,6 @@
 %     \item \textbf{Architectural Overview:} An overview of the system architecture, linked to the high-level requirements.
 %     This will touch on the portions of the system that were ruled out of scope later on, and why.
 %     \item \textbf{System Component Examination:} An examination of the design of each of the system components in detail.
-%     \item \textbf{The Development of Metaspec:} The process of developing the metaspec language itself, as well as some syntax examples and full syntax description. 
-%     \item \textbf{Algorithmic Descriptions:} The verification engine in particular is very heavy on algorithmic work. 
-%     These algorithms will be explained here, accompanied by any additional proof work that they require. 
-%     This will include proofs for the special form semantics.
 %     It will also look at initial or discarded algorithmic designs as part of the process. 
 % \end{itemize}
 
@@ -24,21 +20,16 @@ It also provides a firm background to the design and development of the algorith
 
 \section{Designing the Metacompiler --- ABSOL} % (fold)
 \label{sec:designing_the_metacompiler_absol}
-% TODO Parser: Lexer, Parser, Etc.
-% TODO Verifier: Different Verification Modules, talk about the recursive nature. Preprocessor.
-% Use this same style of architectural overview in the development section. 
-% Architectural overview focuses on system components, not code-level components.
-% Suitability of a pipeline-style architecture for the system as a whole. 
-
 As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. 
 \gls{absol} itself is composed at a high-level of two main modules, Metaparse and Metaverify.
 These modules form a natural segmentation of the work that the compiler has to do, and is are naturally subdivided internally.
 \gls{absol} is best visualised as a pipeline, and the arrows illustrate the flow of data through the metacompiler.
-The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.\\
+The pipeline-style architecture is very suitable for \gls{absol}, as each stage of the toolchain depends only on the output of the previous stage.
+The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.
 
 \begin{figure}[!htb]
     \centering
-    \includegraphics[width=0.95\textwidth]{resources/images/metacompiler_pipeline_architecture.pdf}
+    \includegraphics[width=1\textwidth]{resources/images/metacompiler_pipeline_architecture.pdf}
     \caption{ABSOL High-Level Architectural Diagram}
     \label{fig:absol_high_level_architectural_diagram}
 \end{figure}
@@ -54,21 +45,62 @@ The main components of the metacompiler can be described as follows:
 \end{itemize}
 
 The following sections provide a detailed exploration of the design of these two main components, with a focus on the reasons behind the design choices that have been made.
+It was known at design stage that the implementation language would be Haskell, so sporadic references are made to the language choice and how it may have impacted the system design.
 Also below is an exploration of how the eventual intention for \gls{dsl} execution and type-checking have impacted the design of the metacompiler itself. 
 
 \subsection{The Metacompiler Front-End} % (fold)
 \label{sub:the_metacompiler_front_end}
-% Brief discussion on the roles that the front end had to fulfil
-% How it acts as a harness around the actual operation of the metacompiler
-% CLI Arg parsing
+The metacompiler front-end is the harness that wraps around both Metaparse and Metaverify to allow them to interact with the world. 
+It is not truly part of the requirements for the toolchain, but would always be necessary to enable the core features to have real-world applicability. 
+The front-end needed to handle the following features:
+\begin{itemize}
+    \item \textbf{Command-Line Option Parsing:} The metacompiler front-end needed to be capable of parsing options given to the tool on the command line.
+    These options would be used to provide inputs to the metacompiler (such as the file to run on) and configure its behaviour. 
+    \item \textbf{File Loading:} The front-end also needed to be capable of loading the input language specification.
+    \item \textbf{Pipeline Coordination:} The final task for the front-end was to pass data between the pipeline stages.
+\end{itemize}
+
+Initial design for the metacompiler front-end focused on the identification of separate logical concerns for the front end component.
+Given that its responsibilities are entirely distinct, this posed little issue.
+As any target language, Haskell included, would provide facilities for file loading and the movement of data, the only component that required any significant design work was the command-line options. 
+
+\subsubsection{Designing the Command-Line Options} % (fold)
+\label{ssub:designing_the_command_line_options}
+With Haskell's robust support for parsing libraries, including those dedicated for parsing command-line options, little consideration had to be given to the design of the \gls{cli} argument parser itself.
+As a counterpoint, the options required careful consideration as they would impact the abilities of the user to control the system behaviour. 
+The design of the command-line arguments took place before the scope reduction (as discussed in \autoref{sub:removed_design_elements}) took place.
+Hence, there are references in this list to options that are not used in the final design.\\
+
+Determining appropriate configuration options resulted from an examination of the responsibilities of the metacompiler and a consideration of which portions of its behaviour might benefit from being configurable.
+The analysis was further informed by the behaviour of common build tools such as the generic \mintinline{text}{gmake} (GNU-Make) and the Haskell-specific \mintinline{text}{stack}.
+The following list of options resulted:
+\begin{itemize}
+    \item \textbf{Input Filename:} The metacompiler operates on a language specification, and so needs to be provided with the input file.
+    \item \textbf{Analysis Verbosity:} An oft-encountered configuration parameter for processes with output to the command-line, being able to control the verbosity of the language analysis and error reporting process seemed useful.
+    As a result, the options design included a flag to enable full reporting.
+    \item \textbf{Log File:} It seemed reasonable for users to want to output the analysis results to a log-file rather than do \mintinline{text}{stdout}.
+    This configuration parameter was intended to do exactly that, allowing the user to easily store the results of analysis of their language.
+    \item \textbf{Output Directory:} Provided to serve both the log file output and any eventual build artefacts, many build tools provide the ability to specify the target directory for any output files.
+    This seemed important enough for the option to be included in this list. 
+    \item \textbf{Language Name / Version:} As discussed in \autoref{sub:the_metadata_blocks}, \gls{metaspec} specifications contain language metadata. 
+    It is conceivable, however, that \gls{dsl} authors may want to temporarily override these settings at build time.
+    To this end, flags for providing alternative language names and language versions should be provided. 
+    \item \textbf{Reporting:} As the metacompiler was originally intended to perform code-generation, it was conceivable that the users of the tool might want to verify the language they are developing without generating code from the specification. 
+    Providing a flag to enable this would shorten the write-compile-debug cycle so common in development, and hence improve \gls{dsl} development workflow.
+    \item \textbf{Cleanup:} Also mostly intended to interact with the code-generation stage, the cleanup flag was meant to delete all build artefacts resulting from code-generation.
+    This is a common feature provided by build systems (e.g. \mintinline{sh}{make clean} or \mintinline{sh}{stack cleanup}, and hence seemed important to include.
+\end{itemize}
+
+% subsubsection designing_the_command_line_options (end)
 
 % subsection the_metacompiler_front_end (end)
 
 \subsection{Metaparse --- AST Generation} % (fold)
 \label{sub:metaparse_ast_generation}
-% Talk about the design for the lexer and parser, informed by the use of Megaparsec.
+% Talk about the design for the lexer and parser, informed by the use of Megaparsec. Mention that while they were originally intended to be separated, the inetgration of megaparsec discussed in REFERENCE meant that it made more sense from a design standpoint to integrate the two
 % Talk about the process and use of datatypes to represent a very strongly typed AST
 % Talk about the checks that happen at parse time and reference the appropriate algorithms section.
+% Choice of Technology heavily informing the design
 
 % subsection metaparse_ast_generation (end)
 
@@ -86,9 +118,28 @@ Also below is an exploration of how the eventual intention for \gls{dsl} executi
 
 \subsection{Type-Checking} % (fold)
 \label{sub:type_checking}
-% Explain the ideas behind any and none
+% Explain the ideas behind any and none, why typechecking is not performed at the metacompiler level. 
 
 % subsection type_checking (end)
+
+\subsection{Removed Design Elements} % (fold)
+\label{sub:removed_design_elements}
+The design presented at the start of this section in \autoref{fig:absol_high_level_architectural_diagram} is not the original design for the system.
+Towards the start of the design phase for \gls{absol}, the scope of the project was much more grand. 
+In addition to the areas in the final design, the system was also originally intended to encompass the following:
+\begin{itemize}
+    \item \textbf{DSL Compiler Generation:} The original scope of the metacompiler called for the generation of a DSL compiler from the language specification provided by \gls{metaspec}. 
+    While this was an important part of making the toolchain truly useful for designing and implementing \glspl{dsl}, it is far from novel.
+    The code-generation stage would have been heavily based upon work explored in \autoref{sec:automating_the_generation_of_the_compiler}, and would require significant design and implementation effort, likely exceeding the amount of time available to the project.
+    \item \textbf{Compilation of DSL Programs:} The generated code for the DSL compiler would be intended to be compiled itself. 
+    The resultant build artefact would be capable of transpiling programs in the target DSL to Haskell.
+    These haskell programs would be prepared for interaction via the C \gls{ffi} with any host language that would want to interact with the DSL.
+\end{itemize}
+
+Unfortunately, due to scoping concerns, these additional parts of the metacompiler toolchain were ruled as `out of scope' for the project. 
+While disappointing, care was taken to ensure that the novel parts of the project (the metalanguage and language verification capabilities) remained in scope as part of the core toolchain. 
+
+% subsection removed_design_elements (end)
 
 % section designing_the_metacompiler_absol (end)
 
@@ -149,12 +200,17 @@ Also below is an exploration of how the eventual intention for \gls{dsl} executi
 \label{sec:special_language_features}
 % Talk about the design of each of the language features, and prove the required termination properties here.
 % Talk about those that were considered but not designed and WHY
+% Talk about WHY things were thought of - the design process.
+
+The special language features in \gls{absol} and \gls{metaspec} are best thought of as the `standard library' for \gls{dsl} implementation.
+Each of these features aims to bring some important functionality to the toolchain, whether that be types for the semantics, non-terminals for parsing or special semantic functions to bring added flexibility. 
 
 \subsection{Feature --- \texttt{base}} % (fold)
 \label{sub:feature_base}
 % Needs some utility functions for assesing length of productions (e.g. number of items in a syntax list)
 % Utility special syntax for environment gets (for use in normal syntactic rules).
 % Storing and retrieval of constant keys (a design issue with the grammar)
+% Need to add these to the grammar and parser
 
 % subsection feature_base (end)
 
