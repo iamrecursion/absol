@@ -1,6 +1,7 @@
 % How the problem is analysed to create the solution.
 % Examine the design approaches taken.
 % Identification of areas of the design that account for the requirements and resolve potential conflicts. 
+% Fix algorithm placement
 % Unify formatting around algorithms and functions.
 
 \chapter{Architecture and Algorithms} % (fold)
@@ -877,14 +878,107 @@ The semantics of non-terminals in the syntax for a given rule (with user-defined
 % Discuss both the original intent, some attempted algorithmic designs
 % Reference back to the section ruling full validation as out of scope. 
 % Explain the (very simple) reasoning behind the final algorithm. 
+In order to verify the guards for a given set of program semantics, the algorithm had to ensure that two criteria held:
+\begin{enumerate}
+    \item \textbf{The Completeness Criteria:} There must be a set of semantics defined for every possible combination of values of the guard variables, and hence there must be a guard admitting every possible combination of these values.
+    \item \textbf{The Guard Variable Criteria:} The variables used in the guard expressions must be the result variables for the sub-evaluations of the semantic rules (see \autoref{sub:user_defined_semantic_form_verification}).
+\end{enumerate}
+
+Simply, this means that the result for verifying the guards is the combination of the results of the two separate verification criteria.
+This is given in \autoref{alg:user_defined_guard_verification}, and depends only on the functions that check the two criteria for the guards. 
+Both of these checks, however, depend on the availability of the following function:
+\begin{itemize}
+    \item \textsc{extractGuards}(semanticRules): Extracts the guard expressions from the provided semantic rules, returning these as a list. 
+\end{itemize}
 
 \begin{algorithm}
 \begin{algorithmic}
-    \State
+\Function{verifyGuards}{evaluationRules}
+    \State guardsComplete $\gets$ \Call{verifyGuardsComplete}{evaluationRules}
+    \Comment see \autoref{alg:guard_completeness_checking}
+    \State guardVariablesComplete $\gets$ \Call{verifyGuardVariables}{evaluationRules}
+    \Comment see \autoref{alg:guard_variable_checking}
+    \State \Return{\Call{tagPlus}{guardsComplete, guardVariablesComplete}}
+\EndFunction
 \end{algorithmic}
 \caption{User-Defined Guard Verification}
 \label{alg:user_defined_guard_verification}
 \end{algorithm}
+
+\subsubsection{Checking Guard Completeness} % (fold)
+\label{ssub:checking_guard_completeness}
+Checking guards in the user-defined semantics was a point of significant design challenge, focused on ensuring that there would be defined semantics for all possible values of the guard variables. 
+However, this was not as simple as it might initially sound.
+Even with a restricted set of guard operations, this proved to be a very difficult task, as discussed in \autoref{sub:guard_completeness_checking}, and was eventually ruled out of scope.\\
+
+However, it was not possible to just \textit{assume} that the guards for a given set of semantics were complete, as this could lead to a language where the semantics were not total, and hence to erroneous verification of the language.
+A simple (and unfortunately inelegant) solution was proposed to avoid this: ensure that every set of guards had at least one guard that admitted all values.
+In other words, the goal of guard checking became ensuring that each set of guards had at least one `catch-all' guard. \\
+
+This is particularly inelegant as, even in cases where the \gls{dsl} creator has been able to create a complete set of guards, they still have to add some kind of semantic expression for the catch-all case. 
+However, while ugly, this does not impact on the potential for functionality within the language as guards are evaluated \textit{top-to-bottom}, with the first guard that is satisfied being evaluated. 
+As a result, the finalised method for checking guard completeness can be found in \autoref{alg:guard_completeness_checking}.
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{verifyGuardsComplete}{evaluationRules}
+    \State guards $\gets$ \Call{extractGuards}{evaluationRules}
+    \ForAll{guard $\in$ guards}
+        \If{guard == empty}
+            \State \Return{Terminates}
+        \EndIf
+    \EndFor
+    \State \Return{DoesNotTerminate}
+\EndFunction
+\end{algorithmic}
+\caption{Guard Completeness Checking}
+\label{alg:guard_completeness_checking}
+\end{algorithm}
+
+% subsubsection checking_guard_completeness (end)
+
+\subsubsection{Checking Guard Variables} % (fold)
+\label{ssub:checking_guard_variables}
+The other of the criteria for the guard verification is to ensure that the guards depend only upon variables defined as part of the sub-evaluations in the language semantics.
+The reasoning behind this criteria is that the guards are intended to restrict the circumstances under which computation can take place. 
+Hence, if they depend on the final or intermediate variables of the semantic evaluations, then computation has to take place for the evaluation of the guards.\\
+
+This means that the variables used in the guards must be constrained to those defined for the sub-evaluations of the semantic rule.
+The procedure for verifying this is contained in \autoref{alg:guard_variable_checking}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{extractGuardVariables}(guards): Returns a list containing lists of the variables in each guard.
+    \item \textsc{extractEvalVariables}(evaluations): Returns a list containing lists of the variables in the semantic evaluations for each rule.
+    \item \textsc{zip}(a, b): Creates a list of pairs of the corresponding items in lists a and b.
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{verifyGuardVariables}{evaluationRules}
+    \State guards $\gets$ \Call{extractGuards}{evaluationRules}
+    \State guardVariables $\gets$ \Call{extractGuardVariables}{guards}
+    \State evalVariables $\gets$ \Call{extractEvalVariables}{guards}
+    \State guardEvalVarPairs $\gets$ \Call{zip}{guardVariables, evalVariables}
+    \State results $\gets$ \Map{\Call{checkVars}{}}{guardEvalVarPairs}
+    \State \Return{\Reduce{\Call{tagPlus}{}}{Terminates}{results}}
+\EndFunction
+\State
+\Function{checkVars}{(guardVars, evalVars)}
+    \State result $\gets$ True
+    \ForAll{var $\in$ guardVars}
+        \State result $\gets$ result $\land$ (var $\in$ evalVars)
+    \EndFor
+    \If{result == True}
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{Guard Variable Checking}
+\label{alg:guard_variable_checking}
+\end{algorithm}
+
+% subsubsection checking_guard_variables (end)
 
 % subsection guard_checking (end)
 
