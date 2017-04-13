@@ -283,6 +283,9 @@ The best algorithmic representation can thus be seen in \autoref{alg:the_verific
 
 \begin{algorithm}
 \begin{algorithmic}
+\Require{The language AST is available as input}
+\Ensure{The collated output matches the relevant portions of the AST}
+\State
 \State ast $\gets$ input
 \State
 \State $P_s \gets$ \textbf{findStartRule} 
@@ -293,7 +296,7 @@ The best algorithmic representation can thus be seen in \autoref{alg:the_verific
 \Comment The empty list
 \ForAll{$(N, P_i) \in P_n$}
 \Comment Transform productions into searchable form
-    \State $(N, (\textbf{defaultTag}, P_i)) : P$
+    \State $P \gets (N, (\textbf{defaultTag}, P_i)) : P$
     \Comment where $:$ is the list cons operator
 \EndFor
 \State
@@ -422,13 +425,115 @@ While disappointing, care was taken to ensure that the novel parts of the projec
 \label{sec:the_core_algorithms}
 % Talk about the design of each of the core algorithms in detail.
 % The multiple-function deep mutual recursion. 
+At the core of the design of \gls{absol} are the verification algorithms. 
+Being so crucial to the functionality and success of the project, these underwent significant design work in isolation, and evolved over time during the implementation.
+Much as for the design of the system components themselves, the algorithmic designs evolved over time, and so this section aims to present the final algorithms as well as discuss any changes that occurred over time. \\
 
+The core algorithms can be separated into two main parts.
+The first is the precondition validation algorithm that takes place at parse time (see \autoref{ssub:precondition_verification_in_the_parser}).
+This ensures that the \gls{ast} resultant from parsing the language does not contain certain states permitted by the grammar but not by the verification algorithms preconditions. 
+The second is the validation algorithm itself.
+This is separated into the inference and validation sections, the latter of which is further subdivided into validation for the different kinds of semantic rules encountered. \\
+
+The verification algorithms aim to verify the language against two kinds of non-totality:
+\begin{enumerate}
+    \item \textbf{Divergent Programs:} Programs \gls{diverge} due to infinite loops or non-terminating recursion.
+    \item \textbf{Undefined Programs:} Programs that, for some language expressions, do not have defined semantics or have indeterminate semantics.
+\end{enumerate}
 
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
-% Explain WHY these preconditions must hold, and the consequences for them being broken. 
-% Why they are required for verifier correctness.
-% Two stage verification - some can be done during due to the form of the metaspec file (know imports already), while others must be done at the end of the parse from the collated data. Ensure to show this in the algorithm definition. 
+For the verification algorithm to produce correct results, there are a set of preconditions that must hold. 
+These preconditions are assumed to hold by the algorithms used for verification, and so they must be ensured to hold in order to guarantee that the verification of the language is correct.
+These preconditions are as follows, where scope is defined in all cases as in the first precondition:
+\begin{itemize}
+    \item \label{item:non_terminal_usage} \textbf{Non-Terminal Usage:} Any non-terminal \textit{used} on the right-hand-side of a rule definition must be \textit{defined} in the current scope. 
+    The non-terminals in the current scope are those defined by the \gls{dsl} language specification, and those imported by the language features specified in the \mintinline{text}{using} definition block (\autoref{sub:the_imports_definition_block}).
+    If this precondition was not satisfied, it would be possible to have productions whose sub-terms do not have defined semantics and thus that the language would not be total. 
+    \item \textbf{Single Definition:} Any non-terminal of a given name must be \textit{defined only once} in the language scope.
+    Were this precondition not satisfied, it would be possible to have indeterminate semantics for a given program as the choice of production is undefined.
+    \item \textbf{Types in Scope:} All types used by the language definition must be \textit{in scope}.
+    As types have associated semantics at \gls{dsl} compile-time, having types not in scope could lead to the generation of incorrect programs. 
+    This condition, however, does not lead to incorrectness at the language level, as all types have defined semantics.
+    \item \textbf{Special-Syntax in Scope:} All special syntactic forms used by the language definition must be in scope.
+    As special syntactic forms provide language semantics, not having the syntax in scope when it is used would lead to undefined semantics for programs in the \gls{dsl}. 
+\end{itemize}
+
+Verifying that these preconditions hold is, as mentioned previously, performed as part of Metaparse (\autoref{ssub:precondition_verification_in_the_parser}).
+The verification is a stateful process, and hence the parser is required to track the following information:
+
+\subsubsection{The Precondition Checking Algorithm} % (fold)
+\label{ssub:the_precondition_checking_algorithm}
+The algorithm to check that the preconditions hold is fairly simple, and operates in a three stage process.
+The first stage of the process involves gathering the required information at the start: finding the imported language features and determining which non-terminals, types and special syntax elements they define.
+The second stage of the process operates during the parse, and checks every type and piece of special syntax for being in scope. 
+At the same time, any non-terminal being defined is checked against a list of already-defined non-terminals and any non-terminal being used is stored.
+The final stage of the process operates on the lists of defined and used non-terminals, checking that all members of the latter are members of the former.\\
+
+The algorithm for precondition verification is illustrated in \autoref{alg:the_precondition_verification_algorithm}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textbf{importedNTs:} This function obtains the set of non-terminals defined by the imported language features.
+    \item \textbf{importedTypes:} This function obtains the list of imported types.
+    \item \textbf{importedSpecialSyntax:} This function obtains the list of special-syntax keywords imported by the language features. 
+    \item \textbf{isNT/isType/isSpecial:} Determines whether the current AST node is a non-terminal, type or special-syntax keyword respectively.
+    \item \textbf{defining:} Determines whether the current non-terminal being parsed is being defined or used. 
+    \item \textbf{error:} Generates an error message.
+\end{itemize}
+
+This algorithm is sufficient to check that the preconditions for verification hold, and \textit{must} be executed before the verification algorithm itself.
+
+\begin{algorithm}
+\begin{algorithmic}
+\Require{The Language AST is Present}
+\Ensure{The preconditions are validated}
+\State
+\State definedNTs $\gets$ \textbf{importedNTs}()
+\Comment A set.
+\State usedNTs $\gets$ []
+\Comment [] is the empty list
+\State types $\gets$ \textbf{importedTypes}()
+\Comment A list.
+\State syntax $\gets$ \textbf{importedSpecialSyntax}()
+\Comment A list.
+\State
+\ForAll{$N_i$ $\in$ language}
+\Comment $N_i$ is a node in the AST
+    \State \Call{checkNode}{$N_i$, definedNTs, usedNTs, types, syntax}
+\EndFor
+\State
+\ForAll{NT $\in$ usedNTs}
+    \If{NT $\notin$ definedNTs}
+        \State \textbf{error}(NT used but not defined)
+    \EndIf
+\EndFor
+\State
+\Function{checkNode}{$N_t$, definedNTs, usedNTs, types, syntax}
+    \If{\textbf{isNT}($N_t$)}
+        \If{\textbf{defining}($N_t$)}
+            \If{$N_t \in$ definedNTs}
+                \State \textbf{error}($N_t$ already defined)
+            \Else
+                \State definedNTs $\gets N_t +$ definedNTs
+                \Comment $+$ is the set addition operator
+            \EndIf
+        \Else
+            \State usedNTs $\gets N_t : $ usedNTs
+            \Comment $:$ is the list cons operation
+        \EndIf
+    \ElsIf{\textbf{isType}($N_t$) $\land$ $N_t \notin$ types}
+        \State \textbf{error}($N_t$ not a defined type)
+    \ElsIf{\textbf{isSpecial}($N_t$) $\land$ $N_t \notin$ syntax}
+        \State \textbf{error}($N_t$ not valid syntax)
+    \Else
+        \State continue
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{The Precondition Verification Algorithm}
+\label{alg:the_precondition_verification_algorithm}
+\end{algorithm}
+
+% subsubsection the_precondition_checking_algorithm (end)
 
 % subsection verifier_precondition_validation (end)
 
@@ -449,7 +554,7 @@ As part of this algorithm, each non-terminal in the language...
 \subsection{Semantic Inference} % (fold)
 \label{sub:semantic_inference}
 In some cases, the \gls{dsl} designer would potentially desire to write productions for which they define no semantics. 
-While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference. rule. 
+While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. \\
 
 % subsection semantic_inference (end)
 
@@ -465,6 +570,9 @@ While it is not possible to infer semantics for such rules in the general case (
 
 \subsection{Guard Checking} % (fold)
 \label{sub:guard_checking}
+% Discuss both the original intent, some attempted algorithmic designs
+% Reference back to the section ruling full validation as out of scope. 
+% Explain the (very simple) reasoning behind the final algorithm. 
 
 % subsection guard_checking (end)
 

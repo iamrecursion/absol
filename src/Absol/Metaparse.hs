@@ -36,7 +36,7 @@ import           Text.Megaparsec.Expr
 
 -------------------------------------------------------------------------------
 
--- | Parses a metaspec file.
+-- | Parses a metaspec
 --
 -- The file is taken as input and the corresponding parse-tree or error state is
 -- returned.
