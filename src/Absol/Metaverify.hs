@@ -448,11 +448,19 @@ extractSubtermVariables input = do
         extractEvaluations (SemanticEvaluationRule _ _ _ _ evals) = evals
 
 -- | Verifies a syntax alternative where the semantics are composed indirectly.
+-- 
+-- In general, the inference is restricted to a single instance of a terminal
+-- or non-terminal symbol. 
 verifySubSemantics :: VState SyntaxAlternative -> VState RuleTag
 verifySubSemantics alt = do
     (SyntaxAlternative terms _) <- alt
-    let result = (verifySyntaxTerm . return) <$> terms
-    combineTerminationResults result
+    if length terms > 1 then
+        return $ DoesNotTerminate [
+                (UnableToInfer, [], "Cannot infer semantics for rule.")
+            ]
+    else do
+        let result = (verifySyntaxTerm . return) <$> terms
+        combineTerminationResults result
 
 -- | Verifies a syntax term.
 --

@@ -543,9 +543,6 @@ This algorithm is sufficient to check that the preconditions for verification ho
 
 \subsection{Verifier Traversal} % (fold)
 \label{sub:verifier_traversal}
-% The process of traversing the preprocessed AST and the reasons for it. 
-% This section should contain details of the primary algorithm of the verifier. 
-% Needs to talk about the termination states and how they combine from a theoretical standpoint. 
 % want to write the algorihm recursively, so need to define a function.
 % Make sure to establish the inputs as preconditions, and that it is available as state (however this may be). 
 % TODO write it in terms of the concepts of a map(k,v)
@@ -563,6 +560,43 @@ This preprocessor provides the following information to the algorithm:
     \item \textbf{Non-Terminals:} A mapping from each non-terminal for which there was a user-supplied production to a pair of (tag, rule body).
     The tag is used to track the termination state of each non-terminal. 
 \end{itemize}
+
+As the algorithm aims to verify that all possible semantics \textit{used} in a language terminate, it is easily seen that it is naturally recursive. 
+While it would also suffice to verify that all defined non-terminals terminate, this actually enforces a more strict condition. 
+In the latter case, it is not possible to have non-terminals that define purely syntactic terms (e.g. \mintinline{text}{<excl> ::= "!"}), and also means that the \gls{dsl} designer cannot have partially defined but unused productions (e.g. during language development).\\
+
+So as to best avoid placing overly limiting constraints on the \gls{dsl} designer, the algorithm instead aims to verify only the \textit{reachable} semantics for a given language. 
+This means that it starts from the \textit{start rule}, verifying the semantics of all non-terminals in the rule body in a recursive fashion until it terminates. 
+The results of this verification are then combined back up the recursive tree, marking each non-terminal with the appropriate tag, and determining the overall termination state for the language. \\
+
+This traversal algorithm, though expressed recursively, is one part of a larger mutual recursion with the other verification functions. 
+As a result, the algorithm in \autoref{alg:the_main_verification_traversal_algorithm} references algorithms defined in other portions of this chapter.
+In the following, `productions' is a map of non-terminal to a pair of (tag, rule-body). 
+The state is available across all portions of this algorithm.
+It assumes the availability of the following functions:
+\begin{itemize}
+    \item \textsc{unpackInputs}: This function takes the above inputs to the verification algorithm and unpacks them into a tuple.
+    \item 
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Require{The inputs to the algorithm are available and derived from the \gls{ast} result of Metaparse}
+\Ensure{The verification result is `Terminates' if the language terminates, otherwise `DoesNotTerminate', `Untouched' or `Touched'}
+\State
+\State (truths, (startTag, startRule), productions) $\gets$ \textsc{unpackInputs}()
+\Comment state
+\State
+\State startTag $\gets$ \Call{verifyRule}{startRule}
+\State return startTag
+\State
+\Function{verifyRule}{rule}
+    \If 
+\EndFunction
+\end{algorithmic}
+\caption{The Main Verification Traversal Algorithm}
+\label{alg:the_main_verification_traversal_algorithm}
+\end{algorithm}
 
 \subsubsection{Termination States} % (fold)
 \label{ssub:termination_states}
@@ -605,8 +639,12 @@ The monoid has set $G = \{\text{touched, untouched, does not terminate, terminat
 
 \subsection{Semantic Inference} % (fold)
 \label{sub:semantic_inference}
-In some cases, the \gls{dsl} designer would potentially desire to write productions for which they define no semantics. 
-While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. \\
+% Explain the WHY behind the rule
+% Show the correctness of this restriction
+% Any rule must be a single non-terminal or have defined semantics. Can also have a top-level terminal, as this has no semantics and will always terminate.
+
+In some cases, the \gls{dsl} designer would potentially desire to write productions for which they define no semantics, or to utilise the semantics of existing productions directly.
+While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. 
 
 % subsection semantic_inference (end)
 
@@ -618,6 +656,8 @@ While it is not possible to infer semantics for such rules in the general case (
 % Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
 % Talk about the restrictions placed on the form such that it can be verified
 % Really place the emphasis here on HOW placing these restrictions enables the semantic verification. 
+% How there can be NTs in syntax not used in semantics, and hence these are not verified (can have syntax only productions). 
+% State availability of global state as a precondition.
 
 % subsection basic_semantic_form_verification (end)
 
