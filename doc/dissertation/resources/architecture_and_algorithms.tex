@@ -781,22 +781,72 @@ However, the complexity of the syntactic grammar means that in many circumstance
 \label{sub:defined_semantic_verification}
 While \gls{absol} offers some limited capability for semantic inference, the vast majority of productions will have semantics defined by the \gls{dsl} designer. 
 As discussed in \autoref{lst:language_rule_semantics}, there are four different kinds of semantics that can be defined for a production.
-Each of these must be verified differently and so the explicit verification algorithms for each kind of semantics are defined in their respective sections.
+Each of these must be verified differently and so the explicit verification algorithms for each kind of semantics are defined in their respective sections.\\
 
 The algorithm for verifying the case where the language semantics are explicitly defined by the \gls{dsl} designer is shown in \autoref{alg:the_basic_semantic_verification_algorithm}.
 This algorithm assumes the existence of the following utility functions:
 \begin{itemize}
-    \item 
+    \item \textsc{decompose}(alternative): Returns a tuple of the syntax and semantics for the alternative.
+    \item \textsc{setTag}(map, key, tag): Sets the tag in `map' for `key' to the value `tag'. 
+    \item \textsc{isEnvironmentInputRule} / \textsc{isEnvironmentAccessRule} / \textsc{isSpecialSyntaxRule} / \textsc{isSemanticEvaluationRuleList}(semantics): \textit{True} if the semantics is of the kind in the name, \textit{false} otherwise.
+    \item \textsc{find}(nonTerminal, list): Finds the number in `list' of pairs of (nonTerminal, number) corresponding to the input non-terminal.
 \end{itemize}
 
 \begin{algorithm}
 \begin{algorithmic}
 \Function{verifyDefinedSemantics}{alternative}
+    \State (syntax, semantics) $\gets$ \Call{decompose}{alternative}
+    \State ntCounts $\gets$ \Call{getNTList}{syntax}
+    \ForAll{$(N_i, c) \in $ ntCounts}
+        \State \Call{setTag}{productions $N_i$, Touched}
+    \EndFor
+    \State
+    \If{\Call{isEnvironmentInputRule}{semantics}}
+        \State \Return{\Call{verifyEnvironmentInputRule}{semantics, ntCounts}}
+        \Comment see \autoref{alg:environment_access_rule_verification}
+    \ElsIf{\Call{isEnvironmentAccessRule}{semantics}}
+        \State \Return{\Call{verifyEnvironmentAccessRule}{semantics}}
+        \Comment see \autoref{alg:environment_input_rule_verification}
+    \ElsIf{\Call{isSpecialSyntaxRule}{semantics}}
+        \State \Return{\Call{verifySpecialSyntaxRule}{semantics, ntCounts}}
+        \Comment see \autoref{alg:special_syntax_rule_verification}
+    \ElsIf{\Call{isSemanticEvaluationRuleList}{semantics}}
+        \State \Return{\Call{verifySemanticRuleList}{semantics, ntCounts}}
+        \Comment see \autoref{alg:user_defined_semantic_form_verification}
+    \EndIf
+\EndFunction
+\State
+\Function{getNTList}{syntax}
+\Comment A list of pairs (nt, count)
+    \State out $\gets$ []
+    \Comment [] is the empty list
+    \ForAll{$N_i \in$ syntax}
+        \Comment $N_i$ is a non-terminal
+        \If{\Call{elem}{$N_i$, out}}
+            \State Increment the count for $N_i$.
+        \Else
+            \State Add $N_i$ to out with a count of 1
+        \EndIf
+    \EndFor
+    \State \Return{out}
+\EndFunction
+\State
+\Function{isValid}{(nonTerminal, index), ntList}
+    \State count $\gets$ \Call{find}{nonTerminal, ntList}
+    \If {index $<$ count}
+        \State \Return{\textit{true}}
+    \Else
+        \State \Return{\textit{false}}
+    \EndIf
 \EndFunction
 \end{algorithmic}
 \caption{The Basic Semantic Verification Algorithm}
 \label{alg:the_basic_semantic_verification_algorithm}
 \end{algorithm}
+
+As part of its operation it marks all non-terminals in the syntax for a given alternative as `touched'.
+This ensures that if they are visited again that no infinite recursion will take place, but also means that they do not have to have their semantics verified.
+The semantics of non-terminals in the syntax for a given rule (with user-defined semantics) will only be verified if they also appear in the semantics.
 
 % subsection defined_semantic_verification (end)
 
@@ -813,7 +863,8 @@ This algorithm assumes the existence of the following utility functions:
 
 \begin{algorithm}
 \begin{algorithmic}
-    \State
+\Function{verifySemanticRuleList}{semantics, ntCounts}
+\EndFunction
 \end{algorithmic}
 \caption{User-Defined Semantic Form Verification}
 \label{alg:user_defined_semantic_form_verification}
@@ -839,15 +890,39 @@ This algorithm assumes the existence of the following utility functions:
 
 \subsection{Verification of Other Semantic Forms} % (fold)
 \label{sub:verification_of_other_semantic_forms}
-% The basic user-defined semantics aren't the only kind that exist in metaspec
-% Need to detail the algorithms for verification of these other semantic forms.
+While they are the main form of semantics expected to be used in \gls{metaspec} language definitions, the user semantic rules (\autoref{sub:user_defined_semantic_form_verification}) are not the only form of semantics.
+Much like those rules, however, each form of semantics is required to undergo its own verification process. 
 
 \subsubsection{Verification of Special-Syntax Rules} % (fold)
 \label{ssub:verification_of_special_syntax_rules}
+Special syntax rules exist in \gls{metaspec} to provide language features that can be shown to terminate (by independent proof), but not by the general termination proof mechanism. 
+That does not mean, however, that the termination proof mechanism has nothing to do in this case.\\
+
+As all special syntax rules take arguments, and these may be non-terminals, it is these arguments that must be shown to terminate. 
+Hence, if the semantics of the special-syntax rule have been shown to terminate (by external proof), and the non-terminals involved have also been shown to terminate, then the special syntax rule itself should terminate.
+The method for determining termination of such rules is illustrated in \autoref{alg:special_syntax_rule_verification}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{getAccesses}(nodeList): Extracts a list of syntax access blocks (see \autoref{sub:accessing_syntax_from_the_semantics}) from the nodes of the \gls{ast} used as arguments to the special-syntax rule.
+    \item \textsc{extractNT}(syntaxAccessBlock): Extracts the non-terminal from the syntax access block.
+\end{itemize}
 
 \begin{algorithm}
 \begin{algorithmic}
+\Function{verifySpecialSyntaxRule}{semantics, ntCounts}
+    \State accessList $\gets$ \Call{getAccesses}{semantics}
+    \State validAccesses $\gets$ \Map{\Call{isValid}{}}{accessList}
+    \State validAccess $\gets$ \Reduce{$(\land)$}{True}{validAccesses}
+    \State nonTerminals $\gets$ \Map{\Call{extractNT}{}}{accessList}
+    \State ntResults $\gets$ \Map{\Call{verifyNonTerminal}{}}{nonTerminals}
+    \Comment see \autoref{alg:the_non_terminal_verification_algorithm}
+    \State ntResult $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{ntResults}
     \State
+    \If{validAccess}
+        \State \Return{\Call{tagPlus}{Terminates, ntResult}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, ntResult}}
+    \EndIf
+\EndFunction
 \end{algorithmic}
 \caption{Special-Syntax Rule Verification}
 \label{alg:special_syntax_rule_verification}
@@ -857,29 +932,80 @@ This algorithm assumes the existence of the following utility functions:
 
 \subsubsection{Verification of Environment Input Rules} % (fold)
 \label{ssub:verification_of_environment_input_rules}
+Environment input rules provide a method for the \gls{dsl} designer to store values against keys in a globally accessible environment. 
+While the semantics of such an operation might seem initially simple, it is important to recognise that the key and values might be derived from non-terminals.
+Hence, the termination of an environment input rule is derived from two main components:
+\begin{enumerate}
+    \item \textbf{The Key and Value Terms:} The key and values might be non-terminals, and hence for the input rule to terminate, these non-terminals must also terminate.
+    \item \textbf{The Input Itself:} Under more complex circumstances, it might be conceivable that writing terminating values to an environment might not terminate.
+    However, the environment in \gls{metaspec} is particularly simple, and inputs into the environment are guaranteed to terminate, overwriting any previous value if the key already exists.
+\end{enumerate}
+
+As a result, the verification process for an environment input rule focuses on just verifying that the non-terminals that it uses also terminate.
+This process is illustrated in \autoref{alg:environment_input_rule_verification} and assumes the availability of the following functions:
+\begin{itemize}
+    \item \textsc{getKey}(semantics): Gets the non-terminal and non-terminal index for the key under which the values are stored in the environment.
+    \item \textsc{getValues}(semantics): Gets the non-terminals (and indices)for the values being stored in the environment.
+\end{itemize}
 
 \begin{algorithm}
 \begin{algorithmic}
+\Function{verifyEnvironmentInputRule}{semantics, ntCounts}
+    \State (key, ix) $\gets$ \Call{getKey}{semantics}
+    \State vals $\gets$ \Call{getValues}{semantics}
+    \State ntList $\gets$ (key, ix) $:$ vals
+    \Comment $:$ is the cons operator
+    \State terminationResults $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntList}
+    \Comment see \autoref{alg:the_non_terminal_verification_algorithm}
+    \State validResults $\gets$ \Map{\Call{isValid}{ntCounts}}{ntList}
+    \Comment see \autoref{alg:the_basic_semantic_verification_algorithm}
+    \State terminationResult $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{terminationResults}
+    \State valid $\gets$ \Reduce{$(\land)$}{True}{validResults}
+    \Comment finds if all nt accesses are valid
     \State
+    \If{valid}
+        \State \Return{\Call{tagPlus}{Terminates, terminationResult}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, terminationResult}}
+    \EndIf
+    \Comment combines results where necessary
+\EndFunction
 \end{algorithmic}
 \caption{Environment Input Rule Verification}
 \label{alg:environment_input_rule_verification}
 \end{algorithm}
 
+The fact that the environment just accepts the input with no error reporting is demonstrative of the comparative lack of design work that went into the environment feature. 
+Were there more time allotted for the project, the concept of the environment would receive much additional design effort, allowing it to act as a scoped and error-proof store of environmental data (much more like a useful user state). 
+
 % subsubsection verification_of_environment_input_rules (end)
 
 \subsubsection{Verification of Environment Access Rules} % (fold)
 \label{ssub:verification_of_environment_access_rules}
-% Default values on missing keys
-% User-supplied defaults provided via SSR (mention this and discuss the disparity - due to not considering this entirely until later). 
+The verification of environment access rules is an interesting case as they are always guaranteed to terminate. 
+Environment accesses act like retrievals from a key-value store.
+In many such stores, however, not having a key for a value is a problem, returning some undefined or null value.
+However, in the case of \gls{metaspec}, retrieval from an undefined key has well-defined semantics itself.\\
+
+In such a case, the returned value is a defaulted value for the expected type.
+With such a limited set of types available in the language (see \autoref{sec:special_language_features}), it is a trivial task to define defaulted values for each of them.
+This ensures that any environment access will either return the previously stored value, or a default of the correct type. 
+As a result, the algorithm is simple and shown in \autoref{alg:environment_access_rule_verification}.
 
 \begin{algorithm}
 \begin{algorithmic}
-    \State
+\Function{verifyEnvironmentAccessRule}{semantics}
+    \State \Return{Terminates}
+\EndFunction
 \end{algorithmic}
 \caption{Environment Access Rule Verification}
 \label{alg:environment_access_rule_verification}
 \end{algorithm}
+
+Using global defaults, however, is not always desirable behaviour. 
+To this end, the \texttt{base} language feature provides special-syntax rules for accessing the environment with default values specified by the \gls{dsl} designer instead.
+This is mainly due to the design for the environment not having been given a significant amount of thought at the time of designing the syntax.
+Proofs of the termination properties for these rules (like all special syntax rules) are deferred to the respective language feature designs in \autoref{sec:special_language_features}.
 
 % subsubsection verification_of_environment_access_rules (end)
 
