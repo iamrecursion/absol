@@ -13,7 +13,7 @@
 -- re-export functions from Absol.Metaspec.Special.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaspec 
+module Absol.Metaspec
     (
         getTypes,
         getNonTerminals,
@@ -31,4 +31,4 @@ module Absol.Metaspec
         toSpecialSyntaxName
     ) where
 
-import Absol.Metaspec.Special
+import           Absol.Metaspec.Special

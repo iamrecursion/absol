@@ -422,7 +422,7 @@ While disappointing, care was taken to ensure that the novel parts of the projec
 \label{sec:the_core_algorithms}
 % Talk about the design of each of the core algorithms in detail.
 % The multiple-function deep mutual recursion. 
-The core algorithms encountered as part of...
+
 
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
@@ -485,6 +485,7 @@ While it is not possible to infer semantics for such rules in the general case (
 
 \subsubsection{Verification of Environment Access Rules} % (fold)
 \label{ssub:verification_of_environment_access_rules}
+% Default values on missing keys
 
 % subsubsection verification_of_environment_access_rules (end)
 
@@ -495,16 +496,22 @@ While it is not possible to infer semantics for such rules in the general case (
 \section{Special Language Features} % (fold)
 \label{sec:special_language_features}
 % Talk about the design of each of the language features, and prove the required termination properties here.
-% Talk about those that were considered but not designed and WHY
 % Talk about WHY things were thought of - the design process.
 
 The special language features in \gls{absol} and \gls{metaspec} are best thought of as the `standard library' for \gls{dsl} implementation.
 Each of these features aims to bring some important functionality to the toolchain, whether that be types for the semantics, non-terminals for parsing or special semantic functions to bring added flexibility. 
+The main idea behind each of these features is to aid the \gls{dsl} designer in creating their language. \\
+
+The design process for these features was mainly derived from observation of the most useful features of other programming languages.
+For \gls{absol} to be able to design useful \glspl{dsl}, it had to be able to support most of these features. 
+To this end, the design process was initiated by making a list of all of the useful features that were commonly found in programming languages used today.
+This list was refined through consideration of which features would be possible to represent in the `safe' environment of \gls{metaspec}, and which would be most useful (where useful is defined in a fashion mainly involving intuition).
+What resulted was a minimal set of features that would allow languages designed in \gls{metaspec} to be competent and contain functionality to actually make them useful to the \gls{dsl} implementers and users. 
 
 \subsection{Feature --- \texttt{base}} % (fold)
 \label{sub:feature_base}
 % Needs some utility functions for assesing length of productions (e.g. number of items in a syntax list)
-% Utility special syntax for environment gets (for use in normal syntactic rules).
+% Utility special syntax for environment gets (for use in normal syntactic rules) -> provision of default values to ensure semantics always work (how does this differ)
 % Storing and retrieval of constant keys (a design issue with the grammar)
 % Need to add these to the grammar and parser
 
@@ -540,8 +547,32 @@ Each of these features aims to bring some important functionality to the toolcha
 % How are resultant DSL programs intended to be executed - does this impact the design of the metacompiler at all?
 % During the design process some significant thought was given to... however, as it became apparent that code generation would not be taking place in the scope of this project...
 % Discuss how this is used to enable execution of DSL programs. 
+% Semantics for this are checked at DSL compilation time (do the called functions exist?, are they valid non-recursive calls?, noop calls if invalid?) 
 
 % subsection feature_funcall (end)
+
+\subsection{Discounted Language Features} % (fold)
+\label{sub:discounted_language_features}
+The features that actually went through proper design work for use in \gls{metaspec} were not the only ones considered. 
+In addition to those outlined in the preceding sections, the following features were considered safe to implement for \gls{metaspec}, but were not considered crucial enough to its functionality.
+Omitting these from the project scope was a useful method of constraining the number of features that were required to be implemented.
+They are as follows:
+\begin{itemize}
+    \item \textbf{Associative Arrays:} The ability to represent associative-array container types and the operations on them in metaspec. 
+    This would be useful for representing key-value mappings and any other kind of named dictionary structure.
+    \item \textbf{Random Number Generation:} It could be useful to be able to generate random numbers.
+    Such a feature would likely include probabilistic distributions to assist in mathematical modelling.
+    \item \textbf{Maybe:} A `Maybe' type, similar to that in Haskell.
+    This would aid in the representation of error conditions in functions.
+    \item \textbf{Either:} Also similar to Haskell, this would allow the representation of alternates in result types, and hence also assist in the representation of error conditions.
+    \item \textbf{State:} The provision of a user controlled state (and associated operations) that can be passed around functions and interacted with entirely separately from the semantic environment.
+    \item \textbf{Special Numbers:} A feature providing additional number types such as complex numbers, financial numbers and arbitrary precision floating-point types.
+    \item \textbf{Mathematical Operations:} Sets of additional mathematical operations defined for both the standard \mintinline{text}{number} and the above special numbers features. 
+\end{itemize}
+
+All of these features would provide the appropriate operations, types and non-terminal definitions to allow working with these language features as required. 
+
+% subsection discounted_language_features (end)
 
 % section special_language_features (end)
 

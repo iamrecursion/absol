@@ -13,7 +13,7 @@
 -- algorithm.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaverify.State 
+module Absol.Metaverify.State
     (
         VState,
         ProductionMap,
@@ -49,49 +49,49 @@ type VState a = State VerifierState a
 type ProductionMap = M.Map NonTerminal (RuleTag, LanguageRuleBody)
 
 -- | This type defines the state used by the verification algorithm.
--- 
+--
 -- It tracks the rules in the language, as well as their verification state.
 data VerifierState = VerifierState {
-    startRule :: (RuleTag, LanguageRuleBody),
-    productions :: ProductionMap,
-    truths :: [NonTerminal],
+    startRule       :: (RuleTag, LanguageRuleBody),
+    productions     :: ProductionMap,
+    truths          :: [NonTerminal],
     productionTrace :: [NonTerminal]
 } deriving (Eq, Show)
 
 -- | Initialises the verifier state from the AST data.
-initVerifierState 
-    :: StartRule 
-    -> [LanguageRule] 
-    -> [SemanticTruth] 
+initVerifierState
+    :: StartRule
+    -> [LanguageRule]
+    -> [SemanticTruth]
     -> VerifierState
-initVerifierState (StartRule _ body) rules truths = 
+initVerifierState (StartRule _ body) rules truths =
     VerifierState (Untouched, body) (mapRules rules) extractTruths []
     where
-        mapRules r = M.fromList [ 
-                (getKey v, (Untouched, getBody v)) 
-                | v <- r,  
+        mapRules r = M.fromList [
+                (getKey v, (Untouched, getBody v))
+                | v <- r,
                 let getKey (LanguageRule x _) = x;
                     getBody (LanguageRule _ x) = x
             ]
-        extractTruths = [ x | (SemanticTruth _ _ x) <- truths ]  
+        extractTruths = [ x | (SemanticTruth _ _ x) <- truths ]
 
 -- | Constructs a default instance of the VerifierState type.
--- 
--- This default instance should not be used for anything. 
+--
+-- This default instance should not be used for anything.
 defaultVerifierState :: VerifierState
-defaultVerifierState = 
+defaultVerifierState =
     VerifierState (Untouched, fakeStartRule) M.empty [] []
     where
         fakeStartRule = LanguageRuleBody $ SyntaxExpression []
 
--- | Updates the rule tag for the start rule. 
+-- | Updates the rule tag for the start rule.
 updateStartRuleTag :: RuleTag -> VerifierState -> VerifierState
 updateStartRuleTag t s = do
     let (_, sRule) = startRule s
     s { startRule = (t, sRule)}
 
 -- | Updates the tag for a given production.
--- 
+--
 -- If the production doesn't exist, the state is returned unchanged.
 updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState
 updateRuleTag tag nt st = do
@@ -99,7 +99,7 @@ updateRuleTag tag nt st = do
         foundVal = M.lookup nt prodMap
     case foundVal of
         Nothing -> st
-        Just (_, body) -> 
+        Just (_, body) ->
             st { productions = M.insert nt (tag, body) prodMap }
 
 -- | Pulls result types out of the state monad.
@@ -108,10 +108,10 @@ extractFromState el = evalState el defaultVerifierState
 
 -- | Pushes a production 'frame' onto the top of the current trace in the state.
 pushProductionFrame :: NonTerminal -> VerifierState -> VerifierState
-pushProductionFrame nt st@(VerifierState _ _ _ stack) = 
+pushProductionFrame nt st@(VerifierState _ _ _ stack) =
     st{productionTrace = nt:stack}
 
 -- | Removes the top production 'frame' from the current trace in the state.
 popProductionFrame :: VerifierState -> VerifierState
-popProductionFrame st@(VerifierState _ _ _ []) = st
+popProductionFrame st@(VerifierState _ _ _ [])     = st
 popProductionFrame st@(VerifierState _ _ _ (_:xs)) = st{productionTrace = xs}

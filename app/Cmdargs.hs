@@ -22,8 +22,8 @@ module Cmdargs
         Options.Applicative.execParser
     ) where
 
+import           Data.Monoid         ((<>))
 import           Options.Applicative
-import           Data.Monoid ((<>))
 
 type CmdLineFlag = Bool
 type File = FilePath
@@ -144,8 +144,8 @@ parseLogFile = optional $ option str (
     )
 
 -- | Parses the output directory for build artefacts.
--- 
--- If this is set, all build artefacts will be written to the provided 
+--
+-- If this is set, all build artefacts will be written to the provided
 -- directory.
 parseOutputDirectory :: Parser (Maybe File)
 parseOutputDirectory = optional $ option str (

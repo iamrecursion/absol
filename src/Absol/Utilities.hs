@@ -4,12 +4,12 @@
 -- Description : Generic, useful utilities for the ABSOL project.
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
--- 
+--
 -- Maintainer  : Ara Adkins
 -- Stability   : experimental
 -- Portability : GHC
--- 
--- A set of useful utility types, functions and definitions for the ABSOL 
+--
+-- A set of useful utility types, functions and definitions for the ABSOL
 -- project.
 --
 -------------------------------------------------------------------------------

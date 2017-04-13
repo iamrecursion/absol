@@ -69,7 +69,7 @@ type OpenParenthesis = MetaspecTerminal
 type CloseParenthesis = MetaspecTerminal
 
 -- A type defining the Semantic Types in Metaspec
-data SemanticType 
+data SemanticType
     = AnyType
     | NoneType
     | BoolType
@@ -90,7 +90,7 @@ data SemanticType
     deriving (Show, Eq, Ord)
 
 -- Identifier Types
-newtype NonTerminalIdentifier = NonTerminalIdentifier String 
+newtype NonTerminalIdentifier = NonTerminalIdentifier String
     deriving (Show, Eq, Ord)
 newtype TerminalString = TerminalString String deriving (Show, Eq, Ord)
 newtype SemanticIdentifier = SemanticIdentifier String deriving (Show, Eq, Ord)
@@ -106,7 +106,7 @@ data MetaspecDefblock
     | LanguageDefblock StartRule [LanguageRule]
     deriving (Show, Eq)
 
-data MetaspecFeature 
+data MetaspecFeature
     = FeatureBase
     | FeatureNumber
     | FeatureString

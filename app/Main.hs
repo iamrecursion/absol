@@ -1,10 +1,10 @@
 module Main where
 
-import           Absol.Utilities (outputToken)
-import qualified Absol.Metaparse as P
+import qualified Absol.Metaparse  as P
 import           Absol.Metaverify
+import           Absol.Utilities  (outputToken)
 import           Cmdargs
-import qualified Data.Text.IO as TI
+import qualified Data.Text.IO     as TI
 import           System.Directory
 import           System.Exit
 import           System.FilePath
@@ -23,7 +23,7 @@ main = runMetacompiler =<< execParser (
 -- | Executes the metacompiler on the input file.
 runMetacompiler :: CLIOptions -> IO ()
 runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
-    putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file 
+    putStrLn $ outputToken ++ "Executing the ABSOL metacompiler on " ++ file
     result <- tryIOError process
     case result of
         Left ex -> processFailure ex
@@ -35,11 +35,11 @@ runMetacompiler opts@CLIOptions{filename=file, cleanFlag=False} = do
             hPrint stderr ex
             exitFailure :: IO ()
         processSuccess = exitSuccess :: IO ()
-runMetacompiler CLIOptions{cleanFlag=True} = 
+runMetacompiler CLIOptions{cleanFlag=True} =
     putStrLn "Cleaning not yet implemented."
 
 -- | Loads the metaspec file and executes the metacompiler processing on it.
--- 
+--
 -- Provides safety in the case of the file not existing or otherwise being
 -- unable to open.
 acquireMetaspecFile :: FilePath -> (Handle -> IO a) -> IO a
@@ -47,11 +47,11 @@ acquireMetaspecFile file = withFile file ReadMode
 
 -- | Runs the metacompiler and prints logging diagnostics to relevant locations.
 processMetaspecFile :: CLIOptions -> String -> Handle -> IO ()
-processMetaspecFile 
-    CLIOptions{logFile = reportFile, outputDirectory = outDir, verboseFlag = v} 
+processMetaspecFile
+    CLIOptions{logFile = reportFile, outputDirectory = outDir, verboseFlag = v}
     filename mFile = do
     contents <- TI.hGetContents mFile
-    
+
     -- Parse the file, and print any parse errors to the console.
     case P.parseMetaspecFile filename contents of
         Left err -> hPutStr stderr $ P.parseErrorPretty err
@@ -61,9 +61,9 @@ processMetaspecFile
             -- Handle user-defined output file / path.
             case reportFile of
                 Just fileName -> do
-                    dir <- case outDir of 
+                    dir <- case outDir of
                         Just directory -> return directory
-                        Nothing -> getCurrentDirectory
+                        Nothing        -> getCurrentDirectory
                     let outPath = dir </> fileName
                     withFile outPath WriteMode (writeLogFile diagnostic)
                 Nothing -> return ()
@@ -73,12 +73,12 @@ processMetaspecFile
                 putStrLn diagnostic
             else
                 putStrLn $ takeWhile (/= '\n') diagnostic -- get first line
-                                                          -- 
+                                                          --
             -- Output language status
             if result then
                 putStrLn $ outputToken ++ "Success"
-            else 
+            else
                 putStrLn $ outputToken ++ "Failure"
             return ()
     where
-        writeLogFile diag hndl = hPutStr hndl diag  
+        writeLogFile diag hndl = hPutStr hndl diag

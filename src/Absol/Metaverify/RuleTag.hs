@@ -25,7 +25,7 @@ import           Absol.Metaparse.Grammar
 type NonTerminationItem = (NonTerminationType, [NonTerminal], String)
 
 -- | This type is used to tag each production with its verification state.
--- 
+--
 -- In the case where the production cannot be shown to terminate, it is tagged
 -- with the kind of non-termination and the path that shows that it does not
 -- terminate.
@@ -49,7 +49,7 @@ data NonTerminationType
     deriving (Eq, Show, Ord)
 
 -- | Defines how to combine rule tags.
--- 
+--
 -- The operation is left associative, favouring the left value.
 tagPlus :: RuleTag -> RuleTag -> RuleTag
 tagPlus Untouched _ = Untouched

@@ -15,14 +15,14 @@
 -------------------------------------------------------------------------------
 
 module Absol.Metaparse.Utilities
-    (   
+    (
         keywordWhere,
         trimString
     ) where
 
 import           Absol.Metalex
 import           Absol.Metaparse.Parser
-import           Control.Monad (void)
+import           Control.Monad          (void)
 
 -- | A utility parser for parsing a keyword followed by the where symbol.
 keywordWhere :: String -> ParserST ()
@@ -30,6 +30,6 @@ keywordWhere kwd = do
     keyword kwd
     void whereSymbol
 
--- | Trims whitespace from the start and end of a string. 
+-- | Trims whitespace from the start and end of a string.
 trimString :: String -> String
 trimString = unwords . words

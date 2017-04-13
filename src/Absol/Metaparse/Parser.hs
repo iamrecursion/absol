@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- |
 -- Module      : Absol.Metaparse.Parser
--- Description : Provides a stateful parser type for parsing metaspec. 
+-- Description : Provides a stateful parser type for parsing metaspec.
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
 --
@@ -9,10 +9,10 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This module provides a Parser with backtracking user-accessible state. 
+-- This module provides a Parser with backtracking user-accessible state.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaparse.Parser 
+module Absol.Metaparse.Parser
     (
         ParserST,
         MetaState(..),
@@ -48,13 +48,13 @@ data RulePosition = Head | Body | None deriving (Show)
 
 -- | The parser state.
 data MetaState = MetaState {
-    importedFeatures :: [MetaspecFeature],
-    definedNTs :: [NonTerminalIdentifier],
-    usedNTs :: S.Set NonTerminalIdentifier,
-    importedTypes :: [SemanticType],
+    importedFeatures      :: [MetaspecFeature],
+    definedNTs            :: [NonTerminalIdentifier],
+    usedNTs               :: S.Set NonTerminalIdentifier,
+    importedTypes         :: [SemanticType],
     importedSpecialSyntax :: [SemanticSpecialSyntax],
-    parserPosition :: RulePosition
-} deriving (Show) 
+    parserPosition        :: RulePosition
+} deriving (Show)
 
 -- | Generates an initial state for the parser.
 initParserState :: MetaState
@@ -78,30 +78,30 @@ updateUsedNTs :: NonTerminalIdentifier -> MetaState -> MetaState
 updateUsedNTs identifier st = st {usedNTs = S.insert identifier (usedNTs st) }
 
 -- | Adds a non-terminal identifier to the state based on parser position.
--- 
+--
 -- The behaviour of this function depends on the parser position in a language
 -- production, as indicated by the state.
 addNTIdentifier :: NonTerminalIdentifier -> MetaState -> MetaState
-addNTIdentifier ident x@MetaState{parserPosition = Head} = 
+addNTIdentifier ident x@MetaState{parserPosition = Head} =
     updateDefinedNTs ident x
-addNTIdentifier ident x@MetaState{parserPosition = Body} = 
+addNTIdentifier ident x@MetaState{parserPosition = Body} =
     updateUsedNTs ident x
 addNTIdentifier _ x@MetaState{parserPosition = None} = x
 
 -- | Sets the current parser position to be in the head of a production.
 setPositionHead :: MetaState -> MetaState
-setPositionHead st = st {parserPosition = Head} 
+setPositionHead st = st {parserPosition = Head}
 
 -- | Sets the current parser position to be in the body of a production.
 setPositionBody :: MetaState -> MetaState
-setPositionBody st = st {parserPosition = Body} 
+setPositionBody st = st {parserPosition = Body}
 
 -- | Sets the current parser position to not be in a language rule.
 setPositionNone :: MetaState -> MetaState
 setPositionNone st = st {parserPosition = None}
 
 -- | Checks whether the used identifiers have been defined in the language.
--- 
+--
 -- If all identifiers have been defined, it returns the value True. If there are
 -- any used identifiers that have not been defined, it returns a list containing
 -- these undefined identifiers.
@@ -111,18 +111,18 @@ checkNTsInLang = do
     usedNTVals <- gets usedNTs
     let bools = (`elem` definedNTVals) <$> S.toList usedNTVals
         result = foldl' (&&) True bools
-    if result then 
-        return (Right $ foldl' (&&) True bools) 
-    else 
+    if result then
+        return (Right $ foldl' (&&) True bools)
+    else
         return (Left $ failures (S.toList usedNTVals) bools)
     where
         failures nts bools = [ y | (x,y) <- zip bools nts, not x ]
 
--- | Checks whether the NT has already been defined. 
--- 
+-- | Checks whether the NT has already been defined.
+--
 -- If the parsed NT has been defined before in this file, it will error.
-checkNTNotDefined 
-    :: ParserST NonTerminalIdentifier 
+checkNTNotDefined
+    :: ParserST NonTerminalIdentifier
     -> ParserST NonTerminalIdentifier
 checkNTNotDefined ident = do
     unpackedId <- ident
@@ -136,8 +136,8 @@ checkNTNotDefined ident = do
         (True, Head)  -> failExpr unpackedId
         (_, Body)     -> return unpackedId
     where
-        failExpr nt@(NonTerminalIdentifier x) = 
-            fail $ "Non-Terminal with name \"" ++ x ++ "\" already defined. " 
+        failExpr nt@(NonTerminalIdentifier x) =
+            fail $ "Non-Terminal with name \"" ++ x ++ "\" already defined. "
                 ++ suggest nt
         suggest x = case findFeatureForNT x of
             Nothing -> "Defined elsewhere in document."
@@ -146,9 +146,9 @@ checkNTNotDefined ident = do
                 feats y = intercalate ", " $ toFeatureName <$> y
 
 -- | Checks if a given type is defined in the current language context.
--- 
+--
 -- If the type doesn't exist in scope, it will determine which feature needs to
--- be imported if the type exists, otherwise error. 
+-- be imported if the type exists, otherwise error.
 checkTypeDefined :: ParserST SemanticType -> ParserST SemanticType
 checkTypeDefined t = do
     semType <- t
@@ -157,7 +157,7 @@ checkTypeDefined t = do
         failExpr semType
         where
             failExpr x = fail $ failStr x
-            failStr x = "Type \"" ++ toTypeString x ++ "\" not in scope. " 
+            failStr x = "Type \"" ++ toTypeString x ++ "\" not in scope. "
                 ++ suggest x
             suggest x = case findFeatureForType x of
                 Nothing -> "Does not exist."
@@ -165,10 +165,10 @@ checkTypeDefined t = do
             feats x = intercalate ", " $ toFeatureName <$> x
 
 -- | Checks if a given piece of special syntax is in scope.
--- 
+--
 -- If the syntax is not in scope it will suggest the import for the used syntax.
-checkSpecialSyntaxAvailable 
-    :: ParserST SemanticSpecialSyntax 
+checkSpecialSyntaxAvailable
+    :: ParserST SemanticSpecialSyntax
     -> ParserST SemanticSpecialSyntax
 checkSpecialSyntaxAvailable parser = do
     specialSyntax <- parser
