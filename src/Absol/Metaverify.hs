@@ -476,8 +476,13 @@ verifySyntaxTerm term = do
 -- Repetition is purely a syntactic operation and is ignored here.
 verifySyntaxFactor :: VState SyntaxFactor -> VState RuleTag
 verifySyntaxFactor factor = do
-    (SyntaxFactor _ primary) <- factor
-    verifySyntaxPrimary $ return primary
+    (SyntaxFactor repeat primary) <- factor
+    case repeat of
+        (Just _) -> return $ DoesNotTerminate [
+                (UnableToInfer, 
+                    [], "Cannot infer semantics for rule with repetition.")
+            ]
+        Nothing -> verifySyntaxPrimary $ return primary
 
 -- | Verifies a syntax primary.
 verifySyntaxPrimary :: VState SyntaxPrimary -> VState RuleTag

@@ -1,19 +1,10 @@
 % How the problem is analysed to create the solution.
-% Overall architecture of the design.
 % Examine the design approaches taken.
 % Identification of areas of the design that account for the requirements and resolve potential conflicts. 
-% 
+% Unify formatting around algorithms and functions.
 
 \chapter{Architecture and Algorithms} % (fold)
 \label{cha:architecture_and_algorithms}
-% This section will contain:
-% \begin{itemize}
-%     \item \textbf{Architectural Overview:} An overview of the system architecture, linked to the high-level requirements.
-%     This will touch on the portions of the system that were ruled out of scope later on, and why.
-%     \item \textbf{System Component Examination:} An examination of the design of each of the system components in detail.
-%     It will also look at initial or discarded algorithmic designs as part of the process. 
-% \end{itemize}
-
 Following on from the design work put into the \gls{metaspec} (see \autoref{cha:designing_the_metalanguage}), significant time and effort was then invested into the design of the metacompiler toolchain itself, as well as the core algorithms and theory that it uses. 
 This chapter aims to provide a high-level overview of the \gls{absol} toolchain, showing the main system components and linking these to the high-level requirements.
 It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. \\
@@ -310,15 +301,12 @@ The best algorithmic representation can thus be seen in \autoref{alg:the_verific
 
 \subsubsection{Designing the Verification Engine} % (fold)
 \label{ssub:designing_the_verification_engine}
-% Need to talk about the stateful nature of the algorithm. 
-% How both kinds of verification were best combined. 
-
 While the verification engine itself is algorithmically dependent on the theory explored in \autoref{sec:the_core_algorithms}, this theory alone does not make a design. 
 From an examination of these algorithms two main things are immediately apparent:
 \begin{itemize}
     \item \textbf{Stateful Nature:} The algorithms operate in a stateful fashion.
     This is because they track the current state of the verification engine at any given point.
-    \item \textbf{Integrated Traversal:} While there are two disparate semantic verification algorithms --- one dealing with semantic inference (\autoref{sub:semantic_inference}) and the other verifying defined semantics (\autoref{sub:basic_semantic_form_verification}) --- they both utilise the same traversal mechanism for the verification data. 
+    \item \textbf{Integrated Traversal:} While there are two disparate semantic verification algorithms --- one dealing with semantic inference (\autoref{sub:semantic_inference}) and the other verifying defined semantics (\autoref{sub:user_defined_semantic_form_verification}) --- they both utilise the same traversal mechanism for the verification data. 
     This implies that both kinds of verification should be done in one pass, and that is indeed the form of the algorithm that performs the traversal in \autoref{sub:verifier_traversal}. 
 \end{itemize}
 
@@ -476,12 +464,12 @@ The final stage of the process operates on the lists of defined and used non-ter
 
 The algorithm for precondition verification is illustrated in \autoref{alg:the_precondition_verification_algorithm}, and assumes the existence of the following functions:
 \begin{itemize}
-    \item \textbf{importedNTs:} This function obtains the set of non-terminals defined by the imported language features.
-    \item \textbf{importedTypes:} This function obtains the list of imported types.
-    \item \textbf{importedSpecialSyntax:} This function obtains the list of special-syntax keywords imported by the language features. 
-    \item \textbf{isNT/isType/isSpecial:} Determines whether the current AST node is a non-terminal, type or special-syntax keyword respectively.
-    \item \textbf{defining:} Determines whether the current non-terminal being parsed is being defined or used. 
-    \item \textbf{error:} Generates an error message.
+    \item \textsc{importedNTs}(): This function obtains the set of non-terminals defined by the imported language features.
+    \item \textsc{importedTypes}(): This function obtains the list of imported types.
+    \item \textsc{importedSpecialSyntax}(): This function obtains the list of special-syntax keywords imported by the language features. 
+    \item \textsc{isNT/isType/isSpecial}(node): Determines whether the current AST node is a non-terminal, type or special-syntax keyword respectively.
+    \item \textsc{defining}(node): Determines whether the current non-terminal being parsed is being defined or used. 
+    \item \textsc{error}(msg): Generates an error message.
 \end{itemize}
 
 This algorithm is sufficient to check that the preconditions for verification hold, and \textit{must} be executed before the verification algorithm itself.
@@ -491,13 +479,13 @@ This algorithm is sufficient to check that the preconditions for verification ho
 \Require{The Language AST is Present}
 \Ensure{The preconditions are validated}
 \State
-\State definedNTs $\gets$ \textbf{importedNTs}()
+\State definedNTs $\gets$ \textsc{importedNTs}()
 \Comment A set.
 \State usedNTs $\gets$ []
 \Comment [] is the empty list
-\State types $\gets$ \textbf{importedTypes}()
+\State types $\gets$ \textsc{importedTypes}()
 \Comment A list.
-\State syntax $\gets$ \textbf{importedSpecialSyntax}()
+\State syntax $\gets$ \textsc{importedSpecialSyntax}()
 \Comment A list.
 \State
 \ForAll{$N_i$ $\in$ language}
@@ -507,15 +495,15 @@ This algorithm is sufficient to check that the preconditions for verification ho
 \State
 \ForAll{NT $\in$ usedNTs}
     \If{NT $\notin$ definedNTs}
-        \State \textbf{error}(NT used but not defined)
+        \State \textsc{error}(NT used but not defined)
     \EndIf
 \EndFor
 \State
 \Function{checkNode}{$N_t$, definedNTs, usedNTs, types, syntax}
-    \If{\textbf{isNT}($N_t$)}
-        \If{\textbf{defining}($N_t$)}
+    \If{\textsc{isNT}($N_t$)}
+        \If{\textsc{defining}($N_t$)}
             \If{$N_t \in$ definedNTs}
-                \State \textbf{error}($N_t$ already defined)
+                \State \textsc{error}($N_t$ already defined)
             \Else
                 \State definedNTs $\gets N_t +$ definedNTs
                 \Comment $+$ is the set addition operator
@@ -524,10 +512,10 @@ This algorithm is sufficient to check that the preconditions for verification ho
             \State usedNTs $\gets N_t : $ usedNTs
             \Comment $:$ is the list cons operation
         \EndIf
-    \ElsIf{\textbf{isType}($N_t$) $\land$ $N_t \notin$ types}
-        \State \textbf{error}($N_t$ not a defined type)
-    \ElsIf{\textbf{isSpecial}($N_t$) $\land$ $N_t \notin$ syntax}
-        \State \textbf{error}($N_t$ not valid syntax)
+    \ElsIf{\textsc{isType}($N_t$) $\land$ $N_t \notin$ types}
+        \State \textsc{error}($N_t$ not a defined type)
+    \ElsIf{\textsc{isSpecial}($N_t$) $\land$ $N_t \notin$ syntax}
+        \State \textsc{error}($N_t$ not valid syntax)
     \Else
         \State continue
     \EndIf
@@ -575,8 +563,10 @@ In the following, `productions' is a map of non-terminal to a pair of (tag, rule
 The state is available across all portions of this algorithm.
 It assumes the availability of the following functions:
 \begin{itemize}
-    \item \textsc{unpackInputs}: This function takes the above inputs to the verification algorithm and unpacks them into a tuple.
-    \item 
+    \item \textsc{unpackInputs}(): This function takes the above inputs to the verification algorithm and unpacks them into a tuple.
+    \item \textsc{getAlternatives}(rule): Gets the top-level syntax alternation from the rule. 
+    Each of these alternatives may or may not have defined semantics.
+    \item \textsc{hasSemantics}(alternative): \textit{True} if the alternative has user-defined semantics, \textit{false} otherwise.
 \end{itemize}
 
 \begin{algorithm}
@@ -591,11 +581,86 @@ It assumes the availability of the following functions:
 \State return startTag
 \State
 \Function{verifyRule}{rule}
-    \If 
+    \State alternatives $\gets$ \Call{getAlternatives}{rule}
+    \State results $\gets$ \Map{verifyAlternative}{alternatives}
+    \State result $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{results}
+    \Comment tagPlus in Subsection~\ref{ssub:termination_states}
+    \State \Return{result}
+\EndFunction
+\State
+\Function{verifyAlternative}{alternative}
+    \If{\Call{hasSemantics}{alternative}}
+        \State \Return{\Call{verifyDefinedSemantics}{alternative}}
+        \Comment see \autoref{alg:the_basic_semantic_verification_algorithm}
+    \Else
+        \State \Return{\Call{inferSemantics}{alternative}}
+        \Comment see \autoref{alg:the_semantic_inference_algorithm}
+    \EndIf
 \EndFunction
 \end{algorithmic}
 \caption{The Main Verification Traversal Algorithm}
 \label{alg:the_main_verification_traversal_algorithm}
+\end{algorithm}
+
+As part of this basic traversal another key algorithm is defined, to verify a single non-terminal. 
+Non-terminals are given the result of the verification of their body, and this is where the main recursive call takes place. 
+The verification result for a non-terminal is stored in the algorithm's state.
+This is given by \autoref{alg:the_non_terminal_verification_algorithm}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{find}(map, key): \textit{True} if the key exists in the map, \textit{false} otherwise.
+    \item \textsc{get}(map, key): Gets the value associated with the provided key in the given map.
+    \item \textsc{setTag}(map, key, tag): Sets the tag in `map' for `key' to the value `tag'. 
+    \item \textsc{elem}(val, list): \textit{True} if `val' is an element of `list', \textit{false} otherwise. 
+    \item \textsc{tail}(list): \mintinline{haskell}{tail (x:xs) == xs}.
+\end{itemize}
+
+It also assumes the existence of a stack tracking the current trace of non-terminals to get to this point in the verification. 
+This trace is used to avoid infinite recursion, and is known as `productionTrace'. 
+It is stored as part of the state available to the verification algorithm and has two associated functions:
+\begin{itemize}
+    \item \textsc{pushFrame}(nt): Pushes the frame `nt' onto the top of the stack.
+    \item \textsc{popFrame}(): Pops the top frame off the stack.
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{verifyNonTerminal}{nonTerminal}
+    \State \Call{pushFrame}{nonTerminal}
+    \If{\Call{find}(productions, nonTerminal)}
+        \Comment Non-Terminal exists
+        \State (tag, ruleBody) $\gets$ \Call{get}(productions, nonTerminal)
+        \If{tag == Terminates $\lor$ tag == DoesNotTerminate}
+            \State \Return{tag}
+        \Else
+            \State \Call{set}{productions, nonTerminal, Touched}
+            \State traceTail $\gets$ \Call{tail}{productionTrace}
+            \If{\Call{elem}{nonTerminal, traceTail}}
+                \Comment Avoid infinite loop
+                \State \Return{tag} 
+                \Comment works as tagged `Touched'
+            \Else
+                result $\gets$ \Call{verifyRule}{ruleBody}
+                \Comment see \autoref{alg:the_main_verification_traversal_algorithm}
+                \State \Call{setTag}{productions, nonTerminal result}
+                \State \Return{result}
+            \EndIf
+        \EndIf
+    \Else
+        \Comment must exist in the truths block
+        \State \Return{\Call{checkTruthsForTermination}{nonTerminal}}
+    \EndIf
+\EndFunction
+\Function{checkTruthsForTermination}{nonTerminal}
+    \If{\Call{elem}{nonTerminal, truths}}
+        \Comment `truths' in global state
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{The Non-Terminal Verification Algorithm}
+\label{alg:the_non_terminal_verification_algorithm}
 \end{algorithm}
 
 \subsubsection{Termination States} % (fold)
@@ -628,7 +693,7 @@ tagPlus x Touched                           = x
 
 The monoid has set $G = \{\text{touched, untouched, does not terminate, terminates}\}$, and satisfies the monoid axioms as follows:
 \begin{itemize}
-    \item Clearly, this operation satisfies the \textit{closure} property of the monoid, as the result type is always in the monoidal group $G$ (as given by the faux function signature \mintinline{haskell}{tagPlus :: Tag -> Tag -> Tag}).
+    \item Clearly, this operation satisfies the \textit{closure} property of the monoid, as the result type is always in the monoidal group $G$ (as given by the faux-function signature \mintinline{haskell}{tagPlus :: Tag -> Tag -> Tag}).
     \item Furthermore, it can be seen that the value of `touched' acts as the \textit{identity} element of the monoid: \mintinline{haskell}{Touched `tagPlus` x} = \mintinline{haskell}{x `tagPlus` Touched} = \mintinline{haskell}{x}.
     \item Finally, through observation, it is clear that this operation is also \textit{associative}.
 \end{itemize}
@@ -639,17 +704,104 @@ The monoid has set $G = \{\text{touched, untouched, does not terminate, terminat
 
 \subsection{Semantic Inference} % (fold)
 \label{sub:semantic_inference}
-% Explain the WHY behind the rule
-% Show the correctness of this restriction
-% Any rule must be a single non-terminal or have defined semantics. Can also have a top-level terminal, as this has no semantics and will always terminate.
-
 In some cases, the \gls{dsl} designer would potentially desire to write productions for which they define no semantics, or to utilise the semantics of existing productions directly.
-While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. 
+While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. \\
+
+The core notion behind this inference rule is that designers may want to write productions which are just disjunctions of other non-terminals (e.g. \mintinline{text}{<n> ::= <i> | <d>}).
+Under such circumstances it is trivial to see what the semantics of such a production should be: the semantics of whichever alternative is parsed. 
+To this end, the inference algorithm implements this idea, allowing an alternative to have no user-defined semantics in one of two circumstances:
+\begin{itemize}
+    \item The alternative is a single non-terminal, in which case its semantics are the semantics of the non-terminal.
+    \item The alternative is a single terminal, in which case it has no executable semantics.\footnote{It should be noted that this does not mean that terminal symbols cannot have semantics of their own, but only that they have no semantics where the user does not define them (the inference case).}  
+\end{itemize}
+
+This means that the inference will not take place if there is more than one terminal or non-terminal, or in the presence of any syntax indicating grouping or optionality. 
+However, the inference will still operate in the presence of one syntactic construct.
+If syntactic exception is present, this only serves to restrict the expressions that will match the production, and it has no impact on the semantics of the production.\\
+
+The algorithm used to perform this inference is used as part of the main verification flow, and can be seen in \autoref{alg:the_semantic_inference_algorithm}.
+It assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{numTerms}: Obtains the number of syntactic terms in an alternative. 
+    \item \textsc{getTerm}: Extracts the syntax term from an alternative with only one.
+    \item \textsc{getFactor}: Extracts the syntactic factor from a syntax term.
+    \item \textsc{getPrimary}: Extracts the syntax primary from the syntax factor.
+    \item \textsc{isTerminal}: Returns \textit{true} if the input is a terminal, \textit{false} otherwise.
+    \item \textsc{isNonTerminal}: Returns \textit{true} if the input is a non-terminal, \textit{false} otherwise.
+\end{itemize}
+
+This algorithm ensures that semantics are inferred in all cases where it is \textit{reasonable} to infer the semantics of a top-level alternative.
+It would potentially be possible to define a set of `defaulting' rules to infer semantics in other situations.
+However, the complexity of the syntactic grammar means that in many circumstances these additional rules would infer different semantics than intended by the \gls{dsl} designer, forcing them to manually define the semantics anyway. 
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{inferSemantics}{alternative}
+    \State count $\gets$ \Call{numTerms}{alternative}
+    \If{count $> 1$}
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics
+    \Else
+        \Comment Only one term in this case.
+        \State term $\gets$ \Call{getTerm}{alternative}
+        \State factor $\gets$ \Call{getFactor}{term}
+        \State \Return{\Call{verifyFactor}{factor}}
+    \EndIf
+\EndFunction
+\State
+\Function{verifyFactor}{factor}
+    \If{\Call{hasRepeat}{factor}}
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics
+    \Else
+        \State primary $\gets$ \Call{getPrimary}{factor}
+        \State \Return{\Call{verifyPrimary}{primary}}
+    \EndIf
+\EndFunction
+\State
+\Function{verifyPrimary}{primary}
+    \If{\Call{isTerminal}{primary}}
+        \State \Return{Terminates}
+        \Comment No defined semantics in this path.
+    \ElsIf{\Call{isNonTerminal}{primary}}
+        \State \Return{\Call{verifyNonTerminal}{primary}}
+    \Else
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics in all other cases
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{The Semantic Inference Algorithm}
+\label{alg:the_semantic_inference_algorithm}
+\end{algorithm}
 
 % subsection semantic_inference (end)
 
-\subsection{Basic Semantic Form Verification} % (fold)
-\label{sub:basic_semantic_form_verification}
+\subsection{Defined Semantic Verification} % (fold)
+\label{sub:defined_semantic_verification}
+While \gls{absol} offers some limited capability for semantic inference, the vast majority of productions will have semantics defined by the \gls{dsl} designer. 
+As discussed in \autoref{lst:language_rule_semantics}, there are four different kinds of semantics that can be defined for a production.
+Each of these must be verified differently and so the explicit verification algorithms for each kind of semantics are defined in their respective sections.
+
+The algorithm for verifying the case where the language semantics are explicitly defined by the \gls{dsl} designer is shown in \autoref{alg:the_basic_semantic_verification_algorithm}.
+This algorithm assumes the existence of the following utility functions:
+\begin{itemize}
+    \item 
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{verifyDefinedSemantics}{alternative}
+\EndFunction
+\end{algorithmic}
+\caption{The Basic Semantic Verification Algorithm}
+\label{alg:the_basic_semantic_verification_algorithm}
+\end{algorithm}
+
+% subsection defined_semantic_verification (end)
+
+\subsection{User-Defined Semantic Form Verification} % (fold)
+\label{sub:user_defined_semantic_form_verification}
 % All three criteria (evals, subterms, etc)
 % State the theorem that this algorithm works off.
 % Need to build ALL the core theory here. 
@@ -659,13 +811,29 @@ While it is not possible to infer semantics for such rules in the general case (
 % How there can be NTs in syntax not used in semantics, and hence these are not verified (can have syntax only productions). 
 % State availability of global state as a precondition.
 
-% subsection basic_semantic_form_verification (end)
+\begin{algorithm}
+\begin{algorithmic}
+    \State
+\end{algorithmic}
+\caption{User-Defined Semantic Form Verification}
+\label{alg:user_defined_semantic_form_verification}
+\end{algorithm}
+
+% subsection user_defined_semantic_form_verification (end)
 
 \subsection{Guard Checking} % (fold)
 \label{sub:guard_checking}
 % Discuss both the original intent, some attempted algorithmic designs
 % Reference back to the section ruling full validation as out of scope. 
 % Explain the (very simple) reasoning behind the final algorithm. 
+
+\begin{algorithm}
+\begin{algorithmic}
+    \State
+\end{algorithmic}
+\caption{User-Defined Guard Verification}
+\label{alg:user_defined_guard_verification}
+\end{algorithm}
 
 % subsection guard_checking (end)
 
@@ -677,10 +845,26 @@ While it is not possible to infer semantics for such rules in the general case (
 \subsubsection{Verification of Special-Syntax Rules} % (fold)
 \label{ssub:verification_of_special_syntax_rules}
 
+\begin{algorithm}
+\begin{algorithmic}
+    \State
+\end{algorithmic}
+\caption{Special-Syntax Rule Verification}
+\label{alg:special_syntax_rule_verification}
+\end{algorithm}
+
 % subsubsection verification_of_special_syntax_rules (end)
 
 \subsubsection{Verification of Environment Input Rules} % (fold)
 \label{ssub:verification_of_environment_input_rules}
+
+\begin{algorithm}
+\begin{algorithmic}
+    \State
+\end{algorithmic}
+\caption{Environment Input Rule Verification}
+\label{alg:environment_input_rule_verification}
+\end{algorithm}
 
 % subsubsection verification_of_environment_input_rules (end)
 
@@ -688,6 +872,14 @@ While it is not possible to infer semantics for such rules in the general case (
 \label{ssub:verification_of_environment_access_rules}
 % Default values on missing keys
 % User-supplied defaults provided via SSR (mention this and discuss the disparity - due to not considering this entirely until later). 
+
+\begin{algorithm}
+\begin{algorithmic}
+    \State
+\end{algorithmic}
+\caption{Environment Access Rule Verification}
+\label{alg:environment_access_rule_verification}
+\end{algorithm}
 
 % subsubsection verification_of_environment_access_rules (end)
 

@@ -396,7 +396,7 @@ This would impose significant restrictions in the case of semantic special synta
 
 As the above situation was deemed unsatisfactory, the final access form for \gls{metaspec} takes inspiration from array accesses in other programming languages, using the square-bracket notation (\mintinline{text}{[]}) for familiarity.
 Each access into the syntax must hence specify the (zero-indexed) \textit{position} of the specific non-terminal to which it refers: \mintinline{text}{<bar>[1]} refers to the second instance of the non-terminal, for example.
-These positions must hence be checked at language verification time (see \autoref{sub:basic_semantic_form_verification} for details).\\
+These positions must hence be checked at language verification time (see \autoref{sub:user_defined_semantic_form_verification} for details).\\
 
 This provides an intuitive way to access syntactic elements within the semantics, without restricting the form in which the semantics can be written. 
 
@@ -530,7 +530,7 @@ semantic-evaluation-rule-list =
 \end{listing}
 
 Multiple portions of this syntax are required to match a certain form for verification to be able to occur. 
-These restrictions are discussed in detail in \autoref{sub:basic_semantic_form_verification}, and are crucial to the ability of \gls{absol} to verify the language semantics.
+These restrictions are discussed in detail in \autoref{sub:user_defined_semantic_form_verification}, and are crucial to the ability of \gls{absol} to verify the language semantics.
 
 % subsubsection transforming_big_step_operational_semantics (end)
 
