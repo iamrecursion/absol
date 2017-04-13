@@ -132,3 +132,43 @@
         (CITE)? 
     }
 }
+
+\newglossaryentry{group}{
+    name=Group,
+    text=group,
+    description={
+        A group is a structure $(G, \cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$.
+        A group satisfies the following axioms:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+            \item \textbf{Identity:} $\exists! e \in G. \forall a \in G, e \cdot a = a \cdot e = a$
+            \item \textbf{Inverse:} $\forall a \in G. \exists b \in G, a \cdot b = b \cdot a = e$, where $e$ is the identity as above.
+        \end{itemize}
+    }
+}
+
+\newglossaryentry{semigroup}{
+    name=Semigroup,
+    text=semigroup,
+    description={
+        A semigroup is a structure $(G, \cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$ such that the following axioms hold:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+        \end{itemize}
+    }
+}
+
+\newglossaryentry{monoid}{
+    name=Monoid,
+    text=monoid,
+    description={
+        A monoid is a structure $(G,\cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$ such that the following axioms hold:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+            \item \textbf{Identity:} $\exists! e \in G. \forall a \in G, e \cdot a = a \cdot e = a$
+        \end{itemize}
+    }
+}

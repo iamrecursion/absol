@@ -10,6 +10,7 @@
 -- Portability : GHC
 --
 -- Contains a type used for tagging each production with its verification state.
+-- The type RuleTag is an instance of Monoid.
 --
 -------------------------------------------------------------------------------
 module Absol.Metaverify.RuleTag
@@ -61,3 +62,9 @@ tagPlus _ x@DoesNotTerminate{} = x
 tagPlus Terminates Terminates = Terminates
 tagPlus Touched x = x
 tagPlus x Touched = x
+
+-- | The Monoid instance for RuleTag.
+instance Monoid RuleTag where
+    mempty = Untouched
+    mappend = tagPlus
+    mconcat = foldr mappend mempty

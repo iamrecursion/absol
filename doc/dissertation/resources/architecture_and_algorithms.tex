@@ -441,6 +441,10 @@ The verification algorithms aim to verify the language against two kinds of non-
     \item \textbf{Undefined Programs:} Programs that, for some language expressions, do not have defined semantics or have indeterminate semantics.
 \end{enumerate}
 
+The key recognition about this verification process is that it is \textit{enabled} only by the restricted form of the semantics that can be represented in \gls{metaspec}.
+In general, this kind of verification is an instance of the \gls{halting_problem}, and hence impossible.
+It is through placing stringent restrictions on the form of the semantics for these \glspl{dsl} that it is possible to make this process work. 
+
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
 For the verification algorithm to produce correct results, there are a set of preconditions that must hold. 
@@ -542,10 +546,58 @@ This algorithm is sufficient to check that the preconditions for verification ho
 % The process of traversing the preprocessed AST and the reasons for it. 
 % This section should contain details of the primary algorithm of the verifier. 
 % Needs to talk about the termination states and how they combine from a theoretical standpoint. 
+% want to write the algorihm recursively, so need to define a function.
+% Make sure to establish the inputs as preconditions, and that it is available as state (however this may be). 
+% TODO write it in terms of the concepts of a map(k,v)
+
+The aim of the verification algorithm for \gls{absol} is to ensure that the semantics provided by the \gls{dsl} designer match the set of restrictions imposed to allow the termination proof. 
+The exact nature of these restrictions varies based on the kind of semantics being considered (of the four available in \gls{metaspec} --- see \autoref{lst:language_rule_semantics}), but in all cases it is the job of this algorithm to ensure that the conditions hold for the language to be total. \\
+
+The algorithm as a whole operates on a preprocessed version of the \gls{ast}, collated as discussed in \autoref{ssub:the_verification_preprocessor}. 
+This preprocessor provides the following information to the algorithm:
+\begin{itemize}
+    \item \textbf{Truths:} The truths defined by the language designer.
+    These are the base-cases for the main termination proof mechanism, and are assumed by this algorithm to always terminate.
+    \item \textbf{Start Rule:} The body of the start rule for the language and a tag associated with it.
+    This tag tracks the overall termination state of the language.
+    \item \textbf{Non-Terminals:} A mapping from each non-terminal for which there was a user-supplied production to a pair of (tag, rule body).
+    The tag is used to track the termination state of each non-terminal. 
+\end{itemize}
 
 \subsubsection{Termination States} % (fold)
 \label{ssub:termination_states}
-As part of this algorithm, each non-terminal in the language...
+As part of this algorithm, each non-terminal in the language being analysed is marked with a given state.
+In the project, these termination states are referred to as the \textit{tag} for the rule.
+These tags may take one of four values:
+\begin{itemize}
+    \item \textbf{Untouched:} This is the initial state for all tags, and indicates that the entity associated with the rule (either a non-terminal or the start rule) has not yet been visited by the algorithm.
+    \item \textbf{Touched:} The entity has been visited by the algorithm, but the algorithm is so far unable to assign it a termination state.
+    \item \textbf{Does Not Terminate:} The algorithm has determined that the entity associated with this tag does not terminate. 
+    \item \textbf{Terminates:} The algorithm has determined that the entity associated with this tag does not terminate.
+\end{itemize}
+
+As it is often the case that the tag result for a given production is the combination of the tag results for the non-terminals in the associated rule body, some thought was given to how best to combine these tag results.
+The most intuitive way to define this combination was as a binary operation on values of the tag. 
+After defining the operation, it became apparent that it was both associative and that an identity element existed, and hence the tag type is a \gls{monoid}.
+The associative operation, `tagPlus' is defined as follows (using Haskell notation for convenience, the \mintinline{haskell}{_} refers to any value):
+\begin{minted}[numbers=none]{haskell}
+tagPlus :: Tag -> Tag -> Tag
+tagPlus Untouched _                         = Untouched
+tagPlus _ Untouched                         = Untouched
+tagPlus DoesNotTerminate DoesNotTerminate   = DoesNotTerminate
+tagPlus DoesNotTerminate _                  = DoesNotTerminate
+tagPlus _ DoesNotTerminate                  = DoesNotTerminate
+tagPlus Terminates Terminates               = Terminates
+tagPlus Touched x                           = x
+tagPlus x Touched                           = x
+\end{minted}
+
+The monoid has set $G = \{\text{touched, untouched, does not terminate, terminates}\}$, and satisfies the monoid axioms as follows:
+\begin{itemize}
+    \item Clearly, this operation satisfies the \textit{closure} property of the monoid, as the result type is always in the monoidal group $G$ (as given by the faux function signature \mintinline{haskell}{tagPlus :: Tag -> Tag -> Tag}).
+    \item Furthermore, it can be seen that the value of `touched' acts as the \textit{identity} element of the monoid: \mintinline{haskell}{Touched `tagPlus` x} = \mintinline{haskell}{x `tagPlus` Touched} = \mintinline{haskell}{x}.
+    \item Finally, through observation, it is clear that this operation is also \textit{associative}.
+\end{itemize}
 
 % subsubsection termination_states (end)
 
@@ -565,6 +617,7 @@ While it is not possible to infer semantics for such rules in the general case (
 % Need to build ALL the core theory here. 
 % Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
 % Talk about the restrictions placed on the form such that it can be verified
+% Really place the emphasis here on HOW placing these restrictions enables the semantic verification. 
 
 % subsection basic_semantic_form_verification (end)
 
@@ -594,6 +647,7 @@ While it is not possible to infer semantics for such rules in the general case (
 \subsubsection{Verification of Environment Access Rules} % (fold)
 \label{ssub:verification_of_environment_access_rules}
 % Default values on missing keys
+% User-supplied defaults provided via SSR (mention this and discuss the disparity - due to not considering this entirely until later). 
 
 % subsubsection verification_of_environment_access_rules (end)
 
