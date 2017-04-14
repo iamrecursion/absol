@@ -276,7 +276,7 @@ The best algorithmic representation can thus be seen in \autoref{alg:the_verific
     \item \textbf{extractProductions} --- This function finds all productions (non-terminals) defined by the language and extracts them as pairs (Non-Terminal, Production Body). 
 \end{itemize}
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Require{The language AST is available as input}
 \Ensure{The collated output matches the relevant portions of the AST}
@@ -338,7 +338,7 @@ From an examination of the core algorithm of the verifier (\autoref{sec:the_core
 However, this is not as simple as it might appear at first glance: in the cases where the rule is defined as non-terminating, the tag must also track the associated diagnostic data. \\
 
 This is further complicated by the fact that the verification algorithms might involve arbitrary degrees of recursion. 
-Consider, for example, a production \mintinline{text}{<p> ::= <a> | <b> | <c>}, where the algorithm recurses on each of the non-terminals in the alternation. 
+Consider, a production \mintinline{text}{<p> ::= <a> | <b> | <c>} where the algorithm recurses on each of the non-terminals in the alternation, for example. 
 As each of these may have a different termination result, the result for \mintinline{text}{<p>} is the result of combining all the sub-results. 
 The termination result combination is specified in \autoref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
 In the case of a non-termination, the following data should be retained:
@@ -348,7 +348,7 @@ In the case of a non-termination, the following data should be retained:
     \item A trace of where the non-termination occurred in relation to the rule being tagged. 
 \end{itemize}
 
-At each combination point, therefore, two things need to happen:
+At each combination point where the recursive calls return, therefore, two things need to happen:
 \begin{enumerate}
     \item All of the non-termination reasons need to be stored.
     \item The non-termination trace needs to be updated for \textit{all} of the stored reasons. 
@@ -485,7 +485,9 @@ The algorithm for precondition verification is illustrated in \autoref{alg:the_p
 
 This algorithm is sufficient to check that the preconditions for verification hold, and \textit{must} be executed before the verification algorithm itself.
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{The Precondition Verification Algorithm}
+\label{alg:the_precondition_verification_algorithm}
 \begin{algorithmic}
 \Require{The Language AST is Present}
 \Ensure{The preconditions are validated}
@@ -532,9 +534,7 @@ This algorithm is sufficient to check that the preconditions for verification ho
     \EndIf
 \EndFunction
 \end{algorithmic}
-\caption{The Precondition Verification Algorithm}
-\label{alg:the_precondition_verification_algorithm}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection the_precondition_checking_algorithm (end)
 
@@ -576,7 +576,7 @@ It assumes the availability of the following functions:
     \item \textsc{hasSemantics}(alternative): \textit{True} if the alternative has user-defined semantics, \textit{false} otherwise.
 \end{itemize}
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Require{The inputs to the algorithm are available and derived from the \gls{ast} result of Metaparse}
 \Ensure{The verification result is `Terminates' if the language terminates, otherwise `DoesNotTerminate', `Untouched' or `Touched'}
@@ -629,7 +629,7 @@ It is stored as part of the state available to the verification algorithm and ha
     \item \textsc{popFrame}(): Pops the top frame off the stack.
 \end{itemize}
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{verifyNonTerminal}{nonTerminal}
     \State \Call{pushFrame}{nonTerminal}
@@ -646,7 +646,7 @@ It is stored as part of the state available to the verification algorithm and ha
                 \State \Return{tag} 
                 \Comment works as tagged `Touched'
             \Else
-                result $\gets$ \Call{verifyRule}{ruleBody}
+                \State result $\gets$ \Call{verifyRule}{ruleBody}
                 \Comment see \autoref{alg:the_main_verification_traversal_algorithm}
                 \State \Call{setTag}{productions, nonTerminal result}
                 \State \Return{result}
@@ -741,7 +741,9 @@ This algorithm ensures that semantics are inferred in all cases where it is \tex
 It would potentially be possible to define a set of `defaulting' rules to infer semantics in other situations.
 However, the complexity of the syntactic grammar means that in many circumstances these additional rules would infer different semantics than intended by the \gls{dsl} designer, forcing them to manually define the semantics anyway. 
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{The Semantic Inference Algorithm}
+\label{alg:the_semantic_inference_algorithm}
 \begin{algorithmic}
 \Function{inferSemantics}{alternative}
     \State count $\gets$ \Call{numTerms}{alternative}
@@ -778,9 +780,7 @@ However, the complexity of the syntactic grammar means that in many circumstance
     \EndIf
 \EndFunction
 \end{algorithmic}
-\caption{The Semantic Inference Algorithm}
-\label{alg:the_semantic_inference_algorithm}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsection semantic_inference (end)
 
@@ -799,7 +799,9 @@ This algorithm assumes the existence of the following utility functions:
     \item \textsc{find}(nonTerminal, list): Finds the number in `list' of pairs of (nonTerminal, number) corresponding to the input non-terminal.
 \end{itemize}
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{The Basic Semantic Verification Algorithm}
+\label{alg:the_basic_semantic_verification_algorithm}
 \begin{algorithmic}
 \Function{verifyDefinedSemantics}{alternative}
     \State (syntax, semantics) $\gets$ \Call{decompose}{alternative}
@@ -847,9 +849,7 @@ This algorithm assumes the existence of the following utility functions:
     \EndIf
 \EndFunction
 \end{algorithmic}
-\caption{The Basic Semantic Verification Algorithm}
-\label{alg:the_basic_semantic_verification_algorithm}
-\end{algorithm}
+\end{breakablealgorithm}
 
 As part of its operation it marks all non-terminals in the syntax for a given alternative as `touched'.
 This ensures that if they are visited again that no infinite recursion will take place, but also means that they do not have to have their semantics verified.
@@ -919,7 +919,7 @@ From the theory established in \autoref{sub:user_defined_semantic_form_verificat
 In addition to verification of the convergence hypothesis, which proves the semantics always terminate, it is also important to check that the guards are complete and hence ensure that the semantics are always defined (see \autoref{sub:guard_checking}).
 This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{verifySemanticRuleList}{semantics, ntCounts}
     \Comment `semantics' is a list of rules
@@ -959,7 +959,7 @@ This two-stage process is illustrated in \autoref{alg:verification_of_the_semant
     \item \textsc{getNTIndexPairs}(semantics): Returns a list if pairs of the form (nonTerminal, index).
 \end{itemize}
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{satisfiesSemanticForm}{semantics, ntCounts}
     \State ntIndexPairs $\gets$ \Map{\Call{getNTIndexPairs}{}}{semantics}
@@ -1019,7 +1019,9 @@ The algorithm for checking these criteria on the evaluation definitions in the s
     \item \textsc{notElem}(item, list): \textit{True} if `item' is not an element of `list', \textit{false} otherwise. 
 \end{itemize}
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{Verification of the Semantic Evaluation Criterion}
+\label{alg:verification_of_the_semantic_evaluation_criterion}
 \begin{algorithmic}
 \Function{satisfiesEval}{semantics}
     \State outputEvalPairs $\gets$ \Map{\Call{getOutputEvalPair}{}}{semantics}
@@ -1043,9 +1045,7 @@ The algorithm for checking these criteria on the evaluation definitions in the s
     \State \Return{subEvalVarsNotTemps $\land$ usedVarsExist $\land$ outNotInTemps $\land$ outNotInEvals $\land$ outNotInSubEvals}
 \EndFunction
 \end{algorithmic}
-\caption{Verification of the Semantic Evaluation Criterion}
-\label{alg:verification_of_the_semantic_evaluation_criterion}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection verifying_the_evaluation_criterion (end)
 
@@ -1069,7 +1069,7 @@ Both of these checks, however, depend on the availability of the following funct
     \item \textsc{extractGuards}(semanticRules): Extracts the guard expressions from the provided semantic rules, returning these as a list. 
 \end{itemize}
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{verifyGuards}{evaluationRules}
     \State guardsComplete $\gets$ \Call{verifyGuardsComplete}{evaluationRules}
@@ -1101,7 +1101,7 @@ This is particularly inelegant as, even in cases where the \gls{dsl} creator has
 However, while ugly, this does not impact on the potential for functionality within the language as guards are evaluated \textit{top-to-bottom}, with the first guard that is satisfied being evaluated. 
 As a result, the finalised method for checking guard completeness can be found in \autoref{alg:guard_completeness_checking}.
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{verifyGuardsComplete}{evaluationRules}
     \State guards $\gets$ \Call{extractGuards}{evaluationRules}
@@ -1133,7 +1133,9 @@ The procedure for verifying this is contained in \autoref{alg:guard_variable_che
     \item \textsc{zip}(a, b): Creates a list of pairs of the corresponding items in lists a and b.
 \end{itemize}
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{Guard Variable Checking}
+\label{alg:guard_variable_checking}
 \begin{algorithmic}
 \Function{verifyGuardVariables}{evaluationRules}
     \State guards $\gets$ \Call{extractGuards}{evaluationRules}
@@ -1156,9 +1158,7 @@ The procedure for verifying this is contained in \autoref{alg:guard_variable_che
     \EndIf
 \EndFunction
 \end{algorithmic}
-\caption{Guard Variable Checking}
-\label{alg:guard_variable_checking}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection checking_guard_variables (end)
 
@@ -1182,7 +1182,9 @@ The method for determining termination of such rules is illustrated in \autoref{
     \item \textsc{extractNT}(syntaxAccessBlock): Extracts the non-terminal from the syntax access block.
 \end{itemize}
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{Special-Syntax Rule Verification}
+\label{alg:special_syntax_rule_verification}
 \begin{algorithmic}
 \Function{verifySpecialSyntaxRule}{semantics, ntCounts}
     \State accessList $\gets$ \Call{getAccesses}{semantics}
@@ -1200,9 +1202,7 @@ The method for determining termination of such rules is illustrated in \autoref{
     \EndIf
 \EndFunction
 \end{algorithmic}
-\caption{Special-Syntax Rule Verification}
-\label{alg:special_syntax_rule_verification}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection verification_of_special_syntax_rules (end)
 
@@ -1214,7 +1214,7 @@ Hence, the termination of an environment input rule is derived from two main com
 \begin{enumerate}
     \item \textbf{The Key and Value Terms:} The key and values might be non-terminals, and hence for the input rule to terminate, these non-terminals must also terminate.
     \item \textbf{The Input Itself:} Under more complex circumstances, it might be conceivable that writing terminating values to an environment might not terminate.
-    However, the environment in \gls{metaspec} is particularly simple, and inputs into the environment are guaranteed to terminate, overwriting any previous value if the key already exists.
+    However, the environment in \gls{metaspec} is particularly simple, and inputs into the environment are guaranteed to terminate, overwriting any previous value.
 \end{enumerate}
 
 As a result, the verification process for an environment input rule focuses on just verifying that the non-terminals that it uses also terminate.
@@ -1224,7 +1224,9 @@ This process is illustrated in \autoref{alg:environment_input_rule_verification}
     \item \textsc{getValues}(semantics): Gets the non-terminals (and indices)for the values being stored in the environment.
 \end{itemize}
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{Environment Input Rule Verification}
+\label{alg:environment_input_rule_verification}
 \begin{algorithmic}
 \Function{verifyEnvironmentInputRule}{semantics, ntCounts}
     \State (key, ix) $\gets$ \Call{getKey}{semantics}
@@ -1238,7 +1240,6 @@ This process is illustrated in \autoref{alg:environment_input_rule_verification}
     \State terminationResult $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{terminationResults}
     \State valid $\gets$ \Reduce{$(\land)$}{True}{validResults}
     \Comment finds if all nt accesses are valid
-    \State
     \If{valid}
         \State \Return{\Call{tagPlus}{Terminates, terminationResult}}
     \Else
@@ -1247,9 +1248,7 @@ This process is illustrated in \autoref{alg:environment_input_rule_verification}
     \Comment combines results where necessary
 \EndFunction
 \end{algorithmic}
-\caption{Environment Input Rule Verification}
-\label{alg:environment_input_rule_verification}
-\end{algorithm}
+\end{breakablealgorithm}
 
 The fact that the environment just accepts the input with no error reporting is demonstrative of the comparative lack of design work that went into the environment feature. 
 Were there more time allotted for the project, the concept of the environment would receive much additional design effort, allowing it to act as a scoped and error-proof store of environmental data (much more like a useful user state). 
@@ -1268,7 +1267,7 @@ With such a limited set of types available in the language (see \autoref{sec:spe
 This ensures that any environment access will either return the previously stored value, or a default of the correct type. 
 As a result, the algorithm is simple and shown in \autoref{alg:environment_access_rule_verification}.
 
-\begin{algorithm}
+\begin{algorithm}[!htb]
 \begin{algorithmic}
 \Function{verifyEnvironmentAccessRule}{semantics}
     \State \Return{Terminates}
