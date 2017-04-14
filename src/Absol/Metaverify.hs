@@ -350,13 +350,16 @@ verifySemanticForm
 verifySemanticForm input = do
     (rules, nts) <- input
     let ntIndexPairs = getNTsFromSubEvaluations <$> rules
-    _ <- sequence $ (\(x,_) -> (verifyNonTerminal . return) x) <$>
+    subResults <- sequence $ (\(x,_) -> (verifyNonTerminal . return) x) <$>
         concat ntIndexPairs
     let result = rights $ concat $ fmap (checkNT nts) <$> ntIndexPairs
+        subResult = foldl tagPlus Terminates subResults
     if null result then
-        return Terminates
+        return $ Terminates `tagPlus` subResult
     else
-        return $ DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result
+        return $ 
+            (DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result)
+            `tagPlus` subResult
 
 -- | Converts an error string into a non-termination result with given type.
 resultToErr

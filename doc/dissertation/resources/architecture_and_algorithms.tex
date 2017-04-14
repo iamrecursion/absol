@@ -415,8 +415,6 @@ While disappointing, care was taken to ensure that the novel parts of the projec
 
 \section{The Core Algorithms} % (fold)
 \label{sec:the_core_algorithms}
-% Talk about the design of each of the core algorithms in detail.
-% The multiple-function deep mutual recursion. 
 At the core of the design of \gls{absol} are the verification algorithms. 
 Being so crucial to the functionality and success of the project, these underwent significant design work in isolation, and evolved over time during the implementation.
 Much as for the design of the system components themselves, the algorithmic designs evolved over time, and so this section aims to present the final algorithms as well as discuss any changes that occurred over time. \\
@@ -435,7 +433,16 @@ The verification algorithms aim to verify the language against two kinds of non-
 
 The key recognition about this verification process is that it is \textit{enabled} only by the restricted form of the semantics that can be represented in \gls{metaspec}.
 In general, this kind of verification is an instance of the \gls{halting_problem}, and hence impossible.
-It is through placing stringent restrictions on the form of the semantics for these \glspl{dsl} that it is possible to make this process work. 
+It is through placing stringent restrictions on the form of the semantics for these \glspl{dsl} that it is possible to make this process work. \\
+
+The algorithmic descriptions in this section use a few concepts from functional programming to enable the algorithms to be more concise.
+These are as follows:
+\begin{itemize}
+    \item \textbf{Partial Function Application:} Functions can be given some of their arguments, with the function called when the remaining arguments are filled.
+    This supports use of the next concept.
+    \item \textbf{Mapping:} A form of data traversal that applies an operation to all elements of a structure.
+    \item \textbf{Reduction:} Otherwise known as folding, this traverses a structure and collects all of its elements into one using a binary operation. 
+\end{itemize}
 
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
@@ -535,10 +542,6 @@ This algorithm is sufficient to check that the preconditions for verification ho
 
 \subsection{Verifier Traversal} % (fold)
 \label{sub:verifier_traversal}
-% want to write the algorihm recursively, so need to define a function.
-% Make sure to establish the inputs as preconditions, and that it is available as state (however this may be). 
-% TODO write it in terms of the concepts of a map(k,v)
-
 The aim of the verification algorithm for \gls{absol} is to ensure that the semantics provided by the \gls{dsl} designer match the set of restrictions imposed to allow the termination proof. 
 The exact nature of these restrictions varies based on the kind of semantics being considered (of the four available in \gls{metaspec} --- see \autoref{lst:language_rule_semantics}), but in all cases it is the job of this algorithm to ensure that the conditions hold for the language to be total. \\
 
@@ -856,11 +859,6 @@ The semantics of non-terminals in the syntax for a given rule (with user-defined
 
 \subsection{User-Defined Semantic Form Verification} % (fold)
 \label{sub:user_defined_semantic_form_verification}
-% All three criteria (evals, subterms, etc)
-% Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
-% Really place the emphasis here on HOW placing these restrictions enables the semantic verification. 
-% State availability of global state as a precondition.
-
 Verification of this semantic form lies at the very heart of the \gls{absol} project, with this ability providing much of the power inherent in \gls{metaspec}.
 In order to design an appropriate verification algorithm for these semantics it is important to first develop the underlying theory.\\
 
@@ -917,7 +915,6 @@ It has thus been shown, by induction, that as long as the convergence hypothesis
 
 \subsubsection{Verifying the User-Defined Semantic Form} % (fold)
 \label{ssub:verifying_the_user_defined_semantic_form}
-% How there can be NTs in syntax not used in semantics, and hence these are not verified (can have syntax only productions). 
 From the theory established in \autoref{sub:user_defined_semantic_form_verification} it is possible to establish an algorithm for verifying the criteria required for the convergence hypothesis to hold.
 In addition to verification of the convergence hypothesis, which proves the semantics always terminate, it is also important to check that the guards are complete and hence ensure that the semantics are always defined (see \autoref{sub:guard_checking}).
 This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
@@ -955,14 +952,27 @@ As discussed above, verification that the sub-term criterion holds involves perf
     \item Ensuring that the semantics of the sub-evaluations also terminate until the base-cases are reached. 
 \end{enumerate}
 
+It is important to recognise that the second of the above criteria only applies to the non-terminals in the syntax that are \textit{used} in the semantics.
+This means that non-terminals can be used in a purely syntactic form, and hence do not require any verification.
 This two-stage process is illustrated in \autoref{alg:verification_of_the_semantic_sub_term_criterion} and assumes the existence of the following functions:
 \begin{itemize}
-    \item 
+    \item \textsc{getNTIndexPairs}(semantics): Returns a list if pairs of the form (nonTerminal, index).
 \end{itemize}
 
 \begin{algorithm}
 \begin{algorithmic}
 \Function{satisfiesSemanticForm}{semantics, ntCounts}
+    \State ntIndexPairs $\gets$ \Map{\Call{getNTIndexPairs}{}}{semantics}
+    \State subTermsExist $\gets$ \Map{\Call{isValid}{ntCounts}}{ntIndexPairs}
+    % TODO fix partial application above (wrong arg location)
+    \State subTermsTerminate $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntIndexPairs}
+    \State allSubTermsExist $\gets$ \Reduce{($\land$)}{True}{subTermsExist}
+    \State allSubTermsTerminate $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{subTermsTerminate}
+    \If{allSubTermsExist}
+        \State \Return{\Call{tagPlus}{Terminates, allSubTermsTerminate}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, allSubTermsTerminate}}
+    \EndIf
 \EndFunction
 \end{algorithmic}
 \caption{Verification of the Semantic Sub-Term Criterion}
