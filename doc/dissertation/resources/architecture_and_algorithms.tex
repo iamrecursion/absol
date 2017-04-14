@@ -1295,54 +1295,234 @@ Proofs of the termination properties for these rules (like all special syntax ru
 
 The special language features in \gls{absol} and \gls{metaspec} are best thought of as the `standard library' for \gls{dsl} implementation.
 Each of these features aims to bring some important functionality to the toolchain, whether that be types for the semantics, non-terminals for parsing or special semantic functions to bring added flexibility. 
-The main idea behind each of these features is to aid the \gls{dsl} designer in creating their language. \\
+The main idea behind each of these features (which can also be referred to as \textit{packages}) is to aid the \gls{dsl} designer in creating their language. \\
 
 The design process for these features was mainly derived from observation of the most useful features of other programming languages.
 For \gls{absol} to be able to design useful \glspl{dsl}, it had to be able to support most of these features. 
 To this end, the design process was initiated by making a list of all of the useful features that were commonly found in programming languages used today.
 This list was refined through consideration of which features would be possible to represent in the `safe' environment of \gls{metaspec}, and which would be most useful (where useful is defined in a fashion mainly involving intuition).
-What resulted was a minimal set of features that would allow languages designed in \gls{metaspec} to be competent and contain functionality to actually make them useful to the \gls{dsl} implementers and users. 
+What resulted was a minimal set of features that would allow languages designed in \gls{metaspec} to be competent and contain functionality to actually make them useful to the \gls{dsl} implementers and users. \\
+
+Each feature definition will define the types that it provides, give definitions for each of the non-terminals it provides and also provide a list of language operations and/or special-syntax that it defines.
+In the cases where the special syntax needs proof, the proof of its termination properties will be included. 
+All proofs of special-syntax termination properties are given with the assumption that the arguments to the special syntax also terminate. 
 
 \subsection{Feature --- \texttt{base}} % (fold)
 \label{sub:feature_base}
-% Needs some utility functions for assesing length of productions (e.g. number of items in a syntax list)
-% Utility special syntax for environment gets (for use in normal syntactic rules) -> provision of default values to ensure semantics always work (how does this differ)
-% Storing and retrieval of constant keys (a design issue with the grammar)
-% Need to add these to the grammar and parser
+The notion behind the \texttt{base} package is to provide an elementary set of non-terminals, types and features for defining a simple language grammar. 
+In and of itself it is unlikely to be very useful, but it provides a foundation on which \glspl{dsl} can be created. 
+
+\subsubsection{Types --- \texttt{base}} % (fold)
+\label{ssub:types_base}
+This language feature imports the following types into scope:
+\begin{itemize}
+    \item \texttt{any} --- The any type is for placement in any position where the type of an expression cannot be known until the time of \gls{dsl} compilation. 
+    It is a type marker that is substituted for a concrete type at compile time.
+    \item \texttt{none} --- A type annotation used to suppress the result type of a statement. 
+    This allows for languages to either behave in an expression-oriented fashion (where the last expression in a block is a result), or a statement-oriented fashion, where there is no result of expressions.
+    \item \texttt{bool} --- A basic boolean type that operates as expected. 
+\end{itemize}
+
+% subsubsection types_base (end)
+
+\subsubsection{Non-Terminals --- \texttt{base}} % (fold)
+\label{ssub:non_terminals_base}
+This language feature defines the following non-terminals. 
+All of these are guaranteed to terminate, and can hence be written in the truths definition block of the file. 
+\begin{itemize}
+    \item \mintinline{text}{<digit>} --- UTF-8 Digit Characters
+    \item \mintinline{text}{<nondigit>} --- All UTF-8 non-digit characters except newlines and whitespace.
+    \item \mintinline{text}{<whitespace>} --- All UTF-8 whitespace characters excluding newlines.
+    \item \mintinline{text}{<newline>} --- All UTF-8 newline characters.
+    \item \mintinline{text}{<utf-8-char>} --- All UTF-8 characters.
+    \item \mintinline{text}{<bool> ::= "true" | "false" ;} --- Boolean literals.
+\end{itemize}
+
+% subsubsection non_terminals_base (end)
+
+\subsubsection{Operations and Syntax --- \texttt{base}} % (fold)
+\label{ssub:operations_and_syntax_base}
+This feature defines the following operations over the set of types it defines:
+\begin{itemize}
+    \item \mintinline{text}{&&, ||, &, |, ==, !=, <, >, <=, >=} --- Defined as expected for a C-like programming language.
+    \item \mintinline{text}{envStore(key, value)} --- A more versatile way of storing values in the environment that can be used from anywhere special syntax can.
+    This trivially terminates as long as its arguments do, as the under-the-hood semantics are those of a standard environment store.
+    \item \mintinline{text}{envGet(key)} --- A more versatile way of retrieving values from the environment that can be used from anywhere special syntax can. 
+    This also trivially terminates as long as its arguments do, as the under-the-hood semantics are those of a standard environment store.
+    \item \mintinline{text}{envGetDefault(key, defaultValue)} --- Similar to the above, but allows the \gls{dsl} designer to specify a default value in the case the key does not exist.
+    \item \mintinline{text}{nodeLength(nodeList)} --- Gets the number of nodes contained by a non-terminal. 
+    This is useful in the context of function definitions and function calls where the executed semantics may differ based on the number of arguments given. 
+    As all syntax is finite, determining the length of a finite syntax list is also finite and hence guaranteed to terminate. 
+\end{itemize}
+
+% subsubsection operations_and_syntax_base (end)
 
 % subsection feature_base (end)
 
 \subsection{Feature --- \texttt{number}} % (fold)
 \label{sub:feature_number}
+The \texttt{number} package provides types and non-terminals for a number of standard numerical types found in many programming languages.
+It also has a set of operations defined on these types, and two special-syntax calls for useful numeric operations.
+
+\subsubsection{Types and Non-Terminals --- \texttt{number}} % (fold)
+\label{ssub:types_number}
+This package provides the following types and corresponding non-terminals:
+\begin{itemize}
+    \item \texttt{natural} / \mintinline{text}{<natural>} --- An unbounded, unsigned integer type.
+    \item \texttt{integer} / \mintinline{text}{<integer>} --- An unbounded, signed integer type.
+    \item \texttt{int32} / \mintinline{text}{<int32>} --- A 32-bit signed integer type.
+    \item \texttt{uint32} / \mintinline{text}{<int64>} --- An unsigned 32-bit integer type.
+    \item \texttt{int64} / \mintinline{text}{<uint32>} --- A signed 64-bit integer type.
+    \item \texttt{uint64} / \mintinline{text}{<uint64>} --- An unsigned 64-bit integer type.
+    \item \texttt{float} / \mintinline{text}{<float>} --- An IEEE 754 32-bit floating-point number.
+    \item \texttt{double} / \mintinline{text}{<double>} --- An IEEE 754 64-bit floating-point number.
+    \item \texttt{integral} / \mintinline{text}{<integral>} --- For any integral type.
+    \item \texttt{floating} / \mintinline{text}{<floating>} --- For any floating-point type.
+    \item \texttt{number} / \mintinline{text}{<number>} --- For any of the numeric types imported by this feature.
+\end{itemize}
+
+% subsubsection types_and_non_terminals_number (end)
+
+\subsubsection{Operations and Syntax --- \texttt{number}} % (fold)
+\label{ssub:operations_and_syntax_number}
+This package provides the following operations on the above types:
+\begin{itemize}
+    \item \mintinline{text}{+, -, *, /, ^, \%} --- Standard arithmetic operations.
+    \item \mintinline{text}{ciel(x)} --- Special syntax to calculate the ceiling of \mintinline{text}{x}.
+    \item \mintinline{text}{floor(x)} --- Special syntax to calculate the floor of \mintinline{text}{x}.
+\end{itemize}
+
+% subsubsection operations_and_syntax_number (end)
 
 % subsection feature_number (end)
 
 \subsection{Feature --- \texttt{string}} % (fold)
 \label{sub:feature_string}
+This language feature provides a basic, efficient, packed-UTF-8 string type. 
+It provides one type and non-terminal: \mintinline{text}{string} / \mintinline{text}{<string>}.
+The non-terminal parses strings delimited by double-quotes. 
+The operations over string are as follows:
+\begin{itemize}
+    \item \mintinline{text}{+} --- Concatenates two strings. 
+    This terminates trivially.
+    \item \mintinline{text}{s[x]} --- Addressing into the string at position x, obtaining the corresponding utf-8 glyph.
+    This is guaranteed to return a valid string value (and always terminate): if the index is out of range, it will return the empty string.
+    \item \mintinline{text}{rev(s)} --- Special syntax for reversing the string.
+    Guaranteed to terminate as strings are finite.
+    \item \mintinline{text}{split(s, d)} --- Special syntax for splitting a string \mintinline{text}{s} on the delimiter \mintinline{text}{d}. 
+    As strings are finite, this will always terminate.
+    Must have \texttt{list} imported to work as it will return the string unchanged if list is not imported. 
+    \item \mintinline{text}{join(s, d)} --- Special syntax for joining a list of strings \mintinline{text}{s} with the delimiter \mintinline{text}{d}.
+    As lists and strings are finite this is guaranteed to terminate.
+    Much like the above, it must have \texttt{list} imported to work. 
+\end{itemize}
 
 % subsection feature_string (end)
 
 \subsection{Feature --- \texttt{list}} % (fold)
 \label{sub:feature_list}
+This feature provides a doubly-linked list to contain homogeneous data with the contained type determined at compile time. 
+It defines the type \mintinline{text}{list}, and the corresponding non-terminal \mintinline{text}{<list>}, for the parsing of list literals of the form \mintinline{text}{[a, b, c, d, ...]}.
+It defines the following operations:
+\begin{itemize}
+    \item \mintinline{text}{[]} --- An empty list literal, usable anywhere in the \gls{metaspec} where a value is expected. 
+    This may also be given with comma-separated items of the same type, in which case a list literal with values is constructed.
+    \item \mintinline{text}{l[x]} --- Accesses the list \mintinline{text}{l} at position \mintinline{text}{x}. 
+    As lists are finite this operation is always guaranteed to terminate.
+    If the index \mintinline{text}{x} does not exist, the linearly closest element of the list is returned. 
+    \item \mintinline{text}{+} --- List concatenation.
+    Trivially guaranteed to terminate.
+    \item \mintinline{text}{:} --- The list cons operator, also trivially guaranteed to terminate.
+\end{itemize}
 
 % subsection feature_list (end)
 
 \subsection{Feature --- \texttt{matrix}} % (fold)
 \label{sub:feature_matrix}
+This language feature provides a $m \times n$ matrix type to contain homogeneous data. 
+It defines the type \mintinline{text}{matrix}, and the corresponding non-terminal \mintinline{text}{<matrix>} for matrix literals.
+Matrix literals have the form \mintinline{text}{| a, b, ... ; c, d ... ; ...}, with each row having the same number of columns.
+It defines the following operations:
+\begin{itemize}
+    \item \mintinline{text}{+, *, /, ^, -} --- Standard matrix arithmetic, defined as for matrices.
+    As matrices are finite, this is always guaranteed to terminate.
+    \item \mintinline{text}{||} --- Constructs an empty matrix, or in the presence of values as for matrix literals, constructs the corresponding matrix literal.
+    \item \mintinline{text}{m|x, y, ...|} --- Access the values in matrix \mintinline{text}{m} at the position given. 
+    For any dimension the value \mintinline{text}{:} may be given to access the entire dimension, or \mintinline{text}{a:b} to access the portion of the dimension defined by the semi-closed interval $[a,b)$.
+    This is guaranteed to terminate as matrices are finite, and much as for the list, it will return the linearly closest item(s) if the indices are out of range.
+\end{itemize}
 
 % subsection feature_matrix (end)
 
 \subsection{Feature --- \texttt{traverse}} % (fold)
 \label{sub:feature_traverse}
+Traverse is a special-syntax only package that defines methods for traversing collection data-structures.
+It provides the following operations as special syntax, and requires \texttt{funcall} to be imported into scope:
+\begin{itemize}
+    \item \mintinline{text}{map(fn, collection)} --- This operation traverses \mintinline{text}{structure}, applying the function \mintinline{text}{fn} to each element of the structure. 
+    The termination property for this is not initially obvious, but by \citet{nordstrom1988terminating}, any recursion over a finite structure will terminate as long as the the size of the structure decreases with every recursive call. 
+    As a result, the function uses an implementation under the hood akin to the following for some illusory typeclass \mintinline{haskell}{Traversible}:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+map :: (Traversible t) => (n -> m) -> t n -> t m
+map fn [] = []
+map fn (x:xs) = (fn x) : map fn xs 
+\end{minted}
+    As the argument to the function always gets smaller until it reaches a base case, this is guaranteed to terminate.
+    \item \mintinline{text}{fold(fn, val, collection)} --- This operation traverses \mintinline{text}{structure}, performing a left fold to reduce the values in collection to a single value. 
+    The function \mintinline{text}{fn} must be a binary operation taking two arguments of the type contained in structure, and it uses \mintinline{text}val} as the initial value.
+    Much like for the above, the termination proof for this relies on the fact that finite recursion terminates as long as the size of the structure being recursed over decreases with each recursive call. 
+    It would use an implementation akin to the following Haskell, using the same typeclass:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+fold :: (Traversible t) => (a -> a -> a) -> a -> t a -> a
+fold fn value [] = value
+fold fn value (x:xs) = fold fn (fn value x) xs
+\end{minted}
+    In the case of a matrix, the signature is slightly different as it results in a matrix (that may be a single value) to allow for reduction across rows. 
+    \item \mintinline{text}{filter(fn, collection)} --- This operation traverses \mintinline{text}{structure}, only retaining the elements for which \mintinline{text}{fn}, a predicate, returns true.
+    Much like for the above, the termination proof in this case comes from the fact that the size of the structure decreases with each recursive call, as in this example implementation:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+filter :: (Traversible t) => (a -> Bool) -> t a -> t a
+filter pred [] = []
+filter pred (x:xs) = if pred x 
+    then 
+        (x : filter pred xs) 
+    else 
+        (filter pred xs)
+\end{minted}
+    In the case of a matrix, it operates across a given dimension, and hence produces a new matrix of a potentially different size. 
+\end{itemize}
+
+This language feature also provides variants for matrices taking an additional argument (at the end) that specifies the dimension (by number) to traverse. 
+This ensures that the matrix invariants are not broken and that everything operates as expected. 
 
 % subsection feature_traverse (end)
 
 \subsection{Feature --- \texttt{funcall}} % (fold)
 \label{sub:feature_funcall}
-% How are resultant DSL programs intended to be executed - does this impact the design of the metacompiler at all?
-% During the design process some significant thought was given to... however, as it became apparent that code generation would not be taking place in the scope of this project...
-% Discuss how this is used to enable execution of DSL programs. 
-% Semantics for this are checked at DSL compilation time (do the called functions exist?, are they valid non-recursive calls?, noop calls if invalid?) 
+The final language feature designed during this project is \texttt{funcall}. 
+This language feature provides primitives for defining functions and procedures.
+The distinction between these two may not be obvious, and can be described as follows:
+\begin{itemize}
+    \item \textbf{Function:} A function is a block of code that takes arguments and returns a value. 
+    It may be called from within a procedure, but not from within another function.
+    This avoids recursion.
+    Functions are used as arguments to the special-syntax calls in \texttt{traverse}.
+    \item \textbf{Procedure:} A procedure is a top-level block of code that takes arguments from \textit{the host language} and returns a value to a host language.
+    Procedures may call functions, and there is no mechanism to call other procedures except via the \gls{dsl} \gls{ffi}
+    This avoids the ability to recurse in procedures or mutually recurse between functions and procedures. 
+\end{itemize}
+
+This is a risky area, and so special care has been taken to ensure that the following pieces of special syntax retain the termination properties of the language. 
+They are defined as follows, and are intended to be used to create frameworks within a DSL for defining functions and procedures at the program level:
+\begin{itemize}
+    \item \mintinline{text}{defproc(name, args)} --- This defines a procedure called \mintinline{text}{name}, with arguments of the types of \mintinline{text}{args}.
+    These procedures are automatically connected to the \gls{dsl} \gls{ffi} to allow for the DSL to actually be called from the host language. 
+    \item \mintinline{text}{deffun(name, args)} --- Much like for \mintinline{text}{defproc}, this defines a function called \mintinline{text}{name}, with arguments of the types of \mintinline{text}{args}. 
+    This function is defined into the semantic environment, and can be called from within a procedure through use of the next special syntax call. 
+    \item \mintinline{text}{callfun(name, args)} --- Calls a function named \mintinline{text}{name}, with arguments given by \mintinline{text}{args}.
+    This call is a \gls{noop} when executed from any place other than inside a defined procedure. 
+    This ensures that no recursive function calls (direct or indirect) can be made, and thus ensures that the language using these constructs will always terminate.
+\end{itemize}
 
 % subsection feature_funcall (end)
 

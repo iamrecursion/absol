@@ -73,7 +73,7 @@ Each section contains the following details:
 - `<newline>`
 
 **Operations:**
-- `&&, ||, *, |, ==, !=, <, >, <=, >=`
+- `&&, ||, &, |, ==, !=, <, >, <=, >=`
 
 ### Number
 **Import Name:** number  
@@ -100,9 +100,9 @@ Each section contains the following details:
 - `<uint64>`
 - `<float>`
 - `<double>`
-- `<integral>` --- for any integral type
-- `<floating>` --- for any floating-point type
-- `<number>` for any of the number types in this feature
+- `<integral>`
+- `<floating>`
+- `<number>`
 
 **Operations:**
 - `+, *, /, ^, -, %`: Standard arithmetic.
@@ -193,6 +193,5 @@ Defines no non-terminals.
 
 **Operations:**
 - `defproc`: Define a procedure. Procedures may call functions
-- `callproc`: Calls a procedure by name with given arguments.
 - `deffun`: Define a function. Functions may not call functions or procedures.
 - `callfun`: Call a function by name with given arguments.
