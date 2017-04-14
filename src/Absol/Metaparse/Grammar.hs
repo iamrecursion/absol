@@ -205,10 +205,18 @@ data SemanticSpecialSyntax
     = SpecialSyntaxMap
     | SpecialSyntaxFold
     | SpecialSyntaxFilter
-    | SpecialSyntaxDefproc
     | SpecialSyntaxDeffun
-    | SpecialSyntaxCallproc
+    | SpecialSyntaxDefproc
     | SpecialSyntaxCallfun
+    | SpecialSyntaxEnvStore
+    | SpecialSyntaxEnvGet
+    | SpecialSyntaxEnvGetDefault
+    | SpecialSyntaxNodeLength
+    | SpecialSyntaxCiel
+    | SpecialSyntaxFloor
+    | SpecialSyntaxRev
+    | SpecialSyntaxSplit
+    | SpecialSyntaxJoin
     deriving (Show, Eq)
 
 data EnvironmentAccessRule = EnvironmentAccessRule

@@ -547,10 +547,19 @@ semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
         parseExpr = SpecialSyntaxMap <$ specialSyntaxString "map"
             <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
             <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
-            <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
             <|> SpecialSyntaxDeffun <$ specialSyntaxString "deffun"
-            <|> SpecialSyntaxCallproc <$ specialSyntaxString "callproc"
+            <|> SpecialSyntaxDefproc <$ specialSyntaxString "callproc"
             <|> SpecialSyntaxCallfun <$ specialSyntaxString "callfun"
+            <|> SpecialSyntaxEnvStore <$ specialSyntaxString "envStore"
+            <|> SpecialSyntaxEnvGet <$ specialSyntaxString "envGet"
+            <|> SpecialSyntaxEnvGetDefault 
+                <$ specialSyntaxString "envGetDefault"
+            <|> SpecialSyntaxNodeLength <$ specialSyntaxString "nodeLength"
+            <|> SpecialSyntaxCiel <$ specialSyntaxString "ciel"
+            <|> SpecialSyntaxFloor <$ specialSyntaxString "floor"
+            <|> SpecialSyntaxRev <$ specialSyntaxString "rev"
+            <|> SpecialSyntaxSplit <$ specialSyntaxString "split"
+            <|> SpecialSyntaxJoin <$ specialSyntaxString "join"
 
 -- | Parses a list of semantic restrictions.
 --

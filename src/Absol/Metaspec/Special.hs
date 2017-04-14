@@ -84,16 +84,31 @@ getNonTerminals FeatureNumber = makeNTI <$>
         "number"
     ]
 getNonTerminals FeatureString = makeNTI <$> ["string"]
-getNonTerminals FeatureList = []
-getNonTerminals FeatureMatrix = []
+getNonTerminals FeatureList = makeNTI <$> ["list"]
+getNonTerminals FeatureMatrix = makeNTI <$> ["matrix"]
 getNonTerminals FeatureTraverse = []
 getNonTerminals FeatureFuncall = []
 
 -- | Gets the special syntax elements defined by features.
 getSpecialSyntax :: MetaspecFeature -> [SemanticSpecialSyntax]
-getSpecialSyntax FeatureBase = []
-getSpecialSyntax FeatureNumber = []
-getSpecialSyntax FeatureString = []
+getSpecialSyntax FeatureBase = 
+    [
+        SpecialSyntaxEnvStore,
+        SpecialSyntaxEnvGet,
+        SpecialSyntaxEnvGetDefault,
+        SpecialSyntaxNodeLength
+    ]
+getSpecialSyntax FeatureNumber = 
+    [
+        SpecialSyntaxCiel,
+        SpecialSyntaxFloor
+    ]
+getSpecialSyntax FeatureString = 
+    [
+        SpecialSyntaxRev,
+        SpecialSyntaxSplit,
+        SpecialSyntaxJoin
+    ]
 getSpecialSyntax FeatureList = []
 getSpecialSyntax FeatureMatrix = []
 getSpecialSyntax FeatureTraverse =
@@ -106,7 +121,6 @@ getSpecialSyntax FeatureFuncall =
     [
         SpecialSyntaxDefproc,
         SpecialSyntaxDeffun,
-        SpecialSyntaxCallproc,
         SpecialSyntaxCallfun
     ]
 
@@ -115,10 +129,18 @@ toSpecialSyntaxName :: SemanticSpecialSyntax -> String
 toSpecialSyntaxName SpecialSyntaxMap      = "map"
 toSpecialSyntaxName SpecialSyntaxFold     = "fold"
 toSpecialSyntaxName SpecialSyntaxFilter   = "filter"
-toSpecialSyntaxName SpecialSyntaxDefproc  = "defproc"
 toSpecialSyntaxName SpecialSyntaxDeffun   = "deffun"
-toSpecialSyntaxName SpecialSyntaxCallproc = "callproc"
+toSpecialSyntaxName SpecialSyntaxDefproc = "callproc"
 toSpecialSyntaxName SpecialSyntaxCallfun  = "callfun"
+toSpecialSyntaxName SpecialSyntaxEnvStore = "envStore"
+toSpecialSyntaxName SpecialSyntaxEnvGet = "envGet"
+toSpecialSyntaxName SpecialSyntaxEnvGetDefault = "envGetDefault"
+toSpecialSyntaxName SpecialSyntaxNodeLength = "nodeLength"
+toSpecialSyntaxName SpecialSyntaxCiel = "ciel"
+toSpecialSyntaxName SpecialSyntaxFloor = "floor"
+toSpecialSyntaxName SpecialSyntaxRev = "rev"
+toSpecialSyntaxName SpecialSyntaxSplit = "split"
+toSpecialSyntaxName SpecialSyntaxJoin = "join"
 
 -- | Checks if a given feature provides a non-terminal.
 providesNonTerminal :: NonTerminalIdentifier -> MetaspecFeature -> Bool
