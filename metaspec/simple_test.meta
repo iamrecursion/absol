@@ -20,7 +20,7 @@ truths : {
 
 language : {
 
-<<simple_test>> ::= <statement> ;
+<<simple_test>> ::= <statement> | <a> ;
 
 <statement> ::= <my-number> | <number> | <arith-expr> | <test> | <assignment> ;
 
@@ -28,7 +28,11 @@ language : {
 
 <arith-expr> ::= <my-number> | <arith-op> ;
 
+// I wish there was a way to reject these
+<a> ::= <b> ;
+<b> ::= <a> ;
 <foo> ::= "aaA";
+<bar> ::= <bar> "aa" --> { any n : {n = n1}() : {any n1 <= <bar>[0]}} ;
 
 <arith-op> ::= 
 //     <arith-expr> "+" <arith-expr> --> {
@@ -48,10 +52,10 @@ language : {
 //             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
 //     } |
     <arith-expr> "^" <arith-expr> <foo> --> {
-        number n : {n = 1}(n1 == 1) :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        // number n : {n = n1 * n1}(n2 == 2) :
+        // number n : {n = 1}(n1 == 1) :
         //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+        number n : {n = n1 * n1}(n2 == 2) :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
         // number n : {n = n1 ^ n2}(n2 < 2, n2 > 2) :
         //     {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
         number n : {n = n1 ^ n3, n3 = n2 ^ 1}() :

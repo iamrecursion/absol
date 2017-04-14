@@ -252,7 +252,9 @@ verifyEvaluationCriterion list = do
         opVars = getOperationVars <$> rulePairs
         evalVars = getEvaluationVars <$> rules
         results = checkVariableEvalCriteria <$> zip opVars evalVars
-    if and results then
+        allVarsInOrder = concat $ (getVarsInOrderForEvals . snd) <$> rulePairs 
+        varsOrdered = and $ checkVarDefinitionOrdering <$> allVarsInOrder
+    if (and results) && varsOrdered then
         return Terminates
     else
         return $ DoesNotTerminate
@@ -264,6 +266,25 @@ verifyEvaluationCriterion list = do
         getOutputRulePair
             (SemanticEvaluationRule _ ident (SemanticOperationList evals) _ _) =
             (ident, evals)
+
+-- | Gets the list of variables defined before and after a temporary.
+-- 
+-- The output is [before], temporary, [after].
+getVarsInOrderForEvals 
+    :: [SemanticOperationAssignment] 
+    -> [(SemanticIdentifier, [SemanticIdentifier])]
+getVarsInOrderForEvals [] = []
+getVarsInOrderForEvals ((SemanticOperationAssignment x op):xs) = 
+    (x, getEvalVar op ++ (concat $ evalVars <$> xs)) : getVarsInOrderForEvals xs
+
+-- | Ensures that for input [before], temporary, [after] that temporary is not
+-- a member of after.
+-- 
+-- This ensures the final criteria to verify the semantic evaluations.
+checkVarDefinitionOrdering
+    :: (SemanticIdentifier, [SemanticIdentifier])
+    -> Bool
+checkVarDefinitionOrdering (semId, ids) = semId `notElem` ids
 
 -- | Checks that the usage of variables in the semantic operation is correct.
 --
@@ -300,17 +321,19 @@ getOperationVars (ident, opAssigns) =
         temps :: SemanticOperationAssignment -> SemanticIdentifier
         temps (SemanticOperationAssignment identifier _) = identifier
 
-        evalVars :: SemanticOperationAssignment -> [SemanticIdentifier]
-        evalVars (SemanticOperationAssignment _ op) = getEvalVar op
+-- | Extracts the variables on the RHS of a semantic evaluation assignment.
+evalVars :: SemanticOperationAssignment -> [SemanticIdentifier]
+evalVars (SemanticOperationAssignment _ op) = getEvalVar op
 
-        getEvalVar :: SemanticOperation -> [SemanticIdentifier]
-        getEvalVar (Variable identifier) = [identifier]
-        getEvalVar (VariableAccess identifier _) = [identifier]
-        getEvalVar (Constant _) = []
-        getEvalVar (Parentheses op) = getEvalVar op
-        getEvalVar (PrefixExpr _ op) = getEvalVar op
-        getEvalVar (PostfixExpr _ op) = getEvalVar op
-        getEvalVar (InfixExpr _ op1 op2) = getEvalVar op1 ++ getEvalVar op2
+-- | Extracts the variables on the RHS of a semantic evaluation.
+getEvalVar :: SemanticOperation -> [SemanticIdentifier]
+getEvalVar (Variable identifier) = [identifier]
+getEvalVar (VariableAccess identifier _) = [identifier]
+getEvalVar (Constant _) = []
+getEvalVar (Parentheses op) = getEvalVar op
+getEvalVar (PrefixExpr _ op) = getEvalVar op
+getEvalVar (PostfixExpr _ op) = getEvalVar op
+getEvalVar (InfixExpr _ op1 op2) = getEvalVar op1 ++ getEvalVar op2
 
 -- | Gets the variables defined by the sub-evaluations.
 getEvaluationVars :: SemanticEvaluationRule -> [SemanticIdentifier]

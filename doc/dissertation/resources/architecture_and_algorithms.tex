@@ -3,6 +3,9 @@
 % Identification of areas of the design that account for the requirements and resolve potential conflicts. 
 % Fix algorithm placement
 % Unify formatting around algorithms and functions.
+% Preconditions and postconditions on algorithms where relevant
+% https://tex.stackexchange.com/questions/33866/algorithm-tag-and-page-break
+% Clarify language around semantic evaluations and sub-evaluations somewhere here
 
 \chapter{Architecture and Algorithms} % (fold)
 \label{cha:architecture_and_algorithms}
@@ -854,22 +857,187 @@ The semantics of non-terminals in the syntax for a given rule (with user-defined
 \subsection{User-Defined Semantic Form Verification} % (fold)
 \label{sub:user_defined_semantic_form_verification}
 % All three criteria (evals, subterms, etc)
-% State the theorem that this algorithm works off.
-% Need to build ALL the core theory here. 
 % Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
-% Talk about the restrictions placed on the form such that it can be verified
 % Really place the emphasis here on HOW placing these restrictions enables the semantic verification. 
-% How there can be NTs in syntax not used in semantics, and hence these are not verified (can have syntax only productions). 
 % State availability of global state as a precondition.
+
+Verification of this semantic form lies at the very heart of the \gls{absol} project, with this ability providing much of the power inherent in \gls{metaspec}.
+In order to design an appropriate verification algorithm for these semantics it is important to first develop the underlying theory.\\
+
+As discussed in \autoref{sub:proving_termination}, \citet{nordstrom1988terminating} has shown that it is possible to define languages whose semantics can be reasoned about purely by well-founded induction.
+In the case of \gls{metaspec}, this is not true of the entire language, but just the form of semantics that this portion of the verification engine operates on.
+While this may seem to be a problem, it is possible (as discussed below) to verify that the remaining representable semantics also terminate, allowing the language to be shown to be total.\\
+
+In order to show that the language semantic always terminate, the following relation for a program $M$ with unique configurations $s$ is defined:
+\begin{equation*}
+    s, M \to s', M'
+    \label{eq:program_convergence}
+\end{equation*}
+where:
+\begin{itemize}
+    \item A configuration $s$ refers to any additional computational state (including the heap state, continuation, global environment, etc).
+    \item The relation $\to$ is termed ``converges to'' and is inductively defined.
+\end{itemize}
+
+However, it is not sufficient for the convergence relation to be inductively defined to show that such a relation is total. 
+In order to show totality, it has to be possible to show, by induction on the structure of $M$, that the rules by which $\to$ is defined are defined in such a way that the \textit{convergence hypothesis} for $M$ is given in terms of sub-programs of $M$.
+If this is the case, then $M$ terminates as long as each sub-program terminates.
+By induction, $M$ then terminates as long as the base-case semantics terminate.
+This is formalised in \autoref{ssub:an_inductive_proof_of_the_theory}.\\
+
+In the case of \gls{metaspec}, the program $M$ is a given instance of the language semantics, which provides the initial impetus for the proof mechanism. 
+The proof mechanism for these semantics thus has to be capable of ensuring that the convergence hypothesis for a semantics $M$ is given purely in terms of sub-terms of $M$. 
+It hence has to be capable of showing three things.
+\begin{itemize}
+    \item \textbf{The Sub-Program Criterion:} Each sub-semantics must be a strict sub-term of the semantic rule itself. 
+    In the context of \gls{metaspec} this means ensuring both that the non-terminal in question exists in the syntax of the production, and that the syntax access address is not out of bounds. 
+    \item \textbf{The Evaluation Criterion:} This emerges naturally from the sub-program criterion, and ensures that the evaluation portion of the semantics depends only on the results of evaluating the sub-terms, constants and their intermediaries. 
+    If this did not hold, then it would be possible to define a non-terminating rule by including the output variable as part of the evaluation rules. 
+    \item \textbf{The Inductive Criterion:} Each of the sub-program evaluations for a given semantic rule must also be shown to terminate by recursive verification.
+\end{itemize}
+
+With this theoretical foundation established, it is now possible to design an algorithm for verifying the convergence hypothesis.
+This can be seen in \autoref{ssub:verifying_the_user_defined_semantic_form}. 
+
+\subsubsection{An Inductive Proof of the Theory} % (fold)
+\label{ssub:an_inductive_proof_of_the_theory}
+The following inductive proof substantiates the claim above that $M$ terminates as long as each of its sub-programs terminate. 
+Define a program $M$ whose semantics are defined inductively as a sequence $M_0, M_1, \dots, M_k$, where each $M_i \prec M_{i+1}$ (indicating that $M_i$ is a strict sub-term of $M_{i+1}$).
+\begin{itemize}
+    \item \textbf{Base Case:} The language \gls{metaspec} provides the ability to supply trivially terminating base cases.
+    Therefore, the base case $M_0$ always terminates. 
+    \item \textbf{Inductive hypothesis:} Assume that for some portion of the language semantics $M_{j-1}$ that this portion of the language semantics terminates.
+    \item \textbf{Inductive Step:} By construction, the termination hypothesis for $M_j$ is given purely in terms of sub-programs of $M_j$. 
+    By the inductive hypothesis, the subprograms of $M_j$ ($M_{j-1}$) terminate, and thus $M_j$ terminates.
+\end{itemize}
+
+It has thus been shown, by induction, that as long as the convergence hypothesis for the language semantics holds
+
+% subsubsection an_inductive_proof_of_the_theory (end)
+
+\subsubsection{Verifying the User-Defined Semantic Form} % (fold)
+\label{ssub:verifying_the_user_defined_semantic_form}
+% How there can be NTs in syntax not used in semantics, and hence these are not verified (can have syntax only productions). 
+From the theory established in \autoref{sub:user_defined_semantic_form_verification} it is possible to establish an algorithm for verifying the criteria required for the convergence hypothesis to hold.
+In addition to verification of the convergence hypothesis, which proves the semantics always terminate, it is also important to check that the guards are complete and hence ensure that the semantics are always defined (see \autoref{sub:guard_checking}).
+This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
 
 \begin{algorithm}
 \begin{algorithmic}
 \Function{verifySemanticRuleList}{semantics, ntCounts}
+    \Comment `semantics' is a list of rules
+    \State guardResult $\gets$ \Call{verifyGuards}{semantics}
+    \Comment see \autoref{alg:user_defined_guard_verification}
+    \State rulesResult $\gets$ \Call{verifySemanticRules}{semantics, ntCounts}
+    \State \Return{\Call{tagPlus}{rulesResult, guardsResult}}
+\EndFunction
+\State
+\Function{verifySemanticRules}{semantics, ntCounts}
+    \Comment calls to checks
+    \State evalCheck $\gets$ \Call{satisfiesEval}{semantics}
+    \Comment see \autoref{alg:verification_of_the_semantic_evaluation_criterion}
+    \State subtermCheck $\gets$ \Call{satisfiesSemanticForm}{semantics, ntCounts}
+    \Comment see \autoref{alg:verification_of_the_semantic_sub_term_criterion}
+    \State \Return{\Call{tagPlus}{evalCheck, subtermCheck}}
 \EndFunction
 \end{algorithmic}
 \caption{User-Defined Semantic Form Verification}
 \label{alg:user_defined_semantic_form_verification}
 \end{algorithm}
+
+% subsubsection verifying_the_user_defined_semantic_form (end)
+
+\subsubsection{Verifying the Sub-Term Criterion} % (fold)
+\label{ssub:verifying_the_sub_term_criterion}
+As discussed above, verification that the sub-term criterion holds involves performing two checks:
+\begin{enumerate}
+    \item Ensuring that all sub-evaluations are strict sub-terms of the main rule body (the semantics).
+    \item Ensuring that the semantics of the sub-evaluations also terminate until the base-cases are reached. 
+\end{enumerate}
+
+This two-stage process is illustrated in \autoref{alg:verification_of_the_semantic_sub_term_criterion} and assumes the existence of the following functions:
+\begin{itemize}
+    \item 
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{satisfiesSemanticForm}{semantics, ntCounts}
+\EndFunction
+\end{algorithmic}
+\caption{Verification of the Semantic Sub-Term Criterion}
+\label{alg:verification_of_the_semantic_sub_term_criterion}
+\end{algorithm}
+
+This algorithm, however, is slightly unsatisfactory due to the time constraints placed on the project. 
+As it is, it has not been designed to cope with recursive productions that can never be parsed. 
+While this technically allows it to admit a language with such productions (whose semantics are effectively undefined), such productions will never be parsed in an actual program (as they are infinite), and hence the semantics of any extant \gls{dsl} program are guaranteed.\\
+
+For an illustration of such a circumstance assume the existence of two productions \mintinline{text}{<a> ::= <b>} and \mintinline{text}{<b> ::= "+" <a>}. 
+The only expression that such a set of productions would be able to parse is an infinite string of \mintinline{text}{+} characters, and will hence never be utilised in a real program.
+In such a case, whether the \gls{dsl} designer defines (technically terminating) semantics for these productions or the inference engine states that they terminate, the semantics for these productions can never actually appear in a real program, retaining language totality in any practical sense. 
+
+% subsubsection verifying_the_sub_term_criterion (end)
+
+\subsubsection{Verifying the Evaluation Criterion} % (fold)
+\label{ssub:verifying_the_evaluation_criterion}
+Verification of the evaluation criterion ensures that the \gls{dsl} designer is unable to create semantics that are self-recursive. 
+Evaluations take the form (broadly) of a list of expressions of the kind \mintinline{text}{n = n1 <op> n2}, where \mintinline{text}{<op>} is some operator.
+As part of the semantic rule, the output variable is defined as well. 
+The output variable is assigned to by one rule, and any other target variables (temporaries), can be used freely.
+The algorithm for ensuring this is required to check, for each rule, that the evaluations obey the following criteria:
+\begin{itemize}
+    \item The output variable must not occur in any of the temporary variables in the evaluation list.
+    This prevents duplicate outputs, and hence undefined semantics.
+    \item The output variable does not clash with any of the variables defined for the sub-evaluations of the semantics.
+    This also avoids undefined semantics via avoiding duplicate outputs. 
+    \item The output variable does not occur on the right-hand-side of any semantic assignment.
+    This prevents divergent evaluation semantics.
+    \item The evaluation variables (those defined by the semantic sub-evaluations) must not clash with any of the temporaries.
+    This, too, helps to prevent the occurrence of undefined semantics.
+    \item All variables used on the right-hand-side of an assignment must either be in the list of sub-evaluation variables or the list of temporaries 
+    \item All temporaries must only be used to the left (in the list) of where they are declared.
+    This prevents mutually- or self-recursive evaluation rules, and hence divergent semantics.
+\end{itemize}
+
+The algorithm for checking these criteria on the evaluation definitions in the semantics is shown in \autoref{alg:verification_of_the_semantic_evaluation_criterion} and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{getOutputEvalPair}(semanticRule): Extracts a pair of (output variable, evaluation rules) from a semantic rule ('evaluation rules' is a list). 
+    \item \textsc{getEvalVariables}(outputVar, evalRules): Extracts a tuple of (output variable, temporaries, evaluated), where the `temporaries' is a list of the values assigned to (omitting the output variable), and `evaluated' is a list of variables on the RHS of any assignments.
+    \item \textsc{getVarsInOrder}(pairs): Gets the list of pairs (var, [after]) where `var' is a target (assigned to) variable, and [after] is every variable that occurs after it in the list.
+    \item \textsc{checkVarOrdering}(pair): Checks whether a variable is only used to the left of its definition.
+    \item \textsc{notElem}(item, list): \textit{True} if `item' is not an element of `list', \textit{false} otherwise. 
+\end{itemize}
+
+\begin{algorithm}
+\begin{algorithmic}
+\Function{satisfiesEval}{semantics}
+    \State outputEvalPairs $\gets$ \Map{\Call{getOutputEvalPair}{}}{semantics}
+    \State evalVariables $\gets$ \Map{\Call{getEvalVariables}{}}{outputEvalPairs}
+    \State results $\gets$ \Map{\Call{checkEvalCriteria}{}}{\Call{zip}{outputEvalPairs, evalVariables}}
+    \State orderedVars $\gets$ \Map{\Call{getVarsInOrder}{}}{outputEvalPairs}
+    \State orderResult $\gets$ \Map{\Call{checkVarOrdering}{}}{orderedVars}
+    \If{orderResult $\land$ (\Reduce{$(\land)$}{True}{results})}
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\State
+\Function{checkEvalCriteria}{(outVar, temps, evals), subEvalVars}
+    \State subEvalVarsNotTemps $\gets$ \Reduce{$(\land)$}{True}{(\Map{\Call{notElem}{temps}}{subEvalVars})}
+    \State usedVarsExist $\gets$ \Reduce{$(\land)$}{True}{(\Map{\Call{elem}{temps ++ subEvalVars}}{evals})}
+    \State outNotInEvals $\gets$ \Call{notElem}{outVar, evals}
+    \State outNotInTemps $\gets$ \Call{notElem}{outVar, temps}
+    \State outNotInSubEvals $\gets$ \Call{notElem}{outVar, subEvalVars}
+    \State \Return{subEvalVarsNotTemps $\land$ usedVarsExist $\land$ outNotInTemps $\land$ outNotInEvals $\land$ outNotInSubEvals}
+\EndFunction
+\end{algorithmic}
+\caption{Verification of the Semantic Evaluation Criterion}
+\label{alg:verification_of_the_semantic_evaluation_criterion}
+\end{algorithm}
+
+% subsubsection verifying_the_evaluation_criterion (end)
 
 % subsection user_defined_semantic_form_verification (end)
 
@@ -908,8 +1076,12 @@ Both of these checks, however, depend on the availability of the following funct
 \subsubsection{Checking Guard Completeness} % (fold)
 \label{ssub:checking_guard_completeness}
 Checking guards in the user-defined semantics was a point of significant design challenge, focused on ensuring that there would be defined semantics for all possible values of the guard variables. 
-However, this was not as simple as it might initially sound.
-Even with a restricted set of guard operations, this proved to be a very difficult task, as discussed in \autoref{sub:guard_completeness_checking}, and was eventually ruled out of scope.\\
+However, this was not as simple as it might initially sound.\\
+
+Initial efforts around checking guard completeness focused on transforming the set of six guard (\mintinline{text}{==, !=, <, >, <=, >=}) operations into a more limited set of three (\mintinline{text}{==, <, >}) in the hope that this would ease the verification process.
+Beyond that, this transformation also put all guards into a standard form, with a variable on the left and ordered lexically by that variable, and discarded nonsensical guards (that were nevertheless allowed by the grammar --- a design issue with the \gls{metaspec} language). 
+Attempts were made to develop an algorithm for checking completeness of these transformed guards through enumeration of possible guard states, but it rapidly became apparent that this solution was at least $\mathcal{O}(2^n)$ in complexity and thus infeasible. 
+While it was later discovered that such a problem could be solved via an application of linear programming, as discussed in \autoref{sub:guard_completeness_checking}, it was eventually ruled out of scope due to the time required to implement such a solution.\\
 
 However, it was not possible to just \textit{assume} that the guards for a given set of semantics were complete, as this could lead to a language where the semantics were not total, and hence to erroneous verification of the language.
 A simple (and unfortunately inelegant) solution was proposed to avoid this: ensure that every set of guards had at least one guard that admitted all values.
