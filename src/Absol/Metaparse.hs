@@ -23,26 +23,26 @@ module Absol.Metaparse
 
 import           Absol.Metalex
 import           Absol.Metaparse.Grammar
-import           Absol.Metaparse.Utilities
 import           Absol.Metaparse.Parser
+import           Absol.Metaparse.Utilities
 import           Absol.Metaspec.Special
-import           Control.Monad (void)
-import           Data.List (intercalate)
-import           Data.Maybe (fromJust)
-import           Data.Text (Text)
+import           Control.Monad             (void)
+import           Data.List                 (intercalate)
+import           Data.Maybe                (fromJust)
+import           Data.Text                 (Text)
 import           Text.Megaparsec
-import           Text.Megaparsec.Error (ParseError, Dec)
+import           Text.Megaparsec.Error     (Dec, ParseError)
 import           Text.Megaparsec.Expr
 
 -------------------------------------------------------------------------------
 
--- | Parses a metaspec file.
--- 
+-- | Parses a metaspec
+--
 -- The file is taken as input and the corresponding parse-tree or error state is
--- returned. 
-parseMetaspecFile 
-    :: String 
-    -> Text 
+-- returned.
+parseMetaspecFile
+    :: String
+    -> Text
     -> Either (ParseError Char Dec) (Metaspec, MetaState)
 parseMetaspecFile = runParser (runStateT parseMetaspec initParserState)
 
@@ -55,8 +55,8 @@ parseMetaspec = between spaceConsumer eof metaspec >>= check
             result <- checkNTsInLang
             case result of
                 Left ntList -> failExpr ntList
-                Right _ -> return x
-        failExpr x = fail $ str ++ ntStrings x ++ ". " ++ suggestion x 
+                Right _     -> return x
+        failExpr x = fail $ str ++ ntStrings x ++ ". " ++ suggestion x
         ntStrings x = intercalate ", " $ map extract x
         extract (NonTerminalIdentifier i) = "<" ++ i ++ ">"
         str = "The following Non-Terminals are used but not defined: "
@@ -66,41 +66,41 @@ parseMetaspec = between spaceConsumer eof metaspec >>= check
         featureStrings x = intercalate ", " $ toFeatureName <$> featureList x
         whereValid x = case x of
             Nothing -> False
-            Just _ -> True
+            Just _  -> True
 
--- | Parses the top level metaspec definition blocks. 
--- 
+-- | Parses the top level metaspec definition blocks.
+--
 -- The top-level definitions are parsed in the specified order, ensuring that
--- contextual information is provided in order. 
+-- contextual information is provided in order.
 metaspec :: ParserST Metaspec
 metaspec = Metaspec <$> traverse (<* ruleTerminationSymbol) blocks
     where
         blocks =
             [
-                nameDefblock, 
-                versionDefblock, 
-                usingDefblock, 
-                truthsDefblock, 
+                nameDefblock,
+                versionDefblock,
+                usingDefblock,
+                truthsDefblock,
                 languageDefblock
             ]
 
 -- | Parses the language name definition block.
--- 
+--
 -- It strips whitespace from the start and end of the provided name in the file.
 nameDefblock :: ParserST MetaspecDefblock
 nameDefblock = basicDefblock "name" NameDefblock
 
 -- | Parses the language version definition block.
--- 
--- It strips whitespace from the start and end of the provided version string. 
+--
+-- It strips whitespace from the start and end of the provided version string.
 versionDefblock :: ParserST MetaspecDefblock
 versionDefblock = basicDefblock "version" VersionDefblock
 
--- | Parses a basic defblock. 
-basicDefblock 
-    :: String 
-    -> (String -> MetaspecDefblock) 
-    -> ParserST MetaspecDefblock 
+-- | Parses a basic defblock.
+basicDefblock
+    :: String
+    -> (String -> MetaspecDefblock)
+    -> ParserST MetaspecDefblock
 basicDefblock str constructor = do
     keywordWhere str
     param <- some nonSemicolon
@@ -117,7 +117,7 @@ usingDefblock = do
     return (UsingDefblock items)
 
 -- | Parses a language feature.
--- 
+--
 -- This list of features only includes those which are currently implemented in
 -- metaspec. In future, this list would be expanded for additional utility.
 metaspecFeature :: ParserST MetaspecFeature
@@ -130,7 +130,7 @@ metaspecFeature = FeatureBase <$ terminal "base"
     <|> FeatureFuncall <$ terminal "funcall"
 
 -- | Parses the list of language truths.
--- 
+--
 -- These are used as termination cases by the termination proof engine for the
 -- language. The list of truths is delimited by ','.
 truthsDefblock :: ParserST MetaspecDefblock
@@ -146,7 +146,7 @@ languageDefblock = do
     semanticBlock languageDefinition
 
 -- | Parses the productions that define the language in metaspec.
--- 
+--
 -- The language start rule must be defined once in the file, and must be defined
 -- before any other language productions in this block.
 languageDefinition :: ParserST MetaspecDefblock
@@ -177,14 +177,14 @@ startRule = do
     modify setPositionNone
     return (StartRule startSym ruleBody)
 
--- | Parses the language start symbol. 
+-- | Parses the language start symbol.
 startSymbol :: ParserST StartSymbol
 startSymbol = do
     ident <- startSymbolDelim nonTerminalIdentifier
     return (StartSymbol ident)
 
 -- | Parses the body of a production.
--- 
+--
 -- The body of a production is the portion after the defining symbol.
 languageRuleBody :: ParserST LanguageRuleBody
 languageRuleBody = do
@@ -193,7 +193,7 @@ languageRuleBody = do
     return (LanguageRuleBody syntaxExpr)
 
 -- | Parses a syntax expression.
--- 
+--
 -- Syntax expressions consist of the top-level alternatives for a given
 -- production.
 syntaxExpression :: ParserST SyntaxExpression
@@ -209,7 +209,7 @@ syntaxAlternative = do
     return (SyntaxAlternative terms semantics)
 
 -- | Parses a syntactic term.
--- 
+--
 -- Syntactic terms may contain exception syntax. An exception is another syntax
 -- definition that is subtracted from the set of allowed syntax defined by the
 -- first production.
@@ -227,7 +227,7 @@ syntaxException = do
     return (Just $ SyntaxException term)
 
 -- | Parses syntactic factors.
--- 
+--
 -- These may optionally define a number of repetitions of the group.
 syntaxFactor :: ParserST SyntaxFactor
 syntaxFactor = do
@@ -235,7 +235,7 @@ syntaxFactor = do
     prim <- syntaxPrimary
     return (SyntaxFactor repeatChar prim)
 
--- | Parses the optional repetition syntax. 
+-- | Parses the optional repetition syntax.
 repeatSyntax :: ParserST (Maybe RepeatSyntax)
 repeatSyntax = do
     repeatCount <- naturalNumber
@@ -264,7 +264,7 @@ syntaxGrouped :: ParserST SyntaxPrimary
 syntaxGrouped = SyntaxGrouped <$> grammarGroup syntaxExpression
 
 -- | Parses a special syntax block.
--- 
+--
 -- Special syntax is used for language extensions and is currently not handled
 -- by the metacompiler. Special expressions can contain any kind of text.
 syntaxSpecial :: ParserST SyntaxPrimary
@@ -301,9 +301,9 @@ languageRuleSemantics = do
     return (Just $ LanguageRuleSemantics rules)
 
 -- | Parses a semantic evaluation rule.
--- 
+--
 -- As the rules diverge only after consuming some portion of syntax, this parser
--- utilises the ability for infinite-lookahead backtracking to parse these 
+-- utilises the ability for infinite-lookahead backtracking to parse these
 -- productions.
 semanticRule :: ParserST SemanticRule
 semanticRule = try semanticEvaluationRuleList
@@ -326,19 +326,19 @@ environmentInputRule = do
     return (EnvironmentInputRule exprType syntaxBlock syntaxList)
 
 -- | Parses a special syntax rule.
--- 
+--
 -- Such rules utilise one (or more) of the provided special functions to assist
 -- in defining the semantics of the production.
 specialSyntaxRule :: ParserST SpecialSyntaxRule
 specialSyntaxRule = do
     specialType <- semanticType
     specialOp <- semanticSpecialSyntax
-    semanticBlocks <- specialSyntaxBlock $ 
+    semanticBlocks <- specialSyntaxBlock $
         accessBlockOrRule `sepBy` multilineListSep
     return (SpecialSyntaxRule specialType specialOp semanticBlocks)
 
 -- | Parses an environment access rule.
--- 
+--
 -- These rules are used to retrieve information that has been previously stored
 -- in the semantic environment.
 environmentAccessRule :: ParserST EnvironmentAccessRule
@@ -355,7 +355,7 @@ semanticEvaluationRuleList = do
     return $ SemanticEvaluationRuleList rules
 
 -- | Parses a semantic evaluation rule.
--- 
+--
 -- These are the rules that are checked directly by the proof mechanism, and
 -- they are restricted to being defined in a certain form.
 semanticEvaluationRule :: ParserST SemanticEvaluationRule
@@ -393,7 +393,7 @@ accessBlockOrSpecial :: ParserST AccessBlockOrSpecial
 accessBlockOrSpecial = eitherP syntaxAccessBlock specialSyntaxRule
 
 -- | Parses a syntax access blocks.
--- 
+--
 -- Such blocks are used within the semantics to refer to portions of syntax that
 -- are defined in the grammar production.
 syntaxAccessBlock :: ParserST SyntaxAccessBlock
@@ -411,8 +411,8 @@ syntaxAccessList :: ParserST SyntaxAccessList
 syntaxAccessList = syntaxAccessBlock `sepBy` multilineListSep
 
 -- | Parses a list of semantic truths.
--- 
--- Semantic truths are used to define the termination cases for the language 
+--
+-- Semantic truths are used to define the termination cases for the language
 -- semantics.
 semanticTruthsList :: ParserST SemanticTruthsList
 semanticTruthsList = semanticTruthBlock `sepBy` multilineListSep
@@ -422,7 +422,7 @@ semanticTruthBlock :: ParserST SemanticTruth
 semanticTruthBlock = semanticBlock semanticTruth
 
 -- | Parses a semantic truth.
--- 
+--
 -- Each of these expressions is assumed to terminate by the proof engine.
 semanticTruth :: ParserST SemanticTruth
 semanticTruth = do
@@ -441,7 +441,7 @@ semanticEvaluation :: ParserST SemanticEvaluation
 semanticEvaluation = semanticBlock semanticEvaluationBody
 
 -- | Parses the body of a semantic evaluation expression.
--- 
+--
 -- These expressions are then composed to define the language rule semantics.
 semanticEvaluationBody :: ParserST SemanticEvaluation
 semanticEvaluationBody = do
@@ -452,7 +452,7 @@ semanticEvaluationBody = do
     return (SemanticEvaluation semType semID block)
 
 -- | Parses a list of semantic operations.
--- 
+--
 -- These semantic operations define how the semantic evaluations are combined to
 -- define the actual operation of the language.
 semanticOperationList :: ParserST SemanticOperationList
@@ -493,9 +493,9 @@ variableAccess = do
         accessList = naturalNumber `sepBy` multilineListSep
 
 -- | The operator table for the semantic operations.
--- 
+--
 -- Order in the top-level list defines precedence, and order in the sub-lists
--- defines parse order. 
+-- defines parse order.
 semanticOperatorTable :: [[Operator ParserST SemanticOperation]]
 semanticOperatorTable =
     [
@@ -547,13 +547,22 @@ semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
         parseExpr = SpecialSyntaxMap <$ specialSyntaxString "map"
             <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
             <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
-            <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
             <|> SpecialSyntaxDeffun <$ specialSyntaxString "deffun"
-            <|> SpecialSyntaxCallproc <$ specialSyntaxString "callproc"
+            <|> SpecialSyntaxDefproc <$ specialSyntaxString "callproc"
             <|> SpecialSyntaxCallfun <$ specialSyntaxString "callfun"
+            <|> SpecialSyntaxEnvStore <$ specialSyntaxString "envStore"
+            <|> SpecialSyntaxEnvGet <$ specialSyntaxString "envGet"
+            <|> SpecialSyntaxEnvGetDefault 
+                <$ specialSyntaxString "envGetDefault"
+            <|> SpecialSyntaxNodeLength <$ specialSyntaxString "nodeLength"
+            <|> SpecialSyntaxCiel <$ specialSyntaxString "ciel"
+            <|> SpecialSyntaxFloor <$ specialSyntaxString "floor"
+            <|> SpecialSyntaxRev <$ specialSyntaxString "rev"
+            <|> SpecialSyntaxSplit <$ specialSyntaxString "split"
+            <|> SpecialSyntaxJoin <$ specialSyntaxString "join"
 
 -- | Parses a list of semantic restrictions.
--- 
+--
 -- These restrictions allow control over which semantic behaviour is performed
 -- conditional on the evaluation of the sub-terms.
 semanticRestrictionList :: ParserST SemanticRestrictionList
@@ -573,7 +582,7 @@ semanticRestrictionExpr = SemVariable <$> semanticIdentifier
     <|> SemConstant <$> semanticValue
 
 -- | Defines the operator table for the semantic restrictions.
--- 
+--
 -- All operators have the same precedence, with parse order defined by the order
 -- in the list.
 semanticRestrictionOperator :: [[Operator ParserST SemanticRestriction]]
@@ -591,7 +600,7 @@ semanticRestrictionOperator =
 
 -- TODO make this more sophisticated (should match on constructors of all types)
 -- | Parses a semantic value.
--- 
+--
 -- These are constants of any allowable type.
 semanticValue :: ParserST SemanticValue
 semanticValue = semanticText
@@ -602,14 +611,14 @@ semanticValue = semanticText
 
 -- | Parses a list literal of the form [a, b, ...] or [].
 semanticListLiteral :: ParserST SemanticValue
-semanticListLiteral = 
+semanticListLiteral =
     SemanticListLiteral <$> between (terminal "[") (terminal "]") parseExpr
     where
         parseExpr = some nonSpace `sepBy` multilineListSep
 
 -- | Parses a matrix literal of the form |a, b; c, d| or ||.
 semanticMatrixLiteral :: ParserST SemanticValue
-semanticMatrixLiteral = 
+semanticMatrixLiteral =
     SemanticMatrixLiteral <$> between (terminal "|") (terminal "|") matrixValues
     where
         matrixValues = matrixRow `sepBy` terminal ";"
@@ -627,7 +636,7 @@ semanticNumber = SemanticNumber <$> integer
 
 -- | Parses a boolean constant.
 semanticBoolean :: ParserST SemanticValue
-semanticBoolean = (terminal "true" *> pure (SemanticBoolean True)) 
+semanticBoolean = (terminal "true" *> pure (SemanticBoolean True))
     <|> (terminal "false" *> pure (SemanticBoolean False))
 
 -- | Parses a semantic type expression.
@@ -656,7 +665,7 @@ semanticType = checkTypeDefined parser
             <|> MatrixType <$ semanticTypeString "matrix"
 
 -- | Parses a semantic type that may not exist.
--- 
+--
 -- There are certain expressions where the inclusion of the type is optional.
 -- This parser supports their parsing.
 maybeSemanticType :: ParserST (Maybe SemanticType)

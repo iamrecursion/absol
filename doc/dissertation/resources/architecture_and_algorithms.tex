@@ -1,113 +1,1286 @@
 % How the problem is analysed to create the solution.
-% Overall architecture of the design.
 % Examine the design approaches taken.
 % Identification of areas of the design that account for the requirements and resolve potential conflicts. 
-% 
+% Fix algorithm placement
+% Unify formatting around algorithms and functions.
+% Preconditions and postconditions on algorithms where relevant
+% https://tex.stackexchange.com/questions/33866/algorithm-tag-and-page-break
+% Clarify language around semantic evaluations and sub-evaluations somewhere here
 
 \chapter{Architecture and Algorithms} % (fold)
 \label{cha:architecture_and_algorithms}
-% This section will contain:
-% \begin{itemize}
-%     \item \textbf{Architectural Overview:} An overview of the system architecture, linked to the high-level requirements.
-%     This will touch on the portions of the system that were ruled out of scope later on, and why.
-%     \item \textbf{System Component Examination:} An examination of the design of each of the system components in detail.
-%     \item \textbf{The Development of Metaspec:} The process of developing the metaspec language itself, as well as some syntax examples and full syntax description. 
-%     \item \textbf{Algorithmic Descriptions:} The verification engine in particular is very heavy on algorithmic work. 
-%     These algorithms will be explained here, accompanied by any additional proof work that they require. 
-%     This will include proofs for the special form semantics.
-%     It will also look at initial or discarded algorithmic designs as part of the process. 
-% \end{itemize}
-
 Following on from the design work put into the \gls{metaspec} (see \autoref{cha:designing_the_metalanguage}), significant time and effort was then invested into the design of the metacompiler toolchain itself, as well as the core algorithms and theory that it uses. 
 This chapter aims to provide a high-level overview of the \gls{absol} toolchain, showing the main system components and linking these to the high-level requirements.
-It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. 
+It also provides a firm background to the design and development of the algorithms utilised by the metacompiler itself, and develops the rigour behind the special-case semantics. \\
+
+It should be noted that unlike \gls{metaspec}, which was designed over one consistent period, the design and implementation periods for the \gls{absol} toolchain were interleaved heavily.
+This provided the opportunity to iterate on the designs where necessary.
+Instances of this occurring will be noted throughout this chapter, but the designs presented below will be the final ones. 
 
 \section{Designing the Metacompiler --- ABSOL} % (fold)
 \label{sec:designing_the_metacompiler_absol}
-% TODO Parser: Lexer, Parser, Etc.
-% TODO Verifier: Different Verification Modules, talk about the recursive nature. Preprocessor.
-% Use this same style of architectural overview in the development section. 
-% Architectural overview focuses on system components, not code-level components.
-% Suitability of a pipeline-style architecture for the system as a whole. 
+As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. 
+\gls{absol} itself is composed at a high-level of two main modules, Metaparse and Metaverify.
+These modules form a natural segmentation of the work that the compiler has to do, and is are naturally subdivided internally.
+\gls{absol} is best visualised as a pipeline, and the arrows illustrate the flow of data through the metacompiler.
+The pipeline-style architecture is very suitable for \gls{absol}, as each stage of the toolchain depends only on the output of the previous stage.
+The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.
 
-As for any large system, it is important to be able to visualise the way in which the individual system components interact and are integrated. \\
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=1\textwidth]{resources/images/metacompiler_pipeline_architecture.pdf}
+    \caption{ABSOL High-Level Architectural Diagram}
+    \label{fig:absol_high_level_architectural_diagram}
+\end{figure}
 
-\gls{absol}, the metacompiler system 
+The main components of the metacompiler can be described as follows:
+\begin{itemize}
+    \item \textbf{Metaparse:} Responsible for the generation of an \gls{ast} from the input metaspec file and verifying some precondition properties for the verification engine. 
+    It has two main stages: lexing and parsing (which also performs precondition verification). 
+    For further description of this stage please see \autoref{sub:metaparse_ast_generation}.
+    \item \textbf{Metaverify:} Responsible for verifying the termination properties of the language.
+    It consists of three main stages: \gls{ast} preprocessing, semantic inference and semantic verification.
+    For further description of this stage please see \autoref{sub:metaverify_the_verification_engine}.
+\end{itemize}
 
-\subsection{Lexing and Parsing} % (fold)
-\label{sub:lexing_and_parsing}
-% Talk about the design for the lexer and parser, informed by the use of Megaparsec.
-% Talk about the process and use of datatypes to represent a very strongly typed AST
-% Talk about the checks that happen at parse time and reference the appropriate algorithms section.
+The following sections provide a detailed exploration of the design of these two main components, with a focus on the reasons behind the design choices that have been made.
+It was known at design stage that the implementation language would be Haskell, so sporadic references are made to the language choice and how it may have impacted the system design.
+Also below is an exploration of how the eventual intention for \gls{dsl} execution and type-checking have impacted the design of the metacompiler itself. 
 
-% subsection lexing_and_parsing (end)
+\subsection{The Metacompiler Front-End} % (fold)
+\label{sub:the_metacompiler_front_end}
+The metacompiler front-end is the harness that wraps around both Metaparse and Metaverify to allow them to interact with the world. 
+It is not truly part of the requirements for the toolchain, but would always be necessary to enable the core features to have real-world applicability. 
+The front-end needed to handle the following features:
+\begin{itemize}
+    \item \textbf{Command-Line Option Parsing:} The metacompiler front-end needed to be capable of parsing options given to the tool on the command line.
+    These options would be used to provide inputs to the metacompiler (such as the file to run on) and configure its behaviour. 
+    \item \textbf{File Loading:} The front-end also needed to be capable of loading the input language specification.
+    \item \textbf{Pipeline Coordination:} The final task for the front-end was to pass data between the pipeline stages.
+\end{itemize}
 
-\subsection{The Verification Engine} % (fold)
-\label{sub:the_verification_engine}
+Initial design for the metacompiler front-end focused on the identification of separate logical concerns for the front end component.
+Given that its responsibilities are entirely distinct, this posed little issue.
+As any target language, Haskell included, would provide facilities for file loading and the movement of data, the only component that required any significant design work was the command-line options. 
+
+\subsubsection{Designing the Command-Line Options} % (fold)
+\label{ssub:designing_the_command_line_options}
+With Haskell's robust support for parsing libraries, including those dedicated for parsing command-line options, little consideration had to be given to the design of the \gls{cli} argument parser itself.
+As a counterpoint, the options required careful consideration as they would impact the abilities of the user to control the system behaviour. 
+The design of the command-line arguments took place before the scope reduction (as discussed in \autoref{sub:removed_design_elements}) took place.
+Hence, there are references in this list to options that are not used in the final design.\\
+
+Determining appropriate configuration options resulted from an examination of the responsibilities of the metacompiler and a consideration of which portions of its behaviour might benefit from being configurable.
+The analysis was further informed by the behaviour of common build tools such as the generic \mintinline{text}{gmake} (GNU-Make) and the Haskell-specific \mintinline{text}{stack}.
+The following list of options resulted:
+\begin{itemize}
+    \item \textbf{Input Filename:} The metacompiler operates on a language specification, and so needs to be provided with the input file.
+    \item \textbf{Analysis Verbosity:} An oft-encountered configuration parameter for processes with output to the command-line, being able to control the verbosity of the language analysis and error reporting process seemed useful.
+    As a result, the options design included a flag to enable full reporting.
+    \item \textbf{Log File:} It seemed reasonable for users to want to output the analysis results to a log-file rather than do \mintinline{text}{stdout}.
+    This configuration parameter was intended to do exactly that, allowing the user to easily store the results of analysis of their language.
+    \item \textbf{Output Directory:} Provided to serve both the log file output and any eventual build artefacts, many build tools provide the ability to specify the target directory for any output files.
+    This seemed important enough for the option to be included in this list. 
+    \item \textbf{Language Name / Version:} As discussed in \autoref{sub:the_metadata_blocks}, \gls{metaspec} specifications contain language metadata. 
+    It is conceivable, however, that \gls{dsl} authors may want to temporarily override these settings at build time.
+    To this end, flags for providing alternative language names and language versions should be provided. 
+    \item \textbf{Reporting:} As the metacompiler was originally intended to perform code-generation, it was conceivable that the users of the tool might want to verify the language they are developing without generating code from the specification. 
+    Providing a flag to enable this would shorten the write-compile-debug cycle so common in development, and hence improve \gls{dsl} development workflow.
+    \item \textbf{Cleanup:} Also mostly intended to interact with the code-generation stage, the cleanup flag was meant to delete all build artefacts resulting from code-generation.
+    This is a common feature provided by build systems (e.g. \mintinline{sh}{make clean} or \mintinline{sh}{stack cleanup}, and hence seemed important to include.
+\end{itemize}
+
+% subsubsection designing_the_command_line_options (end)
+
+% subsection the_metacompiler_front_end (end)
+
+\subsection{Metaparse --- AST Generation} % (fold)
+\label{sub:metaparse_ast_generation}
+Metaparse is the subsystem of \gls{absol} that performs generation of an \gls{ast} from the input language specification.
+This meant that it was responsible for providing both a \gls{lexer} and a \gls{parser} for \gls{metaspec}, as stated in Requirement~\reqref{req:ParseMetaspec}.
+During the design process, however, it became clear that the parser was also the most appropriate place to perform some initial precondition checking required by the verification algorithms at later stages of the pipeline. 
+The design of Metaparse was therefore heavily influenced both by its \textit{location} in the metacompiler pipeline and the \textit{data} which it was dealing with.
+The goals for the design of Metaparse were hence set out as follows:
+\begin{itemize}
+    \item \textbf{Produce an AST from a Metaspec File:} The lexing and parsing processes had to result in an AST from the input file, or in the case where the input file was incorrect, produce a helpful syntax error. 
+    \item \textbf{Verify the Preconditions for Metaverify:} As a parser, Metaparse will have had to traverse all portions of the \gls{ast}, allowing it to have all the information necessary to validate the verification preconditions.
+\end{itemize}
+
+\subsubsection{The Parser and Lexer Design} % (fold)
+\label{ssub:the_parser_and_lexer_design}
+Initial considerations for the design of Metaparse called for a two-stage design, with separate lexing and parsing stages. 
+The original intention was for the lexer to operate directly on the character stream of the \gls{metaspec} file, producing a token stream which would then be provided to the parser for the creation of an \gls{ast}. 
+This design represented a good separation of concerns, and provided an appropriate level of decoupling between the two processes. \\
+
+However, the design of Metaparse was later informed quite significantly by the choice of implementation technology. 
+Megaparsec, as discussed in \autoref{sub:megaparsec_improved_parsing}, provides a significantly improved set of utilities for creating lexing primitives for a given language. 
+This meant, from a design standpoint, that merging the lexing and parsing steps would bring significant benefits to the system design:
+\begin{itemize}
+    \item \textbf{Efficiency:} As the \gls{ast}-generation process would now only have to make one pass over the character stream, performing one process of characters $\to$ tokens (contrasted with the dual passes for characters $\to$ tokens and then tokens $\to$ \gls{ast}), this means that the process as a whole is more efficient.
+    \item \textbf{Simplicity:} Merging the two processes serves to simplify the design due to the removal of a (mostly unnecessary) boundary between lexing and parsing.
+    This is 
+    \item \textbf{Ease of Implementation:} This aforementioned simplicity will likely mean that the implementation of Metaparse is simplified.
+    On a time-constrained project this is a big boon, and a big benefit of the integrated design.
+\end{itemize}
+
+While the merging of separate processes like this is often viewed as an improper separation of concerns, it is sometimes the case that certain technologies permit a novel approach that aids significantly in simplifying the design.
+With Megaparsec, this is definitely the case as the lexing primitives it provides are \textit{intended} to be used in an integrated fashion to provide a fluid and easy to read parser. \\
+
+Using Megaparsec for the parser also brings with it additional benefits for the design of the parser. 
+Due to the provision of excellent parse-error reporting facilities, no design effort has to be dedicated to providing useful errors at parse time to the \gls{dsl} designer. 
+Additionally, its nature as a parser combinator library means that the elements of the parser are clearly readable as expressions for the language grammar. 
+
+% subsubsection the_parser_and_lexer_design (end)
+
+\subsubsection{Designing the Metaparse AST} % (fold)
+\label{ssub:designing_the_metaparse_ast}
+Megaparsec operates on a very strongly-typed set of custom \gls{ast} data-types. 
+This `tree' of types is one of the main components of the Metaparse design, and is created in accordance with the grammar for \gls{metaspec} that is outlined in \autoref{cha:designing_the_metalanguage}.
+The process of creating this set of types is more a development task than a design one, as it is an almost direct translation of the \gls{metaspec} \gls{ebnf} grammar into Haskell's data types. \\
+
+The key design element of this transformational process was to determine the level of abstraction at which it should take place:
+\begin{itemize}
+    \item \textbf{Representation of Productions:} Certain elements of the \gls{metaspec} grammar are not able to be directly represented in the form of Haskell data-types.
+    As a result, the design process had to recognise where it was not possible to provide a direct representation and perform a transformation of the grammar while still remaining semantically correct.
+    Due to the modular nature of the grammar, there were only a few instances where this was required to take place, an example of which can be seen below.
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+[ syntax-access-block | environment-access-rule ]
+    \end{minted}
+    This portion of the grammar exists within a more complex production, and representing the possibilities of this in Haskell would be difficult.
+    Instead, it was factored out into a separate type representing this alternation, seen below
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+access-block-or-rule = 
+    syntax-access-block | environment-access-rule ;
+    \end{minted}
+    \item \textbf{Indirections:} The structure of Haskell data-types (usually concerning type recursion) can preclude the representation of certain productions in \gls{ebnf}. 
+    In such cases, it is often necessary to introduce an indirect type (equivalent to a production with a single node itself) to allow proper representation in the \gls{ast}. 
+    An example of this indirection or `factoring out' can be seen below.
+    The following production cannot be directly represented as Haskell data types:
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+semantic-rule = 
+    environment-input-rule |
+    environment-access-rule |
+    special-syntax-rule |
+    semantic-evaluation-rule-list;
+    \end{minted}
+    Some of the rule cases would be factored out as follows to ensure proper representation in Haskell while still retaining the correct grammatical structure.
+    \begin{minted}[xleftmargin=1cm, numbers=none]{text}
+semantic-rule = 
+    environment-input-rule |
+    environment-access-rule-proxy |
+    special-syntax-rule-proxy |
+    semantic-evaluation-rule-list;
+
+environment-access-rule-proxy = environment-access-rule;
+special-syntax-rule-proxy = special-syntax-rule;
+    \end{minted}
+\end{itemize}
+
+These temporary alterations to the grammar in aid of designing the Metaparse \gls{ast} data-types were performed during implementation of the types themselves.
+This means that the temporary alterations to the grammar were not retained in any consistent format, as they did not add any additional clarity to the \gls{ebnf} representation of \gls{metaspec}.
+In most cases, they actually obscured the language grammar, which was undesirable.
+
+% subsubsection designing_the_metaparse_ast (end)
+
+\subsubsection{Precondition Verification in the Parser} % (fold)
+\label{ssub:precondition_verification_in_the_parser}
+The verification algorithms discussed in \autoref{sec:the_core_algorithms} are only correct in the presence of certain preconditions (Requirement~\reqref{req:VerifyLanguageConstruction}).
+For more details on why these are required for verification correctness, please see \autoref{sub:verifier_precondition_validation} on \autopageref{sub:verifier_precondition_validation}.
+These preconditions can briefly be described as follows:
+\begin{itemize}
+    \item All non-terminals that are \textit{used} must be \textit{defined} in scope (this may include non-terminals provided by language features).
+    \item All non-terminals must be \textit{defined only once}.
+    \item All used types must be \textit{in scope}.
+    \item All used special-syntax must be \textit{in scope}. 
+\end{itemize}
+
+While these preconditions could easily be verified in a separate pass over the generated \gls{ast}, the parser itself has to touch every node in the AST as it generates the data structure.
+This makes it an appropriate location to collect the necessary data to perform the verification.\\
+
+The verification of these preconditions is an inherently stateful operation, and hence required some alterations to the initial design of the parser.
+While, by default, a Megaparsec parser tracks some state (in order to provide appropriate parser error messages), this state is not accessible to the user. 
+This means that the design must incorporate some additional state to track the data required to perform this verification.
+It needs to record data as follows:
+\begin{itemize}
+    \item The non-terminals, types and special-syntax \textit{brought into scope} by the language imports.
+    \item The non-terminals \textit{defined} by the language specification.
+    \item The non-terminals \textit{used} by the language specification. 
+\end{itemize}
+
+With the parser capable of tracking this data, the verification algorithm is able to operate.
+For details of the precondition verification algorithm itself, see \autoref{sub:verifier_precondition_validation} on \autopageref{sub:verifier_precondition_validation}. 
+
+% subsubsection precondition_verification_in_the_parser (end)
+
+\subsubsection{The Final Design for Metaparse} % (fold)
+\label{ssub:the_final_design_for_metaparse}
+% Establish the final design elements for the parser as a descriptive list.
+
+Combining the results of the two-stage design process illustrated in the previous sections, the final design for Metaparse is as follows:
+\begin{itemize}
+    \item \textbf{Integrated Lexer and Parser:} The parsing process will use an integrated set of lexer primitives to allow a one-pass parse of the input \gls{metaspec} specification. 
+    \item \textbf{Full AST Data-Type Tree:} The parser will operate over a comprehensive Haskell type-level representation of the \gls{metaspec} grammar. 
+    This typed \gls{ast} will have undergone the necessary transformations so as to allow appropriate representation in Haskell while retaining grammatical correctness. 
+    \item \textbf{Integration of Parser State:} The parser will have an integrated user state that is able to track all the data defined in \autoref{ssub:precondition_verification_in_the_parser}.
+    This data will be tracked as the parse takes place. 
+    \item \textbf{Utilisation of Parser State for Precondition Validation:}
+    The parser will perform precondition validation on the tracked state using the algorithms described in \autoref{sub:verifier_precondition_validation}.
+\end{itemize}
+
+% subsubsection the_final_design_for_metaparse (end)
+
+% subsection metaparse_ast_generation (end)
+
+\subsection{Metaverify --- The Verification Engine} % (fold)
+\label{sub:metaverify_the_verification_engine}
 % Talk about the different modules, the verification preprocessor, the recursive nature of the algorithm for traversing the metaspec AST.
+% Much like Metaparse, it did not make sense to separate the two kinds of verification that had to take place.
+% Despite the fact that they are relatively disparate algorithms
 
-% subsection the_verification_engine (end)
+Metaverify is the second of the main subsystems in \gls{absol} and it is intended to perform verification of the input language. 
+Verification, in the case of the metacompiler, means determining whether the language is guaranteed to always terminate and, in cases where it does not, providing diagnostics as to why.
+This component aims to satisfy Requirements~\reqref{req:VerifySemanticForm}, \reqref{req:VerifySemanticGuards} and \reqref{req:GenerationofVerificationReports}, and hence has the following goals:
+\begin{itemize}
+    \item \textbf{Verification of the Semantic Form:} Checking the form of all of the semantics defined for the language to ensure that they satisfy the necessary criteria for guaranteed termination. 
+    \item \textbf{Verification of the Semantic Guards:} Ensuring totality of all defined semantics.
+    This means that there will always be a semantics for any portion of \gls{dsl} code. 
+    \item \textbf{Generation of Reports:} The generation of reports on the termination status of the language. 
+    In cases where the language cannot be shown to always terminate, these reports contain information specifying exactly why it does not. 
+\end{itemize}
 
-\subsection{Metalanguages and Execution} % (fold)
-\label{sub:metalanguages_and_execution}
-% How are resultant DSL programs intended to be executed - does this impact the design of the metacompiler at all?
+The verification engine consists of a multi-stage process, that first performs a preprocessing step (see \autoref{ssub:the_verification_preprocessor}), and then traverses the resultant language structure to determine if the language terminates. 
+The algorithms used to check termination are not discussed in this section, and can instead be found in \autoref{sec:the_core_algorithms}.
 
-% subsection metalanguages_and_execution (end)
+\subsubsection{The Verification Preprocessor} % (fold)
+\label{ssub:the_verification_preprocessor}
+While it contains all necessary data to perform verification, the \gls{ast} that is generated by Metaparse is not the most efficient structure to verify the language. 
+Simply put, this is because the verification algorithm requires some summary data, while other portions of the AST are just irrelevant.
+To rectify this, the need for a \textit{preprocessing step} was identified at the design stage. \\
+
+The role of the preprocessor is to take the full \gls{ast} that is output by Metaparse and extract the relevant data from it. 
+At a high level this means it is an algorithm (with no dependence on state) with inputs and outputs as follows:
+\begin{itemize}
+    \item \textbf{Input(s):} The \gls{ast} for the input language $L$.
+    \item \textbf{Output(s):} The truths defined for $L$, the start rule for $L$ and the additional language productions (non-terminals) defined for $L$. 
+\end{itemize}
+
+Due to the fact that the methods for traversing an \gls{ast} data-structure are inherently tied to the representation of the structure, it is somewhat difficult to represent this algorithm in a general format.
+The algorithm is also responsible for collating these outputs in such a fashion that they are associated with the required tracking data for their termination state (for the contents of this data see \autoref{ssub:reporting_structures}).
+This tracking data is known to the project as a \textit{tag}, and these are described in more detail later. 
+The best algorithmic representation can thus be seen in \autoref{alg:the_verification_preprocessor_algorithm}, which assumes the existence of a number of functions as follows: 
+\begin{itemize}
+    \item \textbf{findStartRule} --- This function finds the start rule in the AST and extracts it, before associating it with a tag.
+    \item \textbf{defaultTag} --- generates a default tag for the rule (see \autoref{ssub:reporting_structures} for more information).
+    \item \textbf{extractTruths} --- Finds the defined truths for the languages, and extracts a list of the associated non-terminal symbols.
+    These symbols are those known to terminate.
+    \item \textbf{extractProductions} --- This function finds all productions (non-terminals) defined by the language and extracts them as pairs (Non-Terminal, Production Body). 
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Require{The language AST is available as input}
+\Ensure{The collated output matches the relevant portions of the AST}
+\State
+\State ast $\gets$ input
+\State
+\State $P_s \gets$ \textbf{findStartRule} 
+\State startRule $\gets$ (\textbf{defaultTag}, $P_s$)
+\State $T \gets$ \textbf{extractTruths}
+\State $P_n \gets$ \textbf{extractProductions}
+\State $P \gets []$
+\Comment The empty list
+\ForAll{$(N, P_i) \in P_n$}
+\Comment Transform productions into searchable form
+    \State $P \gets (N, (\textbf{defaultTag}, P_i)) : P$
+    \Comment where $:$ is the list cons operator
+\EndFor
+\State
+\State return (startRule, $T$, $P$)
+\end{algorithmic}
+\caption{The Verification Preprocessor Algorithm}
+\label{alg:the_verification_preprocessor_algorithm}
+\end{algorithm}
+
+% subsubsection the_verification_preprocessor (end)
+
+\subsubsection{Designing the Verification Engine} % (fold)
+\label{ssub:designing_the_verification_engine}
+While the verification engine itself is algorithmically dependent on the theory explored in \autoref{sec:the_core_algorithms}, this theory alone does not make a design. 
+From an examination of these algorithms two main things are immediately apparent:
+\begin{itemize}
+    \item \textbf{Stateful Nature:} The algorithms operate in a stateful fashion.
+    This is because they track the current state of the verification engine at any given point.
+    \item \textbf{Integrated Traversal:} While there are two disparate semantic verification algorithms --- one dealing with semantic inference (\autoref{sub:semantic_inference}) and the other verifying defined semantics (\autoref{sub:user_defined_semantic_form_verification}) --- they both utilise the same traversal mechanism for the verification data. 
+    This implies that both kinds of verification should be done in one pass, and that is indeed the form of the algorithm that performs the traversal in \autoref{sub:verifier_traversal}. 
+\end{itemize}
+
+Given that the bulk of this system component involves concrete implementations of the verification algorithms, the core design problem thus revolves around the state. 
+The state for this algorithm provides three main functions:
+\begin{itemize}
+    \item \textbf{Tracking Verification Status:} The state must contain the current state of the verification for the language, including the tags for each production in the language.
+    \item \textbf{Containing Algorithmic Resources:} The state must contain the information required by the verification algorithm.
+    This predominantly means the outputs of the preprocessor algorithm as discussed in \autoref{ssub:the_verification_preprocessor}.
+    \item \textbf{Tracking Temporary State:} As the algorithm progresses, certain portions of it need some awareness of where they have been.
+    This helps to prevent mutual recursion between productions and other such non-terminating behaviour. 
+\end{itemize}
+
+% subsubsection designing_the_verification_engine (end)
+
+\subsubsection{Reporting Structures} % (fold)
+\label{ssub:reporting_structures}
+% The RuleTag concept should be discussed here. 
+% But the expansion of it: how it is designed in practice. 
+
+While the generation of the reports themselves (Requirement~\reqref{req:GenerationofVerificationReports}) is nothing but an exercise in pretty-printing (and thus required no real design work), the recursive nature of the algorithm posed some difficulty for collating this data in the first place. 
+Tracking the termination states, as defined in the verification algorithm (\autoref{ssub:termination_states}), is one of the more interesting design challenges for the Metaverify component.\\
+
+From an examination of the core algorithm of the verifier (\autoref{sec:the_core_algorithms}), it is clear that the Metaverify component requires some practical method of tracking the termination state of each rule. 
+However, this is not as simple as it might appear at first glance: in the cases where the rule is defined as non-terminating, the tag must also track the associated diagnostic data. \\
+
+This is further complicated by the fact that the verification algorithms might involve arbitrary degrees of recursion. 
+Consider, a production \mintinline{text}{<p> ::= <a> | <b> | <c>} where the algorithm recurses on each of the non-terminals in the alternation, for example. 
+As each of these may have a different termination result, the result for \mintinline{text}{<p>} is the result of combining all the sub-results. 
+The termination result combination is specified in \autoref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
+In the case of a non-termination, the following data should be retained:
+\begin{itemize}
+    \item The type of the non-termination.
+    \item An error describing the exact nature of the non-termination.
+    \item A trace of where the non-termination occurred in relation to the rule being tagged. 
+\end{itemize}
+
+At each combination point where the recursive calls return, therefore, two things need to happen:
+\begin{enumerate}
+    \item All of the non-termination reasons need to be stored.
+    \item The non-termination trace needs to be updated for \textit{all} of the stored reasons. 
+\end{enumerate}
+
+% subsubsection reporting_structures (end)
+
+\subsubsection{Finalising the Metaverify Design} % (fold)
+\label{ssub:finalising_the_metaverify_design}
+From the above design work, the final design for the Metaverify system component can be understood as follows:
+\begin{itemize}
+    \item \textbf{Verification Preprocessor:} The component must implement a preprocessor to transform the \gls{ast} into an appropriate form for verification.
+    \item \textbf{Verification State:} Metaverify must provide a mechanism for tracking the state that the algorithm requires to operate (see \autoref{ssub:designing_the_verification_engine}).
+    \item \textbf{Reporting Structures:} The verification engine must be able to accurately track the termination state (and associated metadata) of all of the portions of the language that it is verifying. 
+    This is done via a reporting structure as discussed in \autoref{ssub:reporting_structures}.
+\end{itemize}
+
+% subsubsection finalising_the_metaverify_design (end)
+
+% subsection metaverify_the_verification_engine (end)
 
 \subsection{Type-Checking} % (fold)
 \label{sub:type_checking}
-% Explain the ideas behind any and none
+As part of the process of designing \gls{absol}, significant consideration was given to performing type-checking at the language level. 
+It emerged fairly quickly, however, that this would not be possible. \\
+
+This unfortunate circumstance actually arises from one of the main points of flexibility designed into the typing discipline of the semantics. 
+As \gls{metaspec} provides a number of generic functions (those for which the types involved are not known at language design time), it is impossible to typecheck the language at this stage.
+This impossibility is concisely embodied in the \mintinline{text}{any} type (part of the \mintinline{text}{base} module), that acts as an effective type `hole'.
+The presence of \mintinline{text}{any} as a type in the expression means that the type cannot be determined at the language level, as it can only be filled when types are instantiated at program compile time.
+As a result, the process of type-checking the DSL programs is deferred until program compilation time, rather than performed at the language verification stage.\\
+
+There was some initial worry during this process that not being able to verify the types would compromise the correctness of the language verification, but thankfully this is not the case:
+\begin{itemize}
+    \item The language checker ensures that any expression in the \gls{dsl} that can be parsed has associated semantics.
+    \item It also guarantees that these semantics will always terminate.
+    \item At compile-time, the \gls{dsl} compiler is able to reject the input program if the types for all different instantiations of the \mintinline{text}{any} type in the program do not resolve correctly. 
+\end{itemize}
+
+As a result, it is clear that not being able to typecheck at the level of the language semantics will not have an impact on the correctness of the verification mechanism.
 
 % subsection type_checking (end)
+
+\subsection{Removed Design Elements} % (fold)
+\label{sub:removed_design_elements}
+The design presented at the start of this section in \autoref{fig:absol_high_level_architectural_diagram} is not the original design for the system.
+Towards the start of the design phase for \gls{absol}, the scope of the project was much more grand. 
+In addition to the areas in the final design, the system was also originally intended to encompass the following:
+\begin{itemize}
+    \item \textbf{DSL Compiler Generation:} The original scope of the metacompiler called for the generation of a DSL compiler from the language specification provided by \gls{metaspec}. 
+    While this was an important part of making the toolchain truly useful for designing and implementing \glspl{dsl}, it is far from novel.
+    The code-generation stage would have been heavily based upon work explored in \autoref{sec:automating_the_generation_of_the_compiler}, and would require significant design and implementation effort, likely exceeding the amount of time available to the project.
+    \item \textbf{Compilation of DSL Programs:} The generated code for the DSL compiler would be intended to be compiled itself. 
+    The resultant build artefact would be capable of transpiling programs in the target DSL to Haskell.
+    These haskell programs would be prepared for interaction via the C \gls{ffi} with any host language that would want to interact with the DSL.
+\end{itemize}
+
+Unfortunately, due to scoping concerns, these additional parts of the metacompiler toolchain were ruled as `out of scope' for the project. 
+While disappointing, care was taken to ensure that the novel parts of the project (the metalanguage and language verification capabilities) remained in scope as part of the core toolchain. 
+
+% subsection removed_design_elements (end)
 
 % section designing_the_metacompiler_absol (end)
 
 \section{The Core Algorithms} % (fold)
 \label{sec:the_core_algorithms}
-% Talk about the design of each of the core algorithms in detail.
+At the core of the design of \gls{absol} are the verification algorithms. 
+Being so crucial to the functionality and success of the project, these underwent significant design work in isolation, and evolved over time during the implementation.
+Much as for the design of the system components themselves, the algorithmic designs evolved over time, and so this section aims to present the final algorithms as well as discuss any changes that occurred over time. \\
+
+The core algorithms can be separated into two main parts.
+The first is the precondition validation algorithm that takes place at parse time (see \autoref{ssub:precondition_verification_in_the_parser}).
+This ensures that the \gls{ast} resultant from parsing the language does not contain certain states permitted by the grammar but not by the verification algorithms preconditions. 
+The second is the validation algorithm itself.
+This is separated into the inference and validation sections, the latter of which is further subdivided into validation for the different kinds of semantic rules encountered. \\
+
+The verification algorithms aim to verify the language against two kinds of non-totality:
+\begin{enumerate}
+    \item \textbf{Divergent Programs:} Programs \gls{diverge} due to infinite loops or non-terminating recursion.
+    \item \textbf{Undefined Programs:} Programs that, for some language expressions, do not have defined semantics or have indeterminate semantics.
+\end{enumerate}
+
+The key recognition about this verification process is that it is \textit{enabled} only by the restricted form of the semantics that can be represented in \gls{metaspec}.
+In general, this kind of verification is an instance of the \gls{halting_problem}, and hence impossible.
+It is through placing stringent restrictions on the form of the semantics for these \glspl{dsl} that it is possible to make this process work. \\
+
+The algorithmic descriptions in this section use a few concepts from functional programming to enable the algorithms to be more concise.
+These are as follows:
+\begin{itemize}
+    \item \textbf{Partial Function Application:} Functions can be given some of their arguments, with the function called when the remaining arguments are filled.
+    This supports use of the next concept.
+    \item \textbf{Mapping:} A form of data traversal that applies an operation to all elements of a structure.
+    \item \textbf{Reduction:} Otherwise known as folding, this traverses a structure and collects all of its elements into one using a binary operation. 
+\end{itemize}
 
 \subsection{Verifier Precondition Validation} % (fold)
 \label{sub:verifier_precondition_validation}
+For the verification algorithm to produce correct results, there are a set of preconditions that must hold. 
+These preconditions are assumed to hold by the algorithms used for verification, and so they must be ensured to hold in order to guarantee that the verification of the language is correct.
+These preconditions are as follows, where scope is defined in all cases as in the first precondition:
+\begin{itemize}
+    \item \label{item:non_terminal_usage} \textbf{Non-Terminal Usage:} Any non-terminal \textit{used} on the right-hand-side of a rule definition must be \textit{defined} in the current scope. 
+    The non-terminals in the current scope are those defined by the \gls{dsl} language specification, and those imported by the language features specified in the \mintinline{text}{using} definition block (\autoref{sub:the_imports_definition_block}).
+    If this precondition was not satisfied, it would be possible to have productions whose sub-terms do not have defined semantics and thus that the language would not be total. 
+    \item \textbf{Single Definition:} Any non-terminal of a given name must be \textit{defined only once} in the language scope.
+    Were this precondition not satisfied, it would be possible to have indeterminate semantics for a given program as the choice of production is undefined.
+    \item \textbf{Types in Scope:} All types used by the language definition must be \textit{in scope}.
+    As types have associated semantics at \gls{dsl} compile-time, having types not in scope could lead to the generation of incorrect programs. 
+    This condition, however, does not lead to incorrectness at the language level, as all types have defined semantics.
+    \item \textbf{Special-Syntax in Scope:} All special syntactic forms used by the language definition must be in scope.
+    As special syntactic forms provide language semantics, not having the syntax in scope when it is used would lead to undefined semantics for programs in the \gls{dsl}. 
+\end{itemize}
+
+Verifying that these preconditions hold is, as mentioned previously, performed as part of Metaparse (\autoref{ssub:precondition_verification_in_the_parser}).
+The verification is a stateful process, and hence the parser is required to track the following information:
+
+\subsubsection{The Precondition Checking Algorithm} % (fold)
+\label{ssub:the_precondition_checking_algorithm}
+The algorithm to check that the preconditions hold is fairly simple, and operates in a three stage process.
+The first stage of the process involves gathering the required information at the start: finding the imported language features and determining which non-terminals, types and special syntax elements they define.
+The second stage of the process operates during the parse, and checks every type and piece of special syntax for being in scope. 
+At the same time, any non-terminal being defined is checked against a list of already-defined non-terminals and any non-terminal being used is stored.
+The final stage of the process operates on the lists of defined and used non-terminals, checking that all members of the latter are members of the former.\\
+
+The algorithm for precondition verification is illustrated in \autoref{alg:the_precondition_verification_algorithm}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{importedNTs}(): This function obtains the set of non-terminals defined by the imported language features.
+    \item \textsc{importedTypes}(): This function obtains the list of imported types.
+    \item \textsc{importedSpecialSyntax}(): This function obtains the list of special-syntax keywords imported by the language features. 
+    \item \textsc{isNT/isType/isSpecial}(node): Determines whether the current AST node is a non-terminal, type or special-syntax keyword respectively.
+    \item \textsc{defining}(node): Determines whether the current non-terminal being parsed is being defined or used. 
+    \item \textsc{error}(msg): Generates an error message.
+\end{itemize}
+
+This algorithm is sufficient to check that the preconditions for verification hold, and \textit{must} be executed before the verification algorithm itself.
+
+\begin{breakablealgorithm}
+\caption{The Precondition Verification Algorithm}
+\label{alg:the_precondition_verification_algorithm}
+\begin{algorithmic}
+\Require{The Language AST is Present}
+\Ensure{The preconditions are validated}
+\State
+\State definedNTs $\gets$ \textsc{importedNTs}()
+\Comment A set.
+\State usedNTs $\gets$ []
+\Comment [] is the empty list
+\State types $\gets$ \textsc{importedTypes}()
+\Comment A list.
+\State syntax $\gets$ \textsc{importedSpecialSyntax}()
+\Comment A list.
+\State
+\ForAll{$N_i$ $\in$ language}
+\Comment $N_i$ is a node in the AST
+    \State \Call{checkNode}{$N_i$, definedNTs, usedNTs, types, syntax}
+\EndFor
+\State
+\ForAll{NT $\in$ usedNTs}
+    \If{NT $\notin$ definedNTs}
+        \State \textsc{error}(NT used but not defined)
+    \EndIf
+\EndFor
+\State
+\Function{checkNode}{$N_t$, definedNTs, usedNTs, types, syntax}
+    \If{\textsc{isNT}($N_t$)}
+        \If{\textsc{defining}($N_t$)}
+            \If{$N_t \in$ definedNTs}
+                \State \textsc{error}($N_t$ already defined)
+            \Else
+                \State definedNTs $\gets N_t +$ definedNTs
+                \Comment $+$ is the set addition operator
+            \EndIf
+        \Else
+            \State usedNTs $\gets N_t : $ usedNTs
+            \Comment $:$ is the list cons operation
+        \EndIf
+    \ElsIf{\textsc{isType}($N_t$) $\land$ $N_t \notin$ types}
+        \State \textsc{error}($N_t$ not a defined type)
+    \ElsIf{\textsc{isSpecial}($N_t$) $\land$ $N_t \notin$ syntax}
+        \State \textsc{error}($N_t$ not valid syntax)
+    \Else
+        \State continue
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+% subsubsection the_precondition_checking_algorithm (end)
 
 % subsection verifier_precondition_validation (end)
 
 \subsection{Verifier Traversal} % (fold)
 \label{sub:verifier_traversal}
+The aim of the verification algorithm for \gls{absol} is to ensure that the semantics provided by the \gls{dsl} designer match the set of restrictions imposed to allow the termination proof. 
+The exact nature of these restrictions varies based on the kind of semantics being considered (of the four available in \gls{metaspec} --- see \autoref{lst:language_rule_semantics}), but in all cases it is the job of this algorithm to ensure that the conditions hold for the language to be total. \\
+
+The algorithm as a whole operates on a preprocessed version of the \gls{ast}, collated as discussed in \autoref{ssub:the_verification_preprocessor}. 
+This preprocessor provides the following information to the algorithm:
+\begin{itemize}
+    \item \textbf{Truths:} The truths defined by the language designer.
+    These are the base-cases for the main termination proof mechanism, and are assumed by this algorithm to always terminate.
+    \item \textbf{Start Rule:} The body of the start rule for the language and a tag associated with it.
+    This tag tracks the overall termination state of the language.
+    \item \textbf{Non-Terminals:} A mapping from each non-terminal for which there was a user-supplied production to a pair of (tag, rule body).
+    The tag is used to track the termination state of each non-terminal. 
+\end{itemize}
+
+As the algorithm aims to verify that all possible semantics \textit{used} in a language terminate, it is easily seen that it is naturally recursive. 
+While it would also suffice to verify that all defined non-terminals terminate, this actually enforces a more strict condition. 
+In the latter case, it is not possible to have non-terminals that define purely syntactic terms (e.g. \mintinline{text}{<excl> ::= "!"}), and also means that the \gls{dsl} designer cannot have partially defined but unused productions (e.g. during language development).\\
+
+So as to best avoid placing overly limiting constraints on the \gls{dsl} designer, the algorithm instead aims to verify only the \textit{reachable} semantics for a given language. 
+This means that it starts from the \textit{start rule}, verifying the semantics of all non-terminals in the rule body in a recursive fashion until it terminates. 
+The results of this verification are then combined back up the recursive tree, marking each non-terminal with the appropriate tag, and determining the overall termination state for the language. \\
+
+This traversal algorithm, though expressed recursively, is one part of a larger mutual recursion with the other verification functions. 
+As a result, the algorithm in \autoref{alg:the_main_verification_traversal_algorithm} references algorithms defined in other portions of this chapter.
+In the following, `productions' is a map of non-terminal to a pair of (tag, rule-body). 
+The state is available across all portions of this algorithm.
+It assumes the availability of the following functions:
+\begin{itemize}
+    \item \textsc{unpackInputs}(): This function takes the above inputs to the verification algorithm and unpacks them into a tuple.
+    \item \textsc{getAlternatives}(rule): Gets the top-level syntax alternation from the rule. 
+    Each of these alternatives may or may not have defined semantics.
+    \item \textsc{hasSemantics}(alternative): \textit{True} if the alternative has user-defined semantics, \textit{false} otherwise.
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Require{The inputs to the algorithm are available and derived from the \gls{ast} result of Metaparse}
+\Ensure{The verification result is `Terminates' if the language terminates, otherwise `DoesNotTerminate', `Untouched' or `Touched'}
+\State
+\State (truths, (startTag, startRule), productions) $\gets$ \textsc{unpackInputs}()
+\Comment state
+\State
+\State startTag $\gets$ \Call{verifyRule}{startRule}
+\State return startTag
+\State
+\Function{verifyRule}{rule}
+    \State alternatives $\gets$ \Call{getAlternatives}{rule}
+    \State results $\gets$ \Map{verifyAlternative}{alternatives}
+    \State result $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{results}
+    \Comment tagPlus in Subsection~\ref{ssub:termination_states}
+    \State \Return{result}
+\EndFunction
+\State
+\Function{verifyAlternative}{alternative}
+    \If{\Call{hasSemantics}{alternative}}
+        \State \Return{\Call{verifyDefinedSemantics}{alternative}}
+        \Comment see \autoref{alg:the_basic_semantic_verification_algorithm}
+    \Else
+        \State \Return{\Call{inferSemantics}{alternative}}
+        \Comment see \autoref{alg:the_semantic_inference_algorithm}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{The Main Verification Traversal Algorithm}
+\label{alg:the_main_verification_traversal_algorithm}
+\end{algorithm}
+
+As part of this basic traversal another key algorithm is defined, to verify a single non-terminal. 
+Non-terminals are given the result of the verification of their body, and this is where the main recursive call takes place. 
+The verification result for a non-terminal is stored in the algorithm's state.
+This is given by \autoref{alg:the_non_terminal_verification_algorithm}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{find}(map, key): \textit{True} if the key exists in the map, \textit{false} otherwise.
+    \item \textsc{get}(map, key): Gets the value associated with the provided key in the given map.
+    \item \textsc{setTag}(map, key, tag): Sets the tag in `map' for `key' to the value `tag'. 
+    \item \textsc{elem}(val, list): \textit{True} if `val' is an element of `list', \textit{false} otherwise. 
+    \item \textsc{tail}(list): \mintinline{haskell}{tail (x:xs) == xs}.
+\end{itemize}
+
+It also assumes the existence of a stack tracking the current trace of non-terminals to get to this point in the verification. 
+This trace is used to avoid infinite recursion, and is known as `productionTrace'. 
+It is stored as part of the state available to the verification algorithm and has two associated functions:
+\begin{itemize}
+    \item \textsc{pushFrame}(nt): Pushes the frame `nt' onto the top of the stack.
+    \item \textsc{popFrame}(): Pops the top frame off the stack.
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{verifyNonTerminal}{nonTerminal}
+    \State \Call{pushFrame}{nonTerminal}
+    \If{\Call{find}(productions, nonTerminal)}
+        \Comment Non-Terminal exists
+        \State (tag, ruleBody) $\gets$ \Call{get}(productions, nonTerminal)
+        \If{tag == Terminates $\lor$ tag == DoesNotTerminate}
+            \State \Return{tag}
+        \Else
+            \State \Call{set}{productions, nonTerminal, Touched}
+            \State traceTail $\gets$ \Call{tail}{productionTrace}
+            \If{\Call{elem}{nonTerminal, traceTail}}
+                \Comment Avoid infinite loop
+                \State \Return{tag} 
+                \Comment works as tagged `Touched'
+            \Else
+                \State result $\gets$ \Call{verifyRule}{ruleBody}
+                \Comment see \autoref{alg:the_main_verification_traversal_algorithm}
+                \State \Call{setTag}{productions, nonTerminal result}
+                \State \Return{result}
+            \EndIf
+        \EndIf
+    \Else
+        \Comment must exist in the truths block
+        \State \Return{\Call{checkTruthsForTermination}{nonTerminal}}
+    \EndIf
+\EndFunction
+\Function{checkTruthsForTermination}{nonTerminal}
+    \If{\Call{elem}{nonTerminal, truths}}
+        \Comment `truths' in global state
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{The Non-Terminal Verification Algorithm}
+\label{alg:the_non_terminal_verification_algorithm}
+\end{algorithm}
+
+\subsubsection{Termination States} % (fold)
+\label{ssub:termination_states}
+As part of this algorithm, each non-terminal in the language being analysed is marked with a given state.
+In the project, these termination states are referred to as the \textit{tag} for the rule.
+These tags may take one of four values:
+\begin{itemize}
+    \item \textbf{Untouched:} This is the initial state for all tags, and indicates that the entity associated with the rule (either a non-terminal or the start rule) has not yet been visited by the algorithm.
+    \item \textbf{Touched:} The entity has been visited by the algorithm, but the algorithm is so far unable to assign it a termination state.
+    \item \textbf{Does Not Terminate:} The algorithm has determined that the entity associated with this tag does not terminate. 
+    \item \textbf{Terminates:} The algorithm has determined that the entity associated with this tag does not terminate.
+\end{itemize}
+
+As it is often the case that the tag result for a given production is the combination of the tag results for the non-terminals in the associated rule body, some thought was given to how best to combine these tag results.
+The most intuitive way to define this combination was as a binary operation on values of the tag. 
+After defining the operation, it became apparent that it was both associative and that an identity element existed, and hence the tag type is a \gls{monoid}.
+The associative operation, `tagPlus' is defined as follows (using Haskell notation for convenience, the \mintinline{haskell}{_} refers to any value):
+\begin{minted}[numbers=none]{haskell}
+tagPlus :: Tag -> Tag -> Tag
+tagPlus Untouched _                         = Untouched
+tagPlus _ Untouched                         = Untouched
+tagPlus DoesNotTerminate DoesNotTerminate   = DoesNotTerminate
+tagPlus DoesNotTerminate _                  = DoesNotTerminate
+tagPlus _ DoesNotTerminate                  = DoesNotTerminate
+tagPlus Terminates Terminates               = Terminates
+tagPlus Touched x                           = x
+tagPlus x Touched                           = x
+\end{minted}
+
+The monoid has set $G = \{\text{touched, untouched, does not terminate, terminates}\}$, and satisfies the monoid axioms as follows:
+\begin{itemize}
+    \item Clearly, this operation satisfies the \textit{closure} property of the monoid, as the result type is always in the monoidal group $G$ (as given by the faux-function signature \mintinline{haskell}{tagPlus :: Tag -> Tag -> Tag}).
+    \item Furthermore, it can be seen that the value of `touched' acts as the \textit{identity} element of the monoid: \mintinline{haskell}{Touched `tagPlus` x} = \mintinline{haskell}{x `tagPlus` Touched} = \mintinline{haskell}{x}.
+    \item Finally, through observation, it is clear that this operation is also \textit{associative}.
+\end{itemize}
+
+% subsubsection termination_states (end)
 
 % subsection verifier_traversal (end)
 
-\subsection{Basic Semantic Form Verification} % (fold)
-\label{sub:basic_semantic_form_verification}
-% All three criteria (evals, subterms, etc)
-% State the theorem that this algorithm works off.
-% Need to build ALL the core theory here. 
-% Talk about evaluation ordering and criteria here (how are the sub-evals done, how are the evaluation rules done)?
-% Talk about the restrictions placed on the form such that it can be verified
+\subsection{Semantic Inference} % (fold)
+\label{sub:semantic_inference}
+In some cases, the \gls{dsl} designer would potentially desire to write productions for which they define no semantics, or to utilise the semantics of existing productions directly.
+While it is not possible to infer semantics for such rules in the general case (as the syntax of a production can be arbitrarily complex), \gls{metaspec} aims to support the obvious use case through a simple inference rule. \\
 
-% subsection basic_semantic_form_verification (end)
+The core notion behind this inference rule is that designers may want to write productions which are just disjunctions of other non-terminals (e.g. \mintinline{text}{<n> ::= <i> | <d>}).
+Under such circumstances it is trivial to see what the semantics of such a production should be: the semantics of whichever alternative is parsed. 
+To this end, the inference algorithm implements this idea, allowing an alternative to have no user-defined semantics in one of two circumstances:
+\begin{itemize}
+    \item The alternative is a single non-terminal, in which case its semantics are the semantics of the non-terminal.
+    \item The alternative is a single terminal, in which case it has no executable semantics.\footnote{It should be noted that this does not mean that terminal symbols cannot have semantics of their own, but only that they have no semantics where the user does not define them (the inference case).}  
+\end{itemize}
+
+This means that the inference will not take place if there is more than one terminal or non-terminal, or in the presence of any syntax indicating grouping or optionality. 
+However, the inference will still operate in the presence of one syntactic construct.
+If syntactic exception is present, this only serves to restrict the expressions that will match the production, and it has no impact on the semantics of the production.\\
+
+The algorithm used to perform this inference is used as part of the main verification flow, and can be seen in \autoref{alg:the_semantic_inference_algorithm}.
+It assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{numTerms}: Obtains the number of syntactic terms in an alternative. 
+    \item \textsc{getTerm}: Extracts the syntax term from an alternative with only one.
+    \item \textsc{getFactor}: Extracts the syntactic factor from a syntax term.
+    \item \textsc{getPrimary}: Extracts the syntax primary from the syntax factor.
+    \item \textsc{isTerminal}: Returns \textit{true} if the input is a terminal, \textit{false} otherwise.
+    \item \textsc{isNonTerminal}: Returns \textit{true} if the input is a non-terminal, \textit{false} otherwise.
+\end{itemize}
+
+This algorithm ensures that semantics are inferred in all cases where it is \textit{reasonable} to infer the semantics of a top-level alternative.
+It would potentially be possible to define a set of `defaulting' rules to infer semantics in other situations.
+However, the complexity of the syntactic grammar means that in many circumstances these additional rules would infer different semantics than intended by the \gls{dsl} designer, forcing them to manually define the semantics anyway. 
+
+\begin{breakablealgorithm}
+\caption{The Semantic Inference Algorithm}
+\label{alg:the_semantic_inference_algorithm}
+\begin{algorithmic}
+\Function{inferSemantics}{alternative}
+    \State count $\gets$ \Call{numTerms}{alternative}
+    \If{count $> 1$}
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics
+    \Else
+        \Comment Only one term in this case.
+        \State term $\gets$ \Call{getTerm}{alternative}
+        \State factor $\gets$ \Call{getFactor}{term}
+        \State \Return{\Call{verifyFactor}{factor}}
+    \EndIf
+\EndFunction
+\State
+\Function{verifyFactor}{factor}
+    \If{\Call{hasRepeat}{factor}}
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics
+    \Else
+        \State primary $\gets$ \Call{getPrimary}{factor}
+        \State \Return{\Call{verifyPrimary}{primary}}
+    \EndIf
+\EndFunction
+\State
+\Function{verifyPrimary}{primary}
+    \If{\Call{isTerminal}{primary}}
+        \State \Return{Terminates}
+        \Comment No defined semantics in this path.
+    \ElsIf{\Call{isNonTerminal}{primary}}
+        \State \Return{\Call{verifyNonTerminal}{primary}}
+    \Else
+        \State \Return{DoesNotTerminate} 
+        \Comment Cannot infer semantics in all other cases
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+% subsection semantic_inference (end)
+
+\subsection{Defined Semantic Verification} % (fold)
+\label{sub:defined_semantic_verification}
+While \gls{absol} offers some limited capability for semantic inference, the vast majority of productions will have semantics defined by the \gls{dsl} designer. 
+As discussed in \autoref{lst:language_rule_semantics}, there are four different kinds of semantics that can be defined for a production.
+Each of these must be verified differently and so the explicit verification algorithms for each kind of semantics are defined in their respective sections.\\
+
+The algorithm for verifying the case where the language semantics are explicitly defined by the \gls{dsl} designer is shown in \autoref{alg:the_basic_semantic_verification_algorithm}.
+This algorithm assumes the existence of the following utility functions:
+\begin{itemize}
+    \item \textsc{decompose}(alternative): Returns a tuple of the syntax and semantics for the alternative.
+    \item \textsc{setTag}(map, key, tag): Sets the tag in `map' for `key' to the value `tag'. 
+    \item \textsc{isEnvironmentInputRule} / \textsc{isEnvironmentAccessRule} / \textsc{isSpecialSyntaxRule} / \textsc{isSemanticEvaluationRuleList}(semantics): \textit{True} if the semantics is of the kind in the name, \textit{false} otherwise.
+    \item \textsc{find}(nonTerminal, list): Finds the number in `list' of pairs of (nonTerminal, number) corresponding to the input non-terminal.
+\end{itemize}
+
+\begin{breakablealgorithm}
+\caption{The Basic Semantic Verification Algorithm}
+\label{alg:the_basic_semantic_verification_algorithm}
+\begin{algorithmic}
+\Function{verifyDefinedSemantics}{alternative}
+    \State (syntax, semantics) $\gets$ \Call{decompose}{alternative}
+    \State ntCounts $\gets$ \Call{getNTList}{syntax}
+    \ForAll{$(N_i, c) \in $ ntCounts}
+        \State \Call{setTag}{productions $N_i$, Touched}
+    \EndFor
+    \State
+    \If{\Call{isEnvironmentInputRule}{semantics}}
+        \State \Return{\Call{verifyEnvironmentInputRule}{semantics, ntCounts}}
+        \Comment see \autoref{alg:environment_access_rule_verification}
+    \ElsIf{\Call{isEnvironmentAccessRule}{semantics}}
+        \State \Return{\Call{verifyEnvironmentAccessRule}{semantics}}
+        \Comment see \autoref{alg:environment_input_rule_verification}
+    \ElsIf{\Call{isSpecialSyntaxRule}{semantics}}
+        \State \Return{\Call{verifySpecialSyntaxRule}{semantics, ntCounts}}
+        \Comment see \autoref{alg:special_syntax_rule_verification}
+    \ElsIf{\Call{isSemanticEvaluationRuleList}{semantics}}
+        \State \Return{\Call{verifySemanticRuleList}{semantics, ntCounts}}
+        \Comment see \autoref{alg:user_defined_semantic_form_verification}
+    \EndIf
+\EndFunction
+\State
+\Function{getNTList}{syntax}
+\Comment A list of pairs (nt, count)
+    \State out $\gets$ []
+    \Comment [] is the empty list
+    \ForAll{$N_i \in$ syntax}
+        \Comment $N_i$ is a non-terminal
+        \If{\Call{elem}{$N_i$, out}}
+            \State Increment the count for $N_i$.
+        \Else
+            \State Add $N_i$ to out with a count of 1
+        \EndIf
+    \EndFor
+    \State \Return{out}
+\EndFunction
+\State
+\Function{isValid}{(nonTerminal, index), ntList}
+    \State count $\gets$ \Call{find}{nonTerminal, ntList}
+    \If {index $<$ count}
+        \State \Return{\textit{true}}
+    \Else
+        \State \Return{\textit{false}}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+As part of its operation it marks all non-terminals in the syntax for a given alternative as `touched'.
+This ensures that if they are visited again that no infinite recursion will take place, but also means that they do not have to have their semantics verified.
+The semantics of non-terminals in the syntax for a given rule (with user-defined semantics) will only be verified if they also appear in the semantics.
+
+% subsection defined_semantic_verification (end)
+
+\subsection{User-Defined Semantic Form Verification} % (fold)
+\label{sub:user_defined_semantic_form_verification}
+Verification of this semantic form lies at the very heart of the \gls{absol} project, with this ability providing much of the power inherent in \gls{metaspec}.
+In order to design an appropriate verification algorithm for these semantics it is important to first develop the underlying theory.\\
+
+As discussed in \autoref{sub:proving_termination}, \citet{nordstrom1988terminating} has shown that it is possible to define languages whose semantics can be reasoned about purely by well-founded induction.
+In the case of \gls{metaspec}, this is not true of the entire language, but just the form of semantics that this portion of the verification engine operates on.
+While this may seem to be a problem, it is possible (as discussed below) to verify that the remaining representable semantics also terminate, allowing the language to be shown to be total.\\
+
+In order to show that the language semantic always terminate, the following relation for a program $M$ with unique configurations $s$ is defined:
+\begin{equation*}
+    s, M \to s', M'
+    \label{eq:program_convergence}
+\end{equation*}
+where:
+\begin{itemize}
+    \item A configuration $s$ refers to any additional computational state (including the heap state, continuation, global environment, etc).
+    \item The relation $\to$ is termed ``converges to'' and is inductively defined.
+\end{itemize}
+
+However, it is not sufficient for the convergence relation to be inductively defined to show that such a relation is total. 
+In order to show totality, it has to be possible to show, by induction on the structure of $M$, that the rules by which $\to$ is defined are defined in such a way that the \textit{convergence hypothesis} for $M$ is given in terms of sub-programs of $M$.
+If this is the case, then $M$ terminates as long as each sub-program terminates.
+By induction, $M$ then terminates as long as the base-case semantics terminate.
+This is formalised in \autoref{ssub:an_inductive_proof_of_the_theory}.\\
+
+In the case of \gls{metaspec}, the program $M$ is a given instance of the language semantics, which provides the initial impetus for the proof mechanism. 
+The proof mechanism for these semantics thus has to be capable of ensuring that the convergence hypothesis for a semantics $M$ is given purely in terms of sub-terms of $M$. 
+It hence has to be capable of showing three things.
+\begin{itemize}
+    \item \textbf{The Sub-Program Criterion:} Each sub-semantics must be a strict sub-term of the semantic rule itself. 
+    In the context of \gls{metaspec} this means ensuring both that the non-terminal in question exists in the syntax of the production, and that the syntax access address is not out of bounds. 
+    \item \textbf{The Evaluation Criterion:} This emerges naturally from the sub-program criterion, and ensures that the evaluation portion of the semantics depends only on the results of evaluating the sub-terms, constants and their intermediaries. 
+    If this did not hold, then it would be possible to define a non-terminating rule by including the output variable as part of the evaluation rules. 
+    \item \textbf{The Inductive Criterion:} Each of the sub-program evaluations for a given semantic rule must also be shown to terminate by recursive verification.
+\end{itemize}
+
+With this theoretical foundation established, it is now possible to design an algorithm for verifying the convergence hypothesis.
+This can be seen in \autoref{ssub:verifying_the_user_defined_semantic_form}. 
+
+\subsubsection{An Inductive Proof of the Theory} % (fold)
+\label{ssub:an_inductive_proof_of_the_theory}
+The following inductive proof substantiates the claim above that $M$ terminates as long as each of its sub-programs terminate. 
+Define a program $M$ whose semantics are defined inductively as a sequence $M_0, M_1, \dots, M_k$, where each $M_i \prec M_{i+1}$ (indicating that $M_i$ is a strict sub-term of $M_{i+1}$).
+\begin{itemize}
+    \item \textbf{Base Case:} The language \gls{metaspec} provides the ability to supply trivially terminating base cases.
+    Therefore, the base case $M_0$ always terminates. 
+    \item \textbf{Inductive hypothesis:} Assume that for some portion of the language semantics $M_{j-1}$ that this portion of the language semantics terminates.
+    \item \textbf{Inductive Step:} By construction, the termination hypothesis for $M_j$ is given purely in terms of sub-programs of $M_j$. 
+    By the inductive hypothesis, the subprograms of $M_j$ ($M_{j-1}$) terminate, and thus $M_j$ terminates.
+\end{itemize}
+
+It has thus been shown, by induction, that as long as the convergence hypothesis for the language semantics holds
+
+% subsubsection an_inductive_proof_of_the_theory (end)
+
+\subsubsection{Verifying the User-Defined Semantic Form} % (fold)
+\label{ssub:verifying_the_user_defined_semantic_form}
+From the theory established in \autoref{sub:user_defined_semantic_form_verification} it is possible to establish an algorithm for verifying the criteria required for the convergence hypothesis to hold.
+In addition to verification of the convergence hypothesis, which proves the semantics always terminate, it is also important to check that the guards are complete and hence ensure that the semantics are always defined (see \autoref{sub:guard_checking}).
+This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{verifySemanticRuleList}{semantics, ntCounts}
+    \Comment `semantics' is a list of rules
+    \State guardResult $\gets$ \Call{verifyGuards}{semantics}
+    \Comment see \autoref{alg:user_defined_guard_verification}
+    \State rulesResult $\gets$ \Call{verifySemanticRules}{semantics, ntCounts}
+    \State \Return{\Call{tagPlus}{rulesResult, guardsResult}}
+\EndFunction
+\State
+\Function{verifySemanticRules}{semantics, ntCounts}
+    \Comment calls to checks
+    \State evalCheck $\gets$ \Call{satisfiesEval}{semantics}
+    \Comment see \autoref{alg:verification_of_the_semantic_evaluation_criterion}
+    \State subtermCheck $\gets$ \Call{satisfiesSemanticForm}{semantics, ntCounts}
+    \Comment see \autoref{alg:verification_of_the_semantic_sub_term_criterion}
+    \State \Return{\Call{tagPlus}{evalCheck, subtermCheck}}
+\EndFunction
+\end{algorithmic}
+\caption{User-Defined Semantic Form Verification}
+\label{alg:user_defined_semantic_form_verification}
+\end{algorithm}
+
+% subsubsection verifying_the_user_defined_semantic_form (end)
+
+\subsubsection{Verifying the Sub-Term Criterion} % (fold)
+\label{ssub:verifying_the_sub_term_criterion}
+As discussed above, verification that the sub-term criterion holds involves performing two checks:
+\begin{enumerate}
+    \item Ensuring that all sub-evaluations are strict sub-terms of the main rule body (the semantics).
+    \item Ensuring that the semantics of the sub-evaluations also terminate until the base-cases are reached. 
+\end{enumerate}
+
+It is important to recognise that the second of the above criteria only applies to the non-terminals in the syntax that are \textit{used} in the semantics.
+This means that non-terminals can be used in a purely syntactic form, and hence do not require any verification.
+This two-stage process is illustrated in \autoref{alg:verification_of_the_semantic_sub_term_criterion} and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{getNTIndexPairs}(semantics): Returns a list if pairs of the form (nonTerminal, index).
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{satisfiesSemanticForm}{semantics, ntCounts}
+    \State ntIndexPairs $\gets$ \Map{\Call{getNTIndexPairs}{}}{semantics}
+    \State subTermsExist $\gets$ \Map{\Call{isValid}{ntCounts}}{ntIndexPairs}
+    % TODO fix partial application above (wrong arg location)
+    \State subTermsTerminate $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntIndexPairs}
+    \State allSubTermsExist $\gets$ \Reduce{($\land$)}{True}{subTermsExist}
+    \State allSubTermsTerminate $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{subTermsTerminate}
+    \If{allSubTermsExist}
+        \State \Return{\Call{tagPlus}{Terminates, allSubTermsTerminate}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, allSubTermsTerminate}}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\caption{Verification of the Semantic Sub-Term Criterion}
+\label{alg:verification_of_the_semantic_sub_term_criterion}
+\end{algorithm}
+
+This algorithm, however, is slightly unsatisfactory due to the time constraints placed on the project. 
+As it is, it has not been designed to cope with recursive productions that can never be parsed. 
+While this technically allows it to admit a language with such productions (whose semantics are effectively undefined), such productions will never be parsed in an actual program (as they are infinite), and hence the semantics of any extant \gls{dsl} program are guaranteed.\\
+
+For an illustration of such a circumstance assume the existence of two productions \mintinline{text}{<a> ::= <b>} and \mintinline{text}{<b> ::= "+" <a>}. 
+The only expression that such a set of productions would be able to parse is an infinite string of \mintinline{text}{+} characters, and will hence never be utilised in a real program.
+In such a case, whether the \gls{dsl} designer defines (technically terminating) semantics for these productions or the inference engine states that they terminate, the semantics for these productions can never actually appear in a real program, retaining language totality in any practical sense. 
+
+% subsubsection verifying_the_sub_term_criterion (end)
+
+\subsubsection{Verifying the Evaluation Criterion} % (fold)
+\label{ssub:verifying_the_evaluation_criterion}
+Verification of the evaluation criterion ensures that the \gls{dsl} designer is unable to create semantics that are self-recursive. 
+Evaluations take the form (broadly) of a list of expressions of the kind \mintinline{text}{n = n1 <op> n2}, where \mintinline{text}{<op>} is some operator.
+As part of the semantic rule, the output variable is defined as well. 
+The output variable is assigned to by one rule, and any other target variables (temporaries), can be used freely.
+The algorithm for ensuring this is required to check, for each rule, that the evaluations obey the following criteria:
+\begin{itemize}
+    \item The output variable must not occur in any of the temporary variables in the evaluation list.
+    This prevents duplicate outputs, and hence undefined semantics.
+    \item The output variable does not clash with any of the variables defined for the sub-evaluations of the semantics.
+    This also avoids undefined semantics via avoiding duplicate outputs. 
+    \item The output variable does not occur on the right-hand-side of any semantic assignment.
+    This prevents divergent evaluation semantics.
+    \item The evaluation variables (those defined by the semantic sub-evaluations) must not clash with any of the temporaries.
+    This, too, helps to prevent the occurrence of undefined semantics.
+    \item All variables used on the right-hand-side of an assignment must either be in the list of sub-evaluation variables or the list of temporaries 
+    \item All temporaries must only be used to the left (in the list) of where they are declared.
+    This prevents mutually- or self-recursive evaluation rules, and hence divergent semantics.
+\end{itemize}
+
+The algorithm for checking these criteria on the evaluation definitions in the semantics is shown in \autoref{alg:verification_of_the_semantic_evaluation_criterion} and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{getOutputEvalPair}(semanticRule): Extracts a pair of (output variable, evaluation rules) from a semantic rule ('evaluation rules' is a list). 
+    \item \textsc{getEvalVariables}(outputVar, evalRules): Extracts a tuple of (output variable, temporaries, evaluated), where the `temporaries' is a list of the values assigned to (omitting the output variable), and `evaluated' is a list of variables on the RHS of any assignments.
+    \item \textsc{getVarsInOrder}(pairs): Gets the list of pairs (var, [after]) where `var' is a target (assigned to) variable, and [after] is every variable that occurs after it in the list.
+    \item \textsc{checkVarOrdering}(pair): Checks whether a variable is only used to the left of its definition.
+    \item \textsc{notElem}(item, list): \textit{True} if `item' is not an element of `list', \textit{false} otherwise. 
+\end{itemize}
+
+\begin{breakablealgorithm}
+\caption{Verification of the Semantic Evaluation Criterion}
+\label{alg:verification_of_the_semantic_evaluation_criterion}
+\begin{algorithmic}
+\Function{satisfiesEval}{semantics}
+    \State outputEvalPairs $\gets$ \Map{\Call{getOutputEvalPair}{}}{semantics}
+    \State evalVariables $\gets$ \Map{\Call{getEvalVariables}{}}{outputEvalPairs}
+    \State results $\gets$ \Map{\Call{checkEvalCriteria}{}}{\Call{zip}{outputEvalPairs, evalVariables}}
+    \State orderedVars $\gets$ \Map{\Call{getVarsInOrder}{}}{outputEvalPairs}
+    \State orderResult $\gets$ \Map{\Call{checkVarOrdering}{}}{orderedVars}
+    \If{orderResult $\land$ (\Reduce{$(\land)$}{True}{results})}
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\State
+\Function{checkEvalCriteria}{(outVar, temps, evals), subEvalVars}
+    \State subEvalVarsNotTemps $\gets$ \Reduce{$(\land)$}{True}{(\Map{\Call{notElem}{temps}}{subEvalVars})}
+    \State usedVarsExist $\gets$ \Reduce{$(\land)$}{True}{(\Map{\Call{elem}{temps ++ subEvalVars}}{evals})}
+    \State outNotInEvals $\gets$ \Call{notElem}{outVar, evals}
+    \State outNotInTemps $\gets$ \Call{notElem}{outVar, temps}
+    \State outNotInSubEvals $\gets$ \Call{notElem}{outVar, subEvalVars}
+    \State \Return{subEvalVarsNotTemps $\land$ usedVarsExist $\land$ outNotInTemps $\land$ outNotInEvals $\land$ outNotInSubEvals}
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+% subsubsection verifying_the_evaluation_criterion (end)
+
+% subsection user_defined_semantic_form_verification (end)
 
 \subsection{Guard Checking} % (fold)
 \label{sub:guard_checking}
+% Discuss both the original intent, some attempted algorithmic designs
+% Reference back to the section ruling full validation as out of scope. 
+% Explain the (very simple) reasoning behind the final algorithm. 
+In order to verify the guards for a given set of program semantics, the algorithm had to ensure that two criteria held:
+\begin{enumerate}
+    \item \textbf{The Completeness Criteria:} There must be a set of semantics defined for every possible combination of values of the guard variables, and hence there must be a guard admitting every possible combination of these values.
+    \item \textbf{The Guard Variable Criteria:} The variables used in the guard expressions must be the result variables for the sub-evaluations of the semantic rules (see \autoref{sub:user_defined_semantic_form_verification}).
+\end{enumerate}
+
+Simply, this means that the result for verifying the guards is the combination of the results of the two separate verification criteria.
+This is given in \autoref{alg:user_defined_guard_verification}, and depends only on the functions that check the two criteria for the guards. 
+Both of these checks, however, depend on the availability of the following function:
+\begin{itemize}
+    \item \textsc{extractGuards}(semanticRules): Extracts the guard expressions from the provided semantic rules, returning these as a list. 
+\end{itemize}
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{verifyGuards}{evaluationRules}
+    \State guardsComplete $\gets$ \Call{verifyGuardsComplete}{evaluationRules}
+    \Comment see \autoref{alg:guard_completeness_checking}
+    \State guardVariablesComplete $\gets$ \Call{verifyGuardVariables}{evaluationRules}
+    \Comment see \autoref{alg:guard_variable_checking}
+    \State \Return{\Call{tagPlus}{guardsComplete, guardVariablesComplete}}
+\EndFunction
+\end{algorithmic}
+\caption{User-Defined Guard Verification}
+\label{alg:user_defined_guard_verification}
+\end{algorithm}
+
+\subsubsection{Checking Guard Completeness} % (fold)
+\label{ssub:checking_guard_completeness}
+Checking guards in the user-defined semantics was a point of significant design challenge, focused on ensuring that there would be defined semantics for all possible values of the guard variables. 
+However, this was not as simple as it might initially sound.\\
+
+Initial efforts around checking guard completeness focused on transforming the set of six guard (\mintinline{text}{==, !=, <, >, <=, >=}) operations into a more limited set of three (\mintinline{text}{==, <, >}) in the hope that this would ease the verification process.
+Beyond that, this transformation also put all guards into a standard form, with a variable on the left and ordered lexically by that variable, and discarded nonsensical guards (that were nevertheless allowed by the grammar --- a design issue with the \gls{metaspec} language). 
+Attempts were made to develop an algorithm for checking completeness of these transformed guards through enumeration of possible guard states, but it rapidly became apparent that this solution was at least $\mathcal{O}(2^n)$ in complexity and thus infeasible. 
+While it was later discovered that such a problem could be solved via an application of linear programming, as discussed in \autoref{sub:guard_completeness_checking}, it was eventually ruled out of scope due to the time required to implement such a solution.\\
+
+However, it was not possible to just \textit{assume} that the guards for a given set of semantics were complete, as this could lead to a language where the semantics were not total, and hence to erroneous verification of the language.
+A simple (and unfortunately inelegant) solution was proposed to avoid this: ensure that every set of guards had at least one guard that admitted all values.
+In other words, the goal of guard checking became ensuring that each set of guards had at least one `catch-all' guard. \\
+
+This is particularly inelegant as, even in cases where the \gls{dsl} creator has been able to create a complete set of guards, they still have to add some kind of semantic expression for the catch-all case. 
+However, while ugly, this does not impact on the potential for functionality within the language as guards are evaluated \textit{top-to-bottom}, with the first guard that is satisfied being evaluated. 
+As a result, the finalised method for checking guard completeness can be found in \autoref{alg:guard_completeness_checking}.
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{verifyGuardsComplete}{evaluationRules}
+    \State guards $\gets$ \Call{extractGuards}{evaluationRules}
+    \ForAll{guard $\in$ guards}
+        \If{guard == empty}
+            \State \Return{Terminates}
+        \EndIf
+    \EndFor
+    \State \Return{DoesNotTerminate}
+\EndFunction
+\end{algorithmic}
+\caption{Guard Completeness Checking}
+\label{alg:guard_completeness_checking}
+\end{algorithm}
+
+% subsubsection checking_guard_completeness (end)
+
+\subsubsection{Checking Guard Variables} % (fold)
+\label{ssub:checking_guard_variables}
+The other of the criteria for the guard verification is to ensure that the guards depend only upon variables defined as part of the sub-evaluations in the language semantics.
+The reasoning behind this criteria is that the guards are intended to restrict the circumstances under which computation can take place. 
+Hence, if they depend on the final or intermediate variables of the semantic evaluations, then computation has to take place for the evaluation of the guards.\\
+
+This means that the variables used in the guards must be constrained to those defined for the sub-evaluations of the semantic rule.
+The procedure for verifying this is contained in \autoref{alg:guard_variable_checking}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{extractGuardVariables}(guards): Returns a list containing lists of the variables in each guard.
+    \item \textsc{extractEvalVariables}(evaluations): Returns a list containing lists of the variables in the semantic evaluations for each rule.
+    \item \textsc{zip}(a, b): Creates a list of pairs of the corresponding items in lists a and b.
+\end{itemize}
+
+\begin{breakablealgorithm}
+\caption{Guard Variable Checking}
+\label{alg:guard_variable_checking}
+\begin{algorithmic}
+\Function{verifyGuardVariables}{evaluationRules}
+    \State guards $\gets$ \Call{extractGuards}{evaluationRules}
+    \State guardVariables $\gets$ \Call{extractGuardVariables}{guards}
+    \State evalVariables $\gets$ \Call{extractEvalVariables}{guards}
+    \State guardEvalVarPairs $\gets$ \Call{zip}{guardVariables, evalVariables}
+    \State results $\gets$ \Map{\Call{checkVars}{}}{guardEvalVarPairs}
+    \State \Return{\Reduce{\Call{tagPlus}{}}{Terminates}{results}}
+\EndFunction
+\State
+\Function{checkVars}{(guardVars, evalVars)}
+    \State result $\gets$ True
+    \ForAll{var $\in$ guardVars}
+        \State result $\gets$ result $\land$ (var $\in$ evalVars)
+    \EndFor
+    \If{result == True}
+        \State \Return{Terminates}
+    \Else
+        \State \Return{DoesNotTerminate}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+% subsubsection checking_guard_variables (end)
 
 % subsection guard_checking (end)
 
 \subsection{Verification of Other Semantic Forms} % (fold)
 \label{sub:verification_of_other_semantic_forms}
-% The basic user-defined semantics aren't the only kind that exist in metaspec
-% Need to detail the algorithms for verification of these other semantic forms.
+While they are the main form of semantics expected to be used in \gls{metaspec} language definitions, the user semantic rules (\autoref{sub:user_defined_semantic_form_verification}) are not the only form of semantics.
+Much like those rules, however, each form of semantics is required to undergo its own verification process. 
 
 \subsubsection{Verification of Special-Syntax Rules} % (fold)
 \label{ssub:verification_of_special_syntax_rules}
+Special syntax rules exist in \gls{metaspec} to provide language features that can be shown to terminate (by independent proof), but not by the general termination proof mechanism. 
+That does not mean, however, that the termination proof mechanism has nothing to do in this case.\\
+
+As all special syntax rules take arguments, and these may be non-terminals, it is these arguments that must be shown to terminate. 
+Hence, if the semantics of the special-syntax rule have been shown to terminate (by external proof), and the non-terminals involved have also been shown to terminate, then the special syntax rule itself should terminate.
+The method for determining termination of such rules is illustrated in \autoref{alg:special_syntax_rule_verification}, and assumes the existence of the following functions:
+\begin{itemize}
+    \item \textsc{getAccesses}(nodeList): Extracts a list of syntax access blocks (see \autoref{sub:accessing_syntax_from_the_semantics}) from the nodes of the \gls{ast} used as arguments to the special-syntax rule.
+    \item \textsc{extractNT}(syntaxAccessBlock): Extracts the non-terminal from the syntax access block.
+\end{itemize}
+
+\begin{breakablealgorithm}
+\caption{Special-Syntax Rule Verification}
+\label{alg:special_syntax_rule_verification}
+\begin{algorithmic}
+\Function{verifySpecialSyntaxRule}{semantics, ntCounts}
+    \State accessList $\gets$ \Call{getAccesses}{semantics}
+    \State validAccesses $\gets$ \Map{\Call{isValid}{}}{accessList}
+    \State validAccess $\gets$ \Reduce{$(\land)$}{True}{validAccesses}
+    \State nonTerminals $\gets$ \Map{\Call{extractNT}{}}{accessList}
+    \State ntResults $\gets$ \Map{\Call{verifyNonTerminal}{}}{nonTerminals}
+    \Comment see \autoref{alg:the_non_terminal_verification_algorithm}
+    \State ntResult $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{ntResults}
+    \State
+    \If{validAccess}
+        \State \Return{\Call{tagPlus}{Terminates, ntResult}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, ntResult}}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
 
 % subsubsection verification_of_special_syntax_rules (end)
 
 \subsubsection{Verification of Environment Input Rules} % (fold)
 \label{ssub:verification_of_environment_input_rules}
+Environment input rules provide a method for the \gls{dsl} designer to store values against keys in a globally accessible environment. 
+While the semantics of such an operation might seem initially simple, it is important to recognise that the key and values might be derived from non-terminals.
+Hence, the termination of an environment input rule is derived from two main components:
+\begin{enumerate}
+    \item \textbf{The Key and Value Terms:} The key and values might be non-terminals, and hence for the input rule to terminate, these non-terminals must also terminate.
+    \item \textbf{The Input Itself:} Under more complex circumstances, it might be conceivable that writing terminating values to an environment might not terminate.
+    However, the environment in \gls{metaspec} is particularly simple, and inputs into the environment are guaranteed to terminate, overwriting any previous value.
+\end{enumerate}
+
+As a result, the verification process for an environment input rule focuses on just verifying that the non-terminals that it uses also terminate.
+This process is illustrated in \autoref{alg:environment_input_rule_verification} and assumes the availability of the following functions:
+\begin{itemize}
+    \item \textsc{getKey}(semantics): Gets the non-terminal and non-terminal index for the key under which the values are stored in the environment.
+    \item \textsc{getValues}(semantics): Gets the non-terminals (and indices)for the values being stored in the environment.
+\end{itemize}
+
+\begin{breakablealgorithm}
+\caption{Environment Input Rule Verification}
+\label{alg:environment_input_rule_verification}
+\begin{algorithmic}
+\Function{verifyEnvironmentInputRule}{semantics, ntCounts}
+    \State (key, ix) $\gets$ \Call{getKey}{semantics}
+    \State vals $\gets$ \Call{getValues}{semantics}
+    \State ntList $\gets$ (key, ix) $:$ vals
+    \Comment $:$ is the cons operator
+    \State terminationResults $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntList}
+    \Comment see \autoref{alg:the_non_terminal_verification_algorithm}
+    \State validResults $\gets$ \Map{\Call{isValid}{ntCounts}}{ntList}
+    \Comment see \autoref{alg:the_basic_semantic_verification_algorithm}
+    \State terminationResult $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{terminationResults}
+    \State valid $\gets$ \Reduce{$(\land)$}{True}{validResults}
+    \Comment finds if all nt accesses are valid
+    \If{valid}
+        \State \Return{\Call{tagPlus}{Terminates, terminationResult}}
+    \Else
+        \State \Return{\Call{tagPlus}{DoesNotTerminate, terminationResult}}
+    \EndIf
+    \Comment combines results where necessary
+\EndFunction
+\end{algorithmic}
+\end{breakablealgorithm}
+
+The fact that the environment just accepts the input with no error reporting is demonstrative of the comparative lack of design work that went into the environment feature. 
+Were there more time allotted for the project, the concept of the environment would receive much additional design effort, allowing it to act as a scoped and error-proof store of environmental data (much more like a useful user state). 
 
 % subsubsection verification_of_environment_input_rules (end)
 
 \subsubsection{Verification of Environment Access Rules} % (fold)
 \label{ssub:verification_of_environment_access_rules}
+The verification of environment access rules is an interesting case as they are always guaranteed to terminate. 
+Environment accesses act like retrievals from a key-value store.
+In many such stores, however, not having a key for a value is a problem, returning some undefined or null value.
+However, in the case of \gls{metaspec}, retrieval from an undefined key has well-defined semantics itself.\\
+
+In such a case, the returned value is a defaulted value for the expected type.
+With such a limited set of types available in the language (see \autoref{sec:special_language_features}), it is a trivial task to define defaulted values for each of them.
+This ensures that any environment access will either return the previously stored value, or a default of the correct type. 
+As a result, the algorithm is simple and shown in \autoref{alg:environment_access_rule_verification}.
+
+\begin{algorithm}[!htb]
+\begin{algorithmic}
+\Function{verifyEnvironmentAccessRule}{semantics}
+    \State \Return{Terminates}
+\EndFunction
+\end{algorithmic}
+\caption{Environment Access Rule Verification}
+\label{alg:environment_access_rule_verification}
+\end{algorithm}
+
+Using global defaults, however, is not always desirable behaviour. 
+To this end, the \texttt{base} language feature provides special-syntax rules for accessing the environment with default values specified by the \gls{dsl} designer instead.
+This is mainly due to the design for the environment not having been given a significant amount of thought at the time of designing the syntax.
+Proofs of the termination properties for these rules (like all special syntax rules) are deferred to the respective language feature designs in \autoref{sec:special_language_features}.
 
 % subsubsection verification_of_environment_access_rules (end)
 
@@ -118,45 +1291,263 @@ As for any large system, it is important to be able to visualise the way in whic
 \section{Special Language Features} % (fold)
 \label{sec:special_language_features}
 % Talk about the design of each of the language features, and prove the required termination properties here.
-% Talk about those that were considered but not designed and WHY
+% Talk about WHY things were thought of - the design process.
+
+The special language features in \gls{absol} and \gls{metaspec} are best thought of as the `standard library' for \gls{dsl} implementation.
+Each of these features aims to bring some important functionality to the toolchain, whether that be types for the semantics, non-terminals for parsing or special semantic functions to bring added flexibility. 
+The main idea behind each of these features (which can also be referred to as \textit{packages}) is to aid the \gls{dsl} designer in creating their language. \\
+
+The design process for these features was mainly derived from observation of the most useful features of other programming languages.
+For \gls{absol} to be able to design useful \glspl{dsl}, it had to be able to support most of these features. 
+To this end, the design process was initiated by making a list of all of the useful features that were commonly found in programming languages used today.
+This list was refined through consideration of which features would be possible to represent in the `safe' environment of \gls{metaspec}, and which would be most useful (where useful is defined in a fashion mainly involving intuition).
+What resulted was a minimal set of features that would allow languages designed in \gls{metaspec} to be competent and contain functionality to actually make them useful to the \gls{dsl} implementers and users. \\
+
+Each feature definition will define the types that it provides, give definitions for each of the non-terminals it provides and also provide a list of language operations and/or special-syntax that it defines.
+In the cases where the special syntax needs proof, the proof of its termination properties will be included. 
+All proofs of special-syntax termination properties are given with the assumption that the arguments to the special syntax also terminate. 
 
 \subsection{Feature --- \texttt{base}} % (fold)
 \label{sub:feature_base}
-% Needs some utility functions for assesing length of productions (e.g. number of items in a syntax list)
-% Utility special syntax for environment gets (for use in normal syntactic rules).
-% Storing and retrieval of constant keys (a design issue with the grammar)
+The notion behind the \texttt{base} package is to provide an elementary set of non-terminals, types and features for defining a simple language grammar. 
+In and of itself it is unlikely to be very useful, but it provides a foundation on which \glspl{dsl} can be created. 
+
+\subsubsection{Types --- \texttt{base}} % (fold)
+\label{ssub:types_base}
+This language feature imports the following types into scope:
+\begin{itemize}
+    \item \texttt{any} --- The any type is for placement in any position where the type of an expression cannot be known until the time of \gls{dsl} compilation. 
+    It is a type marker that is substituted for a concrete type at compile time.
+    \item \texttt{none} --- A type annotation used to suppress the result type of a statement. 
+    This allows for languages to either behave in an expression-oriented fashion (where the last expression in a block is a result), or a statement-oriented fashion, where there is no result of expressions.
+    \item \texttt{bool} --- A basic boolean type that operates as expected. 
+\end{itemize}
+
+% subsubsection types_base (end)
+
+\subsubsection{Non-Terminals --- \texttt{base}} % (fold)
+\label{ssub:non_terminals_base}
+This language feature defines the following non-terminals. 
+All of these are guaranteed to terminate, and can hence be written in the truths definition block of the file. 
+\begin{itemize}
+    \item \mintinline{text}{<digit>} --- UTF-8 Digit Characters
+    \item \mintinline{text}{<nondigit>} --- All UTF-8 non-digit characters except newlines and whitespace.
+    \item \mintinline{text}{<whitespace>} --- All UTF-8 whitespace characters excluding newlines.
+    \item \mintinline{text}{<newline>} --- All UTF-8 newline characters.
+    \item \mintinline{text}{<utf-8-char>} --- All UTF-8 characters.
+    \item \mintinline{text}{<bool> ::= "true" | "false" ;} --- Boolean literals.
+\end{itemize}
+
+% subsubsection non_terminals_base (end)
+
+\subsubsection{Operations and Syntax --- \texttt{base}} % (fold)
+\label{ssub:operations_and_syntax_base}
+This feature defines the following operations over the set of types it defines:
+\begin{itemize}
+    \item \mintinline{text}{&&, ||, &, |, ==, !=, <, >, <=, >=} --- Defined as expected for a C-like programming language.
+    \item \mintinline{text}{envStore(key, value)} --- A more versatile way of storing values in the environment that can be used from anywhere special syntax can.
+    This trivially terminates as long as its arguments do, as the under-the-hood semantics are those of a standard environment store.
+    \item \mintinline{text}{envGet(key)} --- A more versatile way of retrieving values from the environment that can be used from anywhere special syntax can. 
+    This also trivially terminates as long as its arguments do, as the under-the-hood semantics are those of a standard environment store.
+    \item \mintinline{text}{envGetDefault(key, defaultValue)} --- Similar to the above, but allows the \gls{dsl} designer to specify a default value in the case the key does not exist.
+    \item \mintinline{text}{nodeLength(nodeList)} --- Gets the number of nodes contained by a non-terminal. 
+    This is useful in the context of function definitions and function calls where the executed semantics may differ based on the number of arguments given. 
+    As all syntax is finite, determining the length of a finite syntax list is also finite and hence guaranteed to terminate. 
+\end{itemize}
+
+% subsubsection operations_and_syntax_base (end)
 
 % subsection feature_base (end)
 
 \subsection{Feature --- \texttt{number}} % (fold)
 \label{sub:feature_number}
+The \texttt{number} package provides types and non-terminals for a number of standard numerical types found in many programming languages.
+It also has a set of operations defined on these types, and two special-syntax calls for useful numeric operations.
+
+\subsubsection{Types and Non-Terminals --- \texttt{number}} % (fold)
+\label{ssub:types_number}
+This package provides the following types and corresponding non-terminals:
+\begin{itemize}
+    \item \texttt{natural} / \mintinline{text}{<natural>} --- An unbounded, unsigned integer type.
+    \item \texttt{integer} / \mintinline{text}{<integer>} --- An unbounded, signed integer type.
+    \item \texttt{int32} / \mintinline{text}{<int32>} --- A 32-bit signed integer type.
+    \item \texttt{uint32} / \mintinline{text}{<int64>} --- An unsigned 32-bit integer type.
+    \item \texttt{int64} / \mintinline{text}{<uint32>} --- A signed 64-bit integer type.
+    \item \texttt{uint64} / \mintinline{text}{<uint64>} --- An unsigned 64-bit integer type.
+    \item \texttt{float} / \mintinline{text}{<float>} --- An IEEE 754 32-bit floating-point number.
+    \item \texttt{double} / \mintinline{text}{<double>} --- An IEEE 754 64-bit floating-point number.
+    \item \texttt{integral} / \mintinline{text}{<integral>} --- For any integral type.
+    \item \texttt{floating} / \mintinline{text}{<floating>} --- For any floating-point type.
+    \item \texttt{number} / \mintinline{text}{<number>} --- For any of the numeric types imported by this feature.
+\end{itemize}
+
+% subsubsection types_and_non_terminals_number (end)
+
+\subsubsection{Operations and Syntax --- \texttt{number}} % (fold)
+\label{ssub:operations_and_syntax_number}
+This package provides the following operations on the above types:
+\begin{itemize}
+    \item \mintinline{text}{+, -, *, /, ^, \%} --- Standard arithmetic operations.
+    \item \mintinline{text}{ciel(x)} --- Special syntax to calculate the ceiling of \mintinline{text}{x}.
+    \item \mintinline{text}{floor(x)} --- Special syntax to calculate the floor of \mintinline{text}{x}.
+\end{itemize}
+
+% subsubsection operations_and_syntax_number (end)
 
 % subsection feature_number (end)
 
 \subsection{Feature --- \texttt{string}} % (fold)
 \label{sub:feature_string}
+This language feature provides a basic, efficient, packed-UTF-8 string type. 
+It provides one type and non-terminal: \mintinline{text}{string} / \mintinline{text}{<string>}.
+The non-terminal parses strings delimited by double-quotes. 
+The operations over string are as follows:
+\begin{itemize}
+    \item \mintinline{text}{+} --- Concatenates two strings. 
+    This terminates trivially.
+    \item \mintinline{text}{s[x]} --- Addressing into the string at position x, obtaining the corresponding utf-8 glyph.
+    This is guaranteed to return a valid string value (and always terminate): if the index is out of range, it will return the empty string.
+    \item \mintinline{text}{rev(s)} --- Special syntax for reversing the string.
+    Guaranteed to terminate as strings are finite.
+    \item \mintinline{text}{split(s, d)} --- Special syntax for splitting a string \mintinline{text}{s} on the delimiter \mintinline{text}{d}. 
+    As strings are finite, this will always terminate.
+    Must have \texttt{list} imported to work as it will return the string unchanged if list is not imported. 
+    \item \mintinline{text}{join(s, d)} --- Special syntax for joining a list of strings \mintinline{text}{s} with the delimiter \mintinline{text}{d}.
+    As lists and strings are finite this is guaranteed to terminate.
+    Much like the above, it must have \texttt{list} imported to work. 
+\end{itemize}
 
 % subsection feature_string (end)
 
 \subsection{Feature --- \texttt{list}} % (fold)
 \label{sub:feature_list}
+This feature provides a doubly-linked list to contain homogeneous data with the contained type determined at compile time. 
+It defines the type \mintinline{text}{list}, and the corresponding non-terminal \mintinline{text}{<list>}, for the parsing of list literals of the form \mintinline{text}{[a, b, c, d, ...]}.
+It defines the following operations:
+\begin{itemize}
+    \item \mintinline{text}{[]} --- An empty list literal, usable anywhere in the \gls{metaspec} where a value is expected. 
+    This may also be given with comma-separated items of the same type, in which case a list literal with values is constructed.
+    \item \mintinline{text}{l[x]} --- Accesses the list \mintinline{text}{l} at position \mintinline{text}{x}. 
+    As lists are finite this operation is always guaranteed to terminate.
+    If the index \mintinline{text}{x} does not exist, the linearly closest element of the list is returned. 
+    \item \mintinline{text}{+} --- List concatenation.
+    Trivially guaranteed to terminate.
+    \item \mintinline{text}{:} --- The list cons operator, also trivially guaranteed to terminate.
+\end{itemize}
 
 % subsection feature_list (end)
 
 \subsection{Feature --- \texttt{matrix}} % (fold)
 \label{sub:feature_matrix}
+This language feature provides a $m \times n$ matrix type to contain homogeneous data. 
+It defines the type \mintinline{text}{matrix}, and the corresponding non-terminal \mintinline{text}{<matrix>} for matrix literals.
+Matrix literals have the form \mintinline{text}{| a, b, ... ; c, d ... ; ...}, with each row having the same number of columns.
+It defines the following operations:
+\begin{itemize}
+    \item \mintinline{text}{+, *, /, ^, -} --- Standard matrix arithmetic, defined as for matrices.
+    As matrices are finite, this is always guaranteed to terminate.
+    \item \mintinline{text}{||} --- Constructs an empty matrix, or in the presence of values as for matrix literals, constructs the corresponding matrix literal.
+    \item \mintinline{text}{m|x, y, ...|} --- Access the values in matrix \mintinline{text}{m} at the position given. 
+    For any dimension the value \mintinline{text}{:} may be given to access the entire dimension, or \mintinline{text}{a:b} to access the portion of the dimension defined by the semi-closed interval $[a,b)$.
+    This is guaranteed to terminate as matrices are finite, and much as for the list, it will return the linearly closest item(s) if the indices are out of range.
+\end{itemize}
 
 % subsection feature_matrix (end)
 
 \subsection{Feature --- \texttt{traverse}} % (fold)
 \label{sub:feature_traverse}
+Traverse is a special-syntax only package that defines methods for traversing collection data-structures.
+It provides the following operations as special syntax, and requires \texttt{funcall} to be imported into scope:
+\begin{itemize}
+    \item \mintinline{text}{map(fn, collection)} --- This operation traverses \mintinline{text}{structure}, applying the function \mintinline{text}{fn} to each element of the structure. 
+    The termination property for this is not initially obvious, but by \citet{nordstrom1988terminating}, any recursion over a finite structure will terminate as long as the the size of the structure decreases with every recursive call. 
+    As a result, the function uses an implementation under the hood akin to the following for some illusory typeclass \mintinline{haskell}{Traversible}:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+map :: (Traversible t) => (n -> m) -> t n -> t m
+map fn [] = []
+map fn (x:xs) = (fn x) : map fn xs 
+\end{minted}
+    As the argument to the function always gets smaller until it reaches a base case, this is guaranteed to terminate.
+    \item \mintinline{text}{fold(fn, val, collection)} --- This operation traverses \mintinline{text}{structure}, performing a left fold to reduce the values in collection to a single value. 
+    The function \mintinline{text}{fn} must be a binary operation taking two arguments of the type contained in structure, and it uses \mintinline{text}val} as the initial value.
+    Much like for the above, the termination proof for this relies on the fact that finite recursion terminates as long as the size of the structure being recursed over decreases with each recursive call. 
+    It would use an implementation akin to the following Haskell, using the same typeclass:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+fold :: (Traversible t) => (a -> a -> a) -> a -> t a -> a
+fold fn value [] = value
+fold fn value (x:xs) = fold fn (fn value x) xs
+\end{minted}
+    In the case of a matrix, the signature is slightly different as it results in a matrix (that may be a single value) to allow for reduction across rows. 
+    \item \mintinline{text}{filter(fn, collection)} --- This operation traverses \mintinline{text}{structure}, only retaining the elements for which \mintinline{text}{fn}, a predicate, returns true.
+    Much like for the above, the termination proof in this case comes from the fact that the size of the structure decreases with each recursive call, as in this example implementation:
+\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+filter :: (Traversible t) => (a -> Bool) -> t a -> t a
+filter pred [] = []
+filter pred (x:xs) = if pred x 
+    then 
+        (x : filter pred xs) 
+    else 
+        (filter pred xs)
+\end{minted}
+    In the case of a matrix, it operates across a given dimension, and hence produces a new matrix of a potentially different size. 
+\end{itemize}
+
+This language feature also provides variants for matrices taking an additional argument (at the end) that specifies the dimension (by number) to traverse. 
+This ensures that the matrix invariants are not broken and that everything operates as expected. 
 
 % subsection feature_traverse (end)
 
 \subsection{Feature --- \texttt{funcall}} % (fold)
 \label{sub:feature_funcall}
+The final language feature designed during this project is \texttt{funcall}. 
+This language feature provides primitives for defining functions and procedures.
+The distinction between these two may not be obvious, and can be described as follows:
+\begin{itemize}
+    \item \textbf{Function:} A function is a block of code that takes arguments and returns a value. 
+    It may be called from within a procedure, but not from within another function.
+    This avoids recursion.
+    Functions are used as arguments to the special-syntax calls in \texttt{traverse}.
+    \item \textbf{Procedure:} A procedure is a top-level block of code that takes arguments from \textit{the host language} and returns a value to a host language.
+    Procedures may call functions, and there is no mechanism to call other procedures except via the \gls{dsl} \gls{ffi}
+    This avoids the ability to recurse in procedures or mutually recurse between functions and procedures. 
+\end{itemize}
+
+This is a risky area, and so special care has been taken to ensure that the following pieces of special syntax retain the termination properties of the language. 
+They are defined as follows, and are intended to be used to create frameworks within a DSL for defining functions and procedures at the program level:
+\begin{itemize}
+    \item \mintinline{text}{defproc(name, args)} --- This defines a procedure called \mintinline{text}{name}, with arguments of the types of \mintinline{text}{args}.
+    These procedures are automatically connected to the \gls{dsl} \gls{ffi} to allow for the DSL to actually be called from the host language. 
+    \item \mintinline{text}{deffun(name, args)} --- Much like for \mintinline{text}{defproc}, this defines a function called \mintinline{text}{name}, with arguments of the types of \mintinline{text}{args}. 
+    This function is defined into the semantic environment, and can be called from within a procedure through use of the next special syntax call. 
+    \item \mintinline{text}{callfun(name, args)} --- Calls a function named \mintinline{text}{name}, with arguments given by \mintinline{text}{args}.
+    This call is a \gls{noop} when executed from any place other than inside a defined procedure. 
+    This ensures that no recursive function calls (direct or indirect) can be made, and thus ensures that the language using these constructs will always terminate.
+\end{itemize}
 
 % subsection feature_funcall (end)
+
+\subsection{Discounted Language Features} % (fold)
+\label{sub:discounted_language_features}
+The features that actually went through proper design work for use in \gls{metaspec} were not the only ones considered. 
+In addition to those outlined in the preceding sections, the following features were considered safe to implement for \gls{metaspec}, but were not considered crucial enough to its functionality.
+Omitting these from the project scope was a useful method of constraining the number of features that were required to be implemented.
+They are as follows:
+\begin{itemize}
+    \item \textbf{Associative Arrays:} The ability to represent associative-array container types and the operations on them in metaspec. 
+    This would be useful for representing key-value mappings and any other kind of named dictionary structure.
+    \item \textbf{Random Number Generation:} It could be useful to be able to generate random numbers.
+    Such a feature would likely include probabilistic distributions to assist in mathematical modelling.
+    \item \textbf{Maybe:} A `Maybe' type, similar to that in Haskell.
+    This would aid in the representation of error conditions in functions.
+    \item \textbf{Either:} Also similar to Haskell, this would allow the representation of alternates in result types, and hence also assist in the representation of error conditions.
+    \item \textbf{State:} The provision of a user controlled state (and associated operations) that can be passed around functions and interacted with entirely separately from the semantic environment.
+    \item \textbf{Special Numbers:} A feature providing additional number types such as complex numbers, financial numbers and arbitrary precision floating-point types.
+    \item \textbf{Mathematical Operations:} Sets of additional mathematical operations defined for both the standard \mintinline{text}{number} and the above special numbers features. 
+\end{itemize}
+
+All of these features would provide the appropriate operations, types and non-terminal definitions to allow working with these language features as required. 
+
+% subsection discounted_language_features (end)
 
 % section special_language_features (end)
 

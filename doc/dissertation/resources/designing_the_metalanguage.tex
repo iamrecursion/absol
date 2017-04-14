@@ -46,12 +46,12 @@ Placing the metadata fields first was a natural way to provide some initial cont
 As the extensions import list, the \mintinline{text}{using-defblock}, can contain dependencies of the other two blocks, it made a significant amount of sense to put this next, as it aids in establishing context for the next two blocks.\\
 
 The ordering of the termination truths (\mintinline{text}{truths-defblock}) and the language definition itself (\mintinline{text}{language-defblock}) was similarly natural. 
-While the truths are mainly depended upon by the termination proof mechanism (see Section~\ref{sub:the_verification_engine}), they can also act as a guide to the language designer to indicate where they will be required to provide semantics for a language production. 
+While the truths are mainly depended upon by the termination proof mechanism (see \autoref{sub:metaverify_the_verification_engine}), they can also act as a guide to the language designer to indicate where they will be required to provide semantics for a language production. 
 This quite clearly indicates that the termination truths should come before the language definition itself, as they provide additional context for the language designer.\\
 
 While one might argue for the separation of these top-level elements, particularly the metadata, into multiple files, it seems far more natural to combine them all under one umbrella.
 This means that each language definition is a self-contained unit with all the context required to understand it. 
-While this single-file requirement does mean that definitions for large DSl
+While this single-file requirement does mean that definitions for large DSL could become unwieldy, taking a single-file approach significantly simplifies implementation.\\
 
 Each of these top-level blocks have fairly distinct forms, and each was designed very carefully to aid the language designer's understanding of the file.
 
@@ -396,7 +396,7 @@ This would impose significant restrictions in the case of semantic special synta
 
 As the above situation was deemed unsatisfactory, the final access form for \gls{metaspec} takes inspiration from array accesses in other programming languages, using the square-bracket notation (\mintinline{text}{[]}) for familiarity.
 Each access into the syntax must hence specify the (zero-indexed) \textit{position} of the specific non-terminal to which it refers: \mintinline{text}{<bar>[1]} refers to the second instance of the non-terminal, for example.
-These positions must hence be checked at language verification time (see \autoref{sub:basic_semantic_form_verification} for details).\\
+These positions must hence be checked at language verification time (see \autoref{sub:user_defined_semantic_form_verification} for details).\\
 
 This provides an intuitive way to access syntactic elements within the semantics, without restricting the form in which the semantics can be written. 
 
@@ -415,7 +415,7 @@ This was imposed upon the language by Requirement~\reqref{req:SemanticTyping} fo
 
 To this end, it was decided to impose types at the semantic level.
 In this case, each semantic expression (where the type could not be inferred) is required to have a result type, where the types may be one of the types allowed by the current language context. 
-These types are expressions as part of the language grammar, and are contextually checked to be in scope at parse time (see \autoref{sub:lexing_and_parsing}).\\
+These types are expressions as part of the language grammar, and are contextually checked to be in scope at parse time (see \autoref{sub:metaparse_ast_generation}).\\
 
 For information on the checking of types in the language specification, please see \autoref{sub:type_checking} on \autopageref{sub:type_checking}. 
 
@@ -530,7 +530,7 @@ semantic-evaluation-rule-list =
 \end{listing}
 
 Multiple portions of this syntax are required to match a certain form for verification to be able to occur. 
-These restrictions are discussed in detail in \autoref{sub:basic_semantic_form_verification}, and are crucial to the ability of \gls{absol} to verify the language semantics.
+These restrictions are discussed in detail in \autoref{sub:user_defined_semantic_form_verification}, and are crucial to the ability of \gls{absol} to verify the language semantics.
 
 % subsubsection transforming_big_step_operational_semantics (end)
 

@@ -1,6 +1,7 @@
 % Present an overview of the software system, and a high-level discussion of the implementation proces.
-% Reflection on the choice of languages, tooling and techniques. 
-% Make sure to focus on the MAIN usses with implementation.
+% Reflection on the choice of languages, tooling and techniques (project management).
+% Make sure to focus on the MAIN issues with implementation.
+% Follow the same architectural ordering as the design section.
 
 \chapter{Implementation} % (fold)
 \label{cha:implementation}
@@ -12,16 +13,23 @@ This section will:
 
 \section{Building the Application Framework} % (fold)
 \label{sec:building_the_application_framework}
+% Designing state into the parser (two stage impl)
+% How did the NT tracker come about - why was it insufficient to track all nt parses the same way? -> they are all parsed the same, but they have different semantic meaning for the precondition verification. 
 
 % section building_the_application_framework (end)
 
 \section{Building the Lexer and Parser} % (fold)
 \label{sec:building_the_lexer_and_parser}
+% The precondition verifier is implemented in separate functions as much as possible. This ensures that it doesn't add unnecessary clutter to the parser itself. 
 
 % section building_the_lexer_and_parser (end)
 
 \subsection{Building the Verification Framework} % (fold)
 \label{sub:building_the_verification_framework}
+% Need to discuss the practicalities of solving the mutually recursive rule problem (the production trace and additional RuleTag types). 
+% The theoretical underpinning of this. 
+% Fun with the state monad for the verification algorithm.
+% Examine the design problem of providing reporting abilities via the RuleTag concept -> not in the core algorithm, so hence an addition to it.
 
 % subsection building_the_verification_framework (end)
 

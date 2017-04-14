@@ -9,11 +9,11 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This file contains functions to assist in pretty-printing the diagnostic 
--- messages produced by the verification engine. 
+-- This file contains functions to assist in pretty-printing the diagnostic
+-- messages produced by the verification engine.
 --
 -------------------------------------------------------------------------------
-module Absol.Metaverify.Diagnostics 
+module Absol.Metaverify.Diagnostics
     (
         prettyPrintRuleTag,
         printLanguageDiagnostics
@@ -21,7 +21,7 @@ module Absol.Metaverify.Diagnostics
 
 import           Absol.Metaverify.RuleTag
 import           Absol.Metaverify.State
-import           Data.List                     (intercalate)
+import           Data.List                (intercalate)
 import qualified Data.Map                 as M
 
 -- | Pretty prints the rule tag output for language diagnostics.
@@ -39,26 +39,26 @@ prettyPrintRuleTag (DoesNotTerminate xs) = let
 printNonTerminationItem :: NonTerminationItem -> String
 printNonTerminationItem (nonTermType, ntTrace, str) = let
         typeStr = case nonTermType of
-            Diverges -> "Production diverges."
-            Incomplete -> "Production incomplete."
-            IncompleteGuards -> "Guards incomplete."
-            MalformedGuards -> "Guards malformed."
+            Diverges                -> "Production diverges."
+            Incomplete              -> "Production incomplete."
+            IncompleteGuards        -> "Guards incomplete."
+            MalformedGuards         -> "Guards malformed."
             IncorrectEvaluationForm -> "Incorrect Semantic Form."
-            NonExistentSubterms -> "Refers to non-existent subterms."
-            UnableToInfer -> "Unable to infer semantics for rule."
+            NonExistentSubterms     -> "Refers to non-existent subterms."
+            UnableToInfer           -> "Unable to infer semantics for rule."
         makeTrace = intercalate " -> " $ show <$> ntTrace
-    in 
+    in
         typeStr ++ "\n    REASON: " ++ str ++ "\n    IN: " ++ makeTrace
 
 -- | Prints a summary diagnostic for the entire language.
 printLanguageDiagnostics :: ProductionMap -> String
-printLanguageDiagnostics productions = let 
+printLanguageDiagnostics productions = let
         extractTag (x,_) = x
-        ntTagPairs = 
+        ntTagPairs =
             zip (M.keys productions) (extractTag <$> M.elems productions)
         ntString (nt, tag) = "----------\n\nPRODUCTION: " ++
             show nt ++ "\n" ++ "STATUS: " ++ prettyPrintRuleTag tag ++ "\n"
         ntStrings = intercalate "\n" $ ntString <$> ntTagPairs
     in
-        "===== FULL LANGUAGE DIAGNOSTIC =====\nEach production was evaluated\ 
+        "===== FULL LANGUAGE DIAGNOSTIC =====\nEach production was evaluated\
         \ as follows:\n\n" ++ ntStrings

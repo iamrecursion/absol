@@ -4,11 +4,11 @@
 -- Description : The implementation of the metaspec lexing engine.
 -- Copyright   : (c) Ara Adkins (2017)
 -- License     : See LICENSE file
--- 
+--
 -- Maintainer  : Ara Adkins
 -- Stability   : experimental
 -- Portability : GHC
--- 
+--
 -- The primitive functions for lexing Metaspec files.
 --
 -------------------------------------------------------------------------------
@@ -22,8 +22,8 @@ import           Text.Megaparsec
 import qualified Text.Megaparsec.Lexer   as L
 
 -- | Strips comments and whitespace from the input.
--- 
--- The definitions for whitespace and comments are specified in the metaspec 
+--
+-- The definitions for whitespace and comments are specified in the metaspec
 -- grammar.
 spaceConsumer :: ParserST ()
 spaceConsumer = L.space (void spaceChar) lineComment blockComment
@@ -32,8 +32,8 @@ spaceConsumer = L.space (void spaceChar) lineComment blockComment
         blockComment = L.skipBlockComment "(*" "*)"
 
 -- | This function provides a wrapper for lexeme parsers.
--- 
--- It specifies how to consume whitespace after each lexeme. 
+--
+-- It specifies how to consume whitespace after each lexeme.
 lexeme :: ParserST a -> ParserST a
 lexeme = L.lexeme spaceConsumer
 
@@ -41,7 +41,7 @@ lexeme = L.lexeme spaceConsumer
 terminal :: String -> ParserST String
 terminal = L.symbol spaceConsumer
 
--- | Parses an unsigned numeric natural number literal. 
+-- | Parses an unsigned numeric natural number literal.
 naturalNumber :: ParserST Integer
 naturalNumber = lexeme L.integer
 
@@ -72,7 +72,7 @@ identifierChar = alphaNumChar <|> oneOf seps
         seps = "_-" :: String
 
 -- | Parses a string allowed as a terminal.
--- 
+--
 -- Terminals may contain any characters except literal newline characters.
 terminalString :: ParserST TerminalString
 terminalString = do
@@ -172,7 +172,7 @@ specialSequenceEndSymbol = terminal "?>"
 
 -- | Parses a special sequence block.
 grammarSpecialSequence :: ParserST a -> ParserST a
-grammarSpecialSequence = 
+grammarSpecialSequence =
     between specialSequenceStartSymbol specialSequenceEndSymbol
 
 -- | Parses the start delimiter of the grammar start symbol.
@@ -284,7 +284,7 @@ specialSyntaxBlock = between specialSyntaxStart specialSyntaxEnd
 
 -- | Parses a non-semicolon character.
 nonSemicolon :: ParserST Char
-nonSemicolon = let 
+nonSemicolon = let
         semi = ";" :: String
     in
         noneOf semi
@@ -316,13 +316,13 @@ multilineAlternative = try parseExpr
         parseExpr = spaceConsumer *> semanticDisjunction <* spaceConsumer
 
 -- | Parses an operator terminal.
--- 
+--
 -- This supports a more sophisticated mechanism than 'terminal', allowing for an
 -- operator to be a prefix of another operator without issue.
 operator :: String -> ParserST String
 operator n = (lexeme . try) (string n <* notFollowedBy punctuationChar)
 
--- | Parses a single, standard, open parenthesis. 
+-- | Parses a single, standard, open parenthesis.
 openParenthesis :: ParserST OpenParenthesis
 openParenthesis = terminal "("
 
@@ -338,6 +338,6 @@ parentheses = between openParenthesis closeParenthesis
 parseString :: ParserST String
 parseString = some anyChar
 
--- | Parses semantic type strings with backtracking behaviour. 
+-- | Parses semantic type strings with backtracking behaviour.
 semanticTypeString :: String -> ParserST String
 semanticTypeString n = (lexeme . try) (string n <* notFollowedBy nonSpace)

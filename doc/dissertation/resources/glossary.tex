@@ -20,7 +20,16 @@
 }
 
 \newdualentry{absol}{ABSOL}{Automatic Builder for Semantically Oriented Languages}{
-    The metacompiler program and toolchain that performs language analysis and verification.
+    The \gls{metacompiler} program and toolchain that performs language analysis and verification.
+}
+
+\newglossaryentry{metacompiler}{
+    name=Metacompiler,
+    text=metacompiler,
+    description={
+        A metacompiler is a program that takes in a specification and generates code for a language compiler as its output. 
+        In the case of this project, the metacompiler is responsible for the verification of the input specification, rather than code generation from it. 
+    }
 }
 
 \newglossaryentry{halting_problem}{
@@ -95,3 +104,79 @@
 }
 
 \newacronym{ssr}{SSR}{Special-Syntax Rule}
+
+\newacronym{cli}{CLI}{Command-Line Interface}
+
+\newglossaryentry{lexer}{
+    name=Lexer,
+    text=lexer,
+    description={
+        A lexer is a program that takes a string of characters and performs a process known as \textit{lexical analysis} to generate a stream of tokens (each of which may consist of one or more characters).
+        Each of these tokens has semantic meaning in a given language.
+    }
+}
+
+\newglossaryentry{parser}{
+    name=Parser,
+    text=parser,
+    description={
+        A parser is a program that takes a string of tokens (usually from a \gls{lexer}) and builds an \acrshort{ast} for out of these tokens based on the language grammar. 
+    }
+}
+
+\newglossaryentry{diverge}{
+    name=Diverge,
+    text=diverge,
+    description={
+        A computer program is said to \textit{diverge} if it never terminates or terminates in some unintended or exceptional state.
+        (CITE)? 
+    }
+}
+
+\newglossaryentry{group}{
+    name=Group,
+    text=group,
+    description={
+        A group is a structure $(G, \cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$.
+        A group satisfies the following axioms:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+            \item \textbf{Identity:} $\exists! e \in G. \forall a \in G, e \cdot a = a \cdot e = a$
+            \item \textbf{Inverse:} $\forall a \in G. \exists b \in G, a \cdot b = b \cdot a = e$, where $e$ is the identity as above.
+        \end{itemize}
+    }
+}
+
+\newglossaryentry{semigroup}{
+    name=Semigroup,
+    text=semigroup,
+    description={
+        A semigroup is a structure $(G, \cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$ such that the following axioms hold:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+        \end{itemize}
+    }
+}
+
+\newglossaryentry{monoid}{
+    name=Monoid,
+    text=monoid,
+    description={
+        A monoid is a structure $(G,\cdot)$ where $G$ is a set and $\cdot$ is an associative binary operation on elements of $G$ such that the following axioms hold:
+        \begin{itemize}
+            \item \textbf{Closure:} $\forall a, b \in G, a \cdot b \in G$
+            \item \textbf{Associativity:} $\forall a, b, c\in G, (a \cdot b) \cdot c = a \cdot (b \cdot c)$.
+            \item \textbf{Identity:} $\exists! e \in G. \forall a \in G, e \cdot a = a \cdot e = a$
+        \end{itemize}
+    }
+}
+
+\newglossaryentry{noop}{
+    name=Noop,
+    text=noop,
+    description={
+        A noop or no-operation is a computer instruction that does nothing, but advances the program counter.
+    }
+}
