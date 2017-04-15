@@ -3,44 +3,184 @@
 % Make sure to focus on the MAIN issues with implementation.
 % Follow the same architectural ordering as the design section.
 
+% This section will:
+% \begin{itemize}
+%     \item Follow a similar structure to algorithms, using code listings to illustrate how the abstract algorithms were turned into a concrete system. 
+%     \item Examine the compromises or changes to the algorithm that had to take place.
+% \end{itemize}
+
 \chapter{Implementation} % (fold)
 \label{cha:implementation}
-This section will:
+Despite its highly theoretical nature, the project also involved a significant implementation in order to provide a proof-of-concept for the theory and algorithms behind the language proof mechanism. 
+The implementation was based directly on the design work and, as mentioned at the start of \autoref{cha:architecture_and_algorithms}, it was often interleaved with the design work in an iterative process that incorporated feedback. 
+This section aims to illustrate the implementation process, methodologies and tools, as well as highlight interesting solutions to the most significant challenges faced. 
+
+\section{The Implementation Process} % (fold)
+\label{sec:the_implementation_process}
+% A discussion of the process taken, with an examinatio of both its flaws and benefits
+% Talk about how the design influenced the process of implementation
+
+The process of implementing \gls{absol} started almost as soon as the high-level system architecture (see \autoref{fig:absol_high_level_architectural_diagram} on \autopageref{fig:absol_high_level_architectural_diagram}) was completed. 
+While the core focus of the project was assuredly on the underlying algorithms and the system design itself, the importance of the proof-of-concept implementation cannot be understated. 
+In order to best support the development of a system so closely tied to its theoretical work, the recognition of the inherent interplay between the design and implementation was key. \\
+
+Implementation of \gls{absol} proceeded according to the process explored in \autoref{sub:the_development_process}, and hence the metacompiler was built in an iterative fashion.
+Much like the components outlined in the final system architecture, this resulted in well-defined phases of implementation, with each portion of the metacompiler being developed over time. 
+While this methodology worked in a fairly effective fashion for producing the proof of concept, the corresponding lack of true issue tracking and other formal development methodologies led to some situations that may otherwise have been mitigated or avoided entirely.
+
+\subsection{The Development Process} % (fold)
+\label{sub:the_development_process}
+While it probably would have been sensible to employ some formal project planing and development methodology, the fluid nature of the intertwined design and development lent itself to a methodology that one could term as falling loosely into the `agile' family of methods \citep{fowler2001agile}.
+The choice of such a method was broadly informed by two main factors: a recognition of the way in which the project's theoretical nature resulted in closely coupled design and implementation cycles, and previous experience with such development methods.\\
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.75\textwidth]{resources/images/absol_development_process.pdf}
+    \caption{The ABSOL Development Process}
+    \label{fig:the_absol_development_process}
+\end{figure}
+
+While it was only employed in an informal fashion during implementation, rather than as a concrete strategy, the development process employed for the implementation of \gls{absol} can best be formalised as illustrated in \autoref{fig:the_absol_development_process}.
+It is best described as follows:
+\begin{enumerate}
+    \item \textbf{Choose a Component:} Determine the component of the system that would be undergoing current development. 
+    While this was initially chosen in the order suggested by the \gls{absol} high-level architecture, each component underwent a development phase more than once throughout the lifetime of the project.
+    \item \textbf{Design the Component:} Create a design for that system component (as illustrated in \autoref{cha:architecture_and_algorithms}), or refine the existing component design.
+    \item \textbf{Develop the Component:} Provide a concrete implementation for the system component.
+    During the process of this implementation it was expected that additional improvements would be made to the design as the implementation could also act as a discovery and idea generation process.
+    These design improvements interacted iteratively with 
+    \item \textbf{Refine the Component:} Once the component is in a reasonable state, perform iteration on the component without altering its design.
+    This process involved editing code for clarity, refining API boundaries and other general refactoring tasks such as the addition or clarification of comments. 
+    It aimed to improve the code product without altering its functionality.
+    \item \textbf{Complete the Component:} Once a component is complete according to the current design, another component is chosen and the process begins again.
+\end{enumerate}
+
+While this process provided a simplistic workflow for the development of \gls{absol}, it should be noted that it provided no real impetus to work like a standard agile methodology.
+There was no notion of a `sprint', or other such work period, for which deliverables would be created.
+This choice was never vocalised \textit{during} the course of development, but in hindsight is likely an artefact of having no concrete ability to schedule time to work on the project due to the unreliable time demands of other surrounding work. 
+
+% subsection the_development_process (end)
+
+\subsection{Tooling and Language Choices} % (fold)
+\label{sub:tooling_and_language_choices}
+The development of \gls{absol} employed a suite of tools to enhance the development experience and enable an experimental style.
+Haskell was the language chosen for metacompiler development due to its significant capabilities with regards to language parsing as discussed in \autoref{sec:technological_support}.
+As a result, most of the tools aimed to support development in Haskell.
+The most important of these tools are as follows:
 \begin{itemize}
-    \item Follow a similar structure to algorithms, using code listings to illustrate how the abstract algorithms were turned into a concrete system. 
-    \item Examine the compromises or changes to the algorithm that had to take place.
+    \item \textbf{GHC:} The Glasgow Haskell Compiler provides a robust Haskell toolchain for the development of Haskell Programs, including a compiler, interpreter, debugger and the suite of core libraries \citep{ghc}. 
+    Beyond this, and importantly for the project, it also provides support for a wide range of Haskell language extensions, enabling the writing of flexible and clear code.
+    During the project the integrated debugger and interpreter proved crucial to diagnosing bugs in the verification engine and parser, while the language extensions enabled additional clarity of code.
+    \item \textbf{Stack:} Stack is a cross-platform framework for the development of Haskell programs \citep{haskellstack}.
+    It provides project management facilities in the form of project metadata, and most importantly it provides reproducible builds. 
+    As project development was taking place across multiple machines, the fact that Stack ensured identical toolchains across these machines saved significant effort in project configuration and allowed the avoidance of many configuration-specific issues. 
+    \item \textbf{Git:} Git is a free, open-source, distributed version control system \citep{git_scm}. 
+    It was used throughout the development on this project to version-control the code.
+    Having this safety allowed much more free experimentation with algorithms and language techniques, as it was always possible to revert to a previous working state. 
+    Beyond this, the version history enabled worry-free refactoring as older versions of the code were always accessible. 
+    \item \textbf{Sublime Text:} Sublime Text is a high-performance text editor with a robust plugin ecosystem \citep{sublime_text}.
+    Sublime was chosen as the main development tool for the project due to familiarity, but also this plugin ecosystem that allowed it to provide a comprehensive Haskell \gls{ide} experience to support development.
+    \item \textbf{SublimeHaskell:} SublimeHaskell is the Haskell plugin that this project used in association with Sublime Text. 
+    It features smart error reporting, semantic contextual completion, refactoring support and integration with the stack build tool \citep{sublime_haskell}. 
+    SublimeHaskell proved integral to the Haskell development experience with this project, allowing the writing of better code at a faster rate due to the integrated autocompletion, suggestions and refactoring tools. 
 \end{itemize}
+
+Notably absent from this list is any kind of project management software.
+The development of \gls{absol} did not make use of such software as it was initially felt that the close interplay between design and implementation would make such a strategy useless.
+
+\subsubsection{Reflecting on the Choice of Haskell} % (fold)
+\label{ssub:reflecting_on_the_choice_of_haskell}
+% Fantastic choice for the task at hand,
+% Failings around debugging due to laziness. 
+% Talk about the use of language extensions -> useful features to build more concise code, but also the downside of it -> creating a 'dialect'
+
+As the entire project was implemented in Haskell there has been significant time to reflect on this choice of language for the development of \gls{absol}.
+Broadly, the choice of Haskell has been an immensely positive one for the project as a whole, and it is unlikely that any other language would have provided the same combination of features that made this implementation so smooth.
+This can be attributed to the following reasons:
+\begin{itemize}
+    \item \textbf{Robust Parsing Support:} Haskell's Monadic effects system provides a robust framework for the building of parsers and parsing libraries. 
+    This meant that building the parser for \gls{metaspec} was a greatly simplified task than it would have been in another language, further improved by the existence of Megaparsec (see \autoref{sub:megaparsec_improved_parsing}). 
+    This `parser combinator' style allows for parsers to closely resemble the structure of the grammar that they are parsing, and hence makes them very simple to write from an existing language grammar (see \autoref{cha:designing_the_metalanguage}).
+    \item \textbf{Suitability of Declarative / Functional Programming:} In addition to its suitability for parsing, the declarative and functional nature of Haskell made it inherently suited to the verification of the language.
+    The use of pattern matching for destructuring data, and the functional concepts of mapping, folding and filtering enabled a vastly simplified implementation of the verification algorithms.
+    Had it been implemented in an imperative style, it would likely have been far more unwieldy. 
+    \item \textbf{Language Familiarity:} The benefits of being familiar with the implementation language cannot be overstated. 
+    Having a high-degree of experience with the language, combined with the suitability of the language for the problem, ensured that development was a mostly smooth experience. 
+    \item \textbf{Laziness:} Haskell is, by default, a lazy language.
+    This means that the creation of computations builds a series of `thunks' that are only evaluated when they are actually required.
+    This enabled a very expressive style of programming without concerns for performance as long pipelines of data transformations could be built up but later collapsed via lazy optimisation for evaluation.
+    This meant that code could be written in the clearest fashion without concern for incurring significant performance penalties, particularly beneficial given that this project did not focus on metacompiler performance at all.
+\end{itemize}
+
+While the choice of Haskell for this project was, in hindsight, the correct one to make, that is not to suggest that it was without its pitfalls.
+The major issue encountered with Haskell is a feature also cited as a boon above: the laziness. 
+While the laziness enabled expressive functional code, it also proved to make certain debugging situations far more difficult than they would have been in a strict language.\\
+
+In certain situations during development it was appropriate to `stub-out' functions with constant return types, or to call them but never use their result.
+Due to the optimisations enabled by laziness this meant that the function bodies were never evaluated, and hence any debug statements in those bodies were never printed. 
+This occurred despite the excellent debugger integrated into \gls{ghci}, as that debugger does not have the ability to force evaluation of thunks.
+This led to some significant frustration during the development of the metacompiler in particular, where it was often useful to visualise the data resultant from certain operations. \\
+
+It is, nevertheless, certain that Haskell was the best choice for the development of \gls{absol} as the benefits in terms of robust parsing support and language familiarity far outweighed the sometimes frustrating debugging experience. 
+
+% subsubsection reflecting_on_the_choice_of_haskell (end)
+
+% subsection tooling_and_language_choices (end)
+
+\subsection{Benefits of the Implementation Process} % (fold)
+\label{sub:benefits_of_the_implementation_process}
+Overall, the implementation process chosen for the development of \gls{absol} turned out to be more helpful than a hindrance. 
+The flexibility of the development process ensured that it was able to work within the project's often random time constraints, rather than trying to force development effort into a predefined schedule.
+Additionally, the close interplay between design and implementation ensured that improvements that derived from the development process and concrete implementation were incorporated back into the system and algorithmic design. \\
+
+The choice of tooling as a whole was also a significant boon, enabling a robust but clear implementation of a language parser, and later of the fairly complex verification algorithms.
+The development in Haskell ensured that the resultant code was clear, and was well supported by the choice of toolchain, with Stack ensuring that the project would build in any environment, and SublimeHaskell providing flexible suggestions and refactoring tools that saw significant use. 
+
+% subsection benefits_of_the_implementation_process (end)
+
+\subsection{Downsides of the Implementation Process} % (fold)
+\label{sub:downsides_of_the_implementation_process}
+However, in hindsight, there are some elements of the implementation process that could have seen significant improvement with more forethought. 
+One of the most pressing issues that occurred during development was the methodology for tracking bugs and missing features. \\
+
+Due to the lack of a formal process, this also meant that the project did not employ any formalised project planning and management tools such as JIRA or Pivotal Tracker (both issue trackers).
+While these would not have been used for planning work allotments, they would have been invaluable for maintaining a list of issues with the project, and things yet to be implemented, even as the project evolved.
+Instead, the project made use of the designs as lists of features, which led to features being forgotten about on multiple occasions.
+This was augmented through the use of \mintinline{text}{-- TODO} comments throughout the project codebase.
+While these were more visible than drawing features from design notes, they prevented the ability to obtain a clear overview of the work left to do on the implementation.\\
+
+This lack of an ability to form an accurate overview of the work remaining in the project proved problematic on multiple occasions, with implementation of certain system components taking far longer than otherwise expected.
+It was clear that, through the use of a formal project tracker, this could have been avoided.
+These issues also illustrated the downside of not scheduling work, as doing so would have provided a more accurate overview of the project, and hence a better ability to plan and estimate development time and effort. 
+
+% subsection downsides_of_the_implementation_process (end)
+
+% section the_implementation_process (end)
 
 \section{Building the Application Framework} % (fold)
 \label{sec:building_the_application_framework}
-% Designing state into the parser (two stage impl)
-% How did the NT tracker come about - why was it insufficient to track all nt parses the same way? -> they are all parsed the same, but they have different semantic meaning for the precondition verification. 
+% The first component to be implemented, though it has been revisited
 
 % section building_the_application_framework (end)
 
 \section{Building the Lexer and Parser} % (fold)
 \label{sec:building_the_lexer_and_parser}
 % The precondition verifier is implemented in separate functions as much as possible. This ensures that it doesn't add unnecessary clutter to the parser itself. 
+% Designing state into the parser (two stage impl)
+% Two-stage implementation of the lexer and parser
+% Grammar then Lexer elements then Parser parts 
+% Got it to a state where it could parse metaspec and THEN Integrated the state required to perform precondition checking. 
+% How did the NT tracker come about - why was it insufficient to track all nt parses the same way? -> they are all parsed the same, but they have different semantic meaning for the precondition verification. 
 
 % section building_the_lexer_and_parser (end)
 
-\subsection{Building the Verification Framework} % (fold)
-\label{sub:building_the_verification_framework}
+\section{Building the Verification Framework} % (fold)
+\label{sec:building_the_verification_framework}
 % Need to discuss the practicalities of solving the mutually recursive rule problem (the production trace and additional RuleTag types). 
 % The theoretical underpinning of this. 
 % Fun with the state monad for the verification algorithm.
 % Examine the design problem of providing reporting abilities via the RuleTag concept -> not in the core algorithm, so hence an addition to it.
 
-% subsection building_the_verification_framework (end)
-
-\section{Tooling and Language Choices} % (fold)
-\label{sec:tooling_and_language_choices}
-
-\subsection{Reflecting on the Language Choice} % (fold)
-\label{sub:reflecting_on_the_language_choice}
-
-% subsection reflecting_on_the_language_choice (end)
-
-% section tooling_and_language_choices (end)
+% section building_the_verification_framework (end)
 
 % chapter implementation (end)
