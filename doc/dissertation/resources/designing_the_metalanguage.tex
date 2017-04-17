@@ -766,7 +766,8 @@ language-rule-semantics =
 \label{sub:determining_the_combination_point}
 Just as important as the combination syntax was the choice of where to combine the syntactic and semantic descriptions.\\
 
-The initial choice of the connection point went somewhat awry, with the grammar specifying that the semantics came directly after the full syntactic specification: \mintinline{text}{production, "-->", "{", semantics, "}"}.
+The initial choice of the connection point went somewhat awry, with the grammar specifying that the semantics came directly after the full syntactic specification: \\
+\mintinline{text}{production, "-->", "{", semantics, "}"}.
 For some fairly obvious reasons, this did not work.
 All of these boil down to one essential fact: syntactic productions contain alternations:
 \begin{itemize}
@@ -775,7 +776,7 @@ All of these boil down to one essential fact: syntactic productions contain alte
 \end{itemize}
 
 Clearly, the semantics should instead be specified at the level of the alternation instead: \mintinline{text}{<a> --> {} | <b> --> {} | ...} and so on.
-This provides the maximum amount of flexibility to the language designers, allowing them to specify more complex productions that are logically grouped. An example of this is the `arithmetic operation' production shown in \autoref{lst:arithmetic_operations_in_metaspec}.
+This provides the maximum amount of flexibility to the language designers, allowing them to specify more complex productions that are logically grouped. An example of this is the `arithmetic operation' production shown in \autoref{lst:arithmetic_operations_in_metaspec}.\\
 
 \begin{listing}[!htb]
 \begin{minted}[numbers=none]{text} 

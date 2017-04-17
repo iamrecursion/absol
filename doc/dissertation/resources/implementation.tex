@@ -5,42 +5,766 @@
 
 \chapter{Implementation} % (fold)
 \label{cha:implementation}
-This section will:
+Despite its highly theoretical nature, the project also involved a significant implementation in order to provide a proof-of-concept for the theory and algorithms behind the language proof mechanism. 
+The implementation was based directly on the design work and, as mentioned at the start of \autoref{cha:architecture_and_algorithms}, it was often interleaved with the design work in an iterative process that incorporated feedback. 
+This section aims to illustrate the implementation process, methodologies and tools, as well as highlight interesting solutions to the most significant challenges faced. 
+
+\section{The Implementation Process} % (fold)
+\label{sec:the_implementation_process}
+% A discussion of the process taken, with an examinatio of both its flaws and benefits
+% Talk about how the design influenced the process of implementation
+
+The process of implementing \gls{absol} started almost as soon as the high-level system architecture (see \autoref{fig:absol_high_level_architectural_diagram} on \autopageref{fig:absol_high_level_architectural_diagram}) was completed. 
+While the core focus of the project was assuredly on the underlying algorithms and the system design itself, the importance of the proof-of-concept implementation cannot be understated. 
+In order to best support the development of a system so closely tied to its theoretical work, the recognition of the inherent interplay between the design and implementation was key. \\
+
+Implementation of \gls{absol} proceeded according to the process explored in \autoref{sub:the_development_process}, and hence the metacompiler was built in an iterative fashion.
+Much like the components outlined in the final system architecture, this resulted in well-defined phases of implementation, with each portion of the metacompiler being developed over time. 
+While this methodology worked in a fairly effective fashion for producing the proof of concept, the corresponding lack of true issue tracking and other formal development methodologies led to some situations that may otherwise have been mitigated or avoided entirely.
+
+\subsection{The Development Process} % (fold)
+\label{sub:the_development_process}
+While it probably would have been sensible to employ some formal project planing and development methodology, the fluid nature of the intertwined design and development lent itself to a methodology that one could term as falling loosely into the `agile' family of methods \citep{fowler2001agile}.
+The choice of such a method was broadly informed by two main factors: a recognition of the way in which the project's theoretical nature resulted in closely coupled design and implementation cycles, and previous experience with such development methods.\\
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.75\textwidth]{resources/images/absol_development_process.pdf}
+    \caption{The ABSOL Development Process}
+    \label{fig:the_absol_development_process}
+\end{figure}
+
+While it was only employed in an informal fashion during implementation, rather than as a concrete strategy, the development process employed for the implementation of \gls{absol} can best be formalised as illustrated in \autoref{fig:the_absol_development_process}.
+It is best described as follows:
+\begin{enumerate}
+    \item \textbf{Choose a Component:} Determine the component of the system that would be undergoing current development. 
+    While this was initially chosen in the order suggested by the \gls{absol} high-level architecture, each component underwent a development phase more than once throughout the lifetime of the project.
+    \item \textbf{Design the Component:} Create a design for that system component (as illustrated in \autoref{cha:architecture_and_algorithms}), or refine the existing component design.
+    \item \textbf{Develop the Component:} Provide a concrete implementation for the system component.
+    During the process of this implementation it was expected that additional improvements would be made to the design as the implementation could also act as a discovery and idea generation process.
+    These design improvements interacted iteratively with 
+    \item \textbf{Refine the Component:} Once the component is in a reasonable state, perform iteration on the component without altering its design.
+    This process involved editing code for clarity, refining API boundaries and other general refactoring tasks such as the addition or clarification of comments. 
+    It aimed to improve the code product without altering its functionality.
+    \item \textbf{Complete the Component:} Once a component is complete according to the current design, another component is chosen and the process begins again.
+\end{enumerate}
+
+While this process provided a simplistic workflow for the development of \gls{absol}, it should be noted that it provided no real impetus to work like a standard agile methodology.
+There was no notion of a `sprint', or other such work period, for which deliverables would be created.
+This choice was never vocalised \textit{during} the course of development, but in hindsight is likely an artefact of having no concrete ability to schedule time to work on the project due to the unreliable time demands of other surrounding work. 
+
+% subsection the_development_process (end)
+
+\subsection{Tooling and Language Choices} % (fold)
+\label{sub:tooling_and_language_choices}
+The development of \gls{absol} employed a suite of tools to enhance the development experience and enable an experimental style.
+Haskell was the language chosen for metacompiler development due to its significant capabilities with regards to language parsing as discussed in \autoref{sec:technological_support}.
+As a result, most of the tools aimed to support development in Haskell.
+The most important of these tools are as follows:
 \begin{itemize}
-    \item Follow a similar structure to algorithms, using code listings to illustrate how the abstract algorithms were turned into a concrete system. 
-    \item Examine the compromises or changes to the algorithm that had to take place.
+    \item \textbf{GHC:} The Glasgow Haskell Compiler provides a robust Haskell toolchain for the development of Haskell Programs, including a compiler, interpreter, debugger and the suite of core libraries \citep{ghc}. 
+    Beyond this, and importantly for the project, it also provides support for a wide range of Haskell language extensions, enabling the writing of flexible and clear code.
+    During the project the integrated debugger and interpreter proved crucial to diagnosing bugs in the verification engine and parser, while the language extensions enabled additional clarity of code.
+    \item \textbf{Stack:} Stack is a cross-platform framework for the development of Haskell programs \citep{haskellstack}.
+    It provides project management facilities in the form of project metadata, and most importantly it provides reproducible builds. 
+    As project development was taking place across multiple machines, the fact that Stack ensured identical toolchains across these machines saved significant effort in project configuration and allowed the avoidance of many configuration-specific issues. 
+    \item \textbf{Git:} Git is a free, open-source, distributed version control system \citep{git_scm}. 
+    It was used throughout the development on this project to version-control the code.
+    Having this safety allowed much more free experimentation with algorithms and language techniques, as it was always possible to revert to a previous working state. 
+    Beyond this, the version history enabled worry-free refactoring as older versions of the code were always accessible. 
+    \item \textbf{Sublime Text:} Sublime Text is a high-performance text editor with a robust plugin ecosystem \citep{sublime_text}.
+    Sublime was chosen as the main development tool for the project due to familiarity, but also this plugin ecosystem that allowed it to provide a comprehensive Haskell \gls{ide} experience to support development.
+    \item \textbf{SublimeHaskell:} SublimeHaskell is the Haskell plugin that this project used in association with Sublime Text. 
+    It features smart error reporting, semantic contextual completion, refactoring support and integration with the stack build tool \citep{sublime_haskell}. 
+    SublimeHaskell proved integral to the Haskell development experience with this project, allowing the writing of better code at a faster rate due to the integrated autocompletion, suggestions and refactoring tools. 
 \end{itemize}
 
-\section{Building the Application Framework} % (fold)
-\label{sec:building_the_application_framework}
-% Designing state into the parser (two stage impl)
-% How did the NT tracker come about - why was it insufficient to track all nt parses the same way? -> they are all parsed the same, but they have different semantic meaning for the precondition verification. 
+Notably absent from this list is any kind of project management software.
+The development of \gls{absol} did not make use of such software as it was initially felt that the close interplay between design and implementation would make such a strategy useless.
 
-% section building_the_application_framework (end)
+\subsubsection{Reflecting on the Choice of Haskell} % (fold)
+\label{ssub:reflecting_on_the_choice_of_haskell}
+% Fantastic choice for the task at hand,
+% Failings around debugging due to laziness. 
+% Talk about the use of language extensions -> useful features to build more concise code, but also the downside of it -> creating a 'dialect'
+
+As the entire project was implemented in Haskell there has been significant time to reflect on this choice of language for the development of \gls{absol}.
+Broadly, the choice of Haskell has been an immensely positive one for the project as a whole, and it is unlikely that any other language would have provided the same combination of features that made this implementation so smooth.
+This can be attributed to the following reasons:
+\begin{itemize}
+    \item \textbf{Robust Parsing Support:} Haskell's Monadic effects system provides a robust framework for the building of parsers and parsing libraries. 
+    This meant that building the parser for \gls{metaspec} was a greatly simplified task than it would have been in another language, further improved by the existence of Megaparsec (see \autoref{sub:megaparsec_improved_parsing}). 
+    This `parser combinator' style allows for parsers to closely resemble the structure of the grammar that they are parsing, and hence makes them very simple to write from an existing language grammar (see \autoref{cha:designing_the_metalanguage}).
+    \item \textbf{Suitability of Declarative / Functional Programming:} In addition to its suitability for parsing, the declarative and functional nature of Haskell made it inherently suited to the verification of the language.
+    The use of pattern matching for destructuring data, and the functional concepts of mapping, folding and filtering enabled a vastly simplified implementation of the verification algorithms.
+    Had it been implemented in an imperative style, it would likely have been far more unwieldy. 
+    \item \textbf{Language Familiarity:} The benefits of being familiar with the implementation language cannot be overstated. 
+    Having a high-degree of experience with the language, combined with the suitability of the language for the problem, ensured that development was a mostly smooth experience. 
+    \item \textbf{Laziness:} Haskell is, by default, a lazy language.
+    This means that the creation of computations builds a series of `thunks' that are only evaluated when they are actually required.
+    This enabled a very expressive style of programming without concerns for performance as long pipelines of data transformations could be built up but later collapsed via lazy optimisation for evaluation.
+    This meant that code could be written in the clearest fashion without concern for incurring significant performance penalties, particularly beneficial given that this project did not focus on metacompiler performance at all.
+\end{itemize}
+
+While the choice of Haskell for this project was, in hindsight, the correct one to make, that is not to suggest that it was without its pitfalls.
+The major issue encountered with Haskell is a feature also cited as a boon above: the laziness. 
+While the laziness enabled expressive functional code, it also proved to make certain debugging situations far more difficult than they would have been in a strict language.\\
+
+In certain situations during development it was appropriate to `stub-out' functions with constant return types, or to call them but never use their result.
+Due to the optimisations enabled by laziness this meant that the function bodies were never evaluated, and hence any debug statements in those bodies were never printed. 
+This occurred despite the excellent debugger integrated into \gls{ghci}, as that debugger does not have the ability to force evaluation of thunks.
+This led to some significant frustration during the development of the metacompiler in particular, where it was often useful to visualise the data resultant from certain operations. \\
+
+It is, nevertheless, certain that Haskell was the best choice for the development of \gls{absol} as the benefits in terms of robust parsing support and language familiarity far outweighed the sometimes frustrating debugging experience. 
+
+% subsubsection reflecting_on_the_choice_of_haskell (end)
+
+% subsection tooling_and_language_choices (end)
+
+\subsection{Benefits of the Implementation Process} % (fold)
+\label{sub:benefits_of_the_implementation_process}
+Overall, the implementation process chosen for the development of \gls{absol} turned out to be more helpful than a hindrance. 
+The flexibility of the development process ensured that it was able to work within the project's often random time constraints, rather than trying to force development effort into a predefined schedule.
+Additionally, the close interplay between design and implementation ensured that improvements that derived from the development process and concrete implementation were incorporated back into the system and algorithmic design. \\
+
+The choice of tooling as a whole was also a significant boon, enabling a robust but clear implementation of a language parser, and later of the fairly complex verification algorithms.
+The development in Haskell ensured that the resultant code was clear, and was well supported by the choice of toolchain, with Stack ensuring that the project would build in any environment, and SublimeHaskell providing flexible suggestions and refactoring tools that saw significant use. 
+
+% subsection benefits_of_the_implementation_process (end)
+
+\subsection{Downsides of the Implementation Process} % (fold)
+\label{sub:downsides_of_the_implementation_process}
+However, in hindsight, there are some elements of the implementation process that could have seen significant improvement with more forethought. 
+One of the most pressing issues that occurred during development was the methodology for tracking bugs and missing features. \\
+
+Due to the lack of a formal process, this also meant that the project did not employ any formalised project planning and management tools such as JIRA or Pivotal Tracker (both issue trackers).
+While these would not have been used for planning work allotments, they would have been invaluable for maintaining a list of issues with the project, and things yet to be implemented, even as the project evolved.
+Instead, the project made use of the designs as lists of features, which led to features being forgotten about on multiple occasions.
+This was augmented through the use of \mintinline{text}{-- TODO} comments throughout the project codebase.
+While these were more visible than drawing features from design notes, they prevented the ability to obtain a clear overview of the work left to do on the implementation.\\
+
+This lack of an ability to form an accurate overview of the work remaining in the project proved problematic on multiple occasions, with implementation of certain system components taking far longer than otherwise expected.
+It was clear that, through the use of a formal project tracker, this could have been avoided.
+These issues also illustrated the downside of not scheduling work, as doing so would have provided a more accurate overview of the project, and hence a better ability to plan and estimate development time and effort. 
+
+% subsection downsides_of_the_implementation_process (end)
+
+% section the_implementation_process (end)
+
+\section{Building the Metacompiler Front-End} % (fold)
+\label{sec:building_the_metacompiler_front_end}
+The metacompiler front-end was the first component that saw any implementation work as part of the project. 
+The front end, as per the design is responsible for parsing the command-line options, loading the metaspec file and coordinating the metacompiler pipeline.
+There were few challenges during the implementation of this stage, and it proceeded smoothly.
+The metacompiler front end is contained within the files listed in the appropriate portion of Appendix~\ref{cha:software_readme}.\\
+
+Loading the metaspec file was a simple task, with Haskell providing a robust API for dealing with both files (\mintinline{text}{System.IO}) and file paths (\mintinline{text}{System.FilePath}). 
+The only cases that loading the file was really concerned with were the file not being present, or the program crashing while the file was open.
+The default Haskell behaviour in the former case was acceptable, throwing a runtime exception with a descriptive error (seen in \autoref{lst:haskell_error_for_non_existent_file}).\\
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+metaspec/simple_test.met: openFile: does not exist (No such file or directory)
+\end{minted}
+\caption{Haskell Error for Non-Existent File}
+\label{lst:haskell_error_for_non_existent_file}
+\end{listing}
+
+In the second case, however, care had to be taken as crashing with the file open may lead to a resource leak. 
+To prevent this, the implementation used the exception-safe function \mintinline{haskell}{withFile} to open the file.
+This function automatically closes the file handle when an exception is thrown, and thus prevents the resource leak.
+It made sense to wrap this primitive in another function to provide some options, which can be seen in \autoref{lst:safe_file_io_in_haskell}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+acquireMetaspecFile :: FilePath -> (Handle -> IO a) -> IO a
+acquireMetaspecFile file = withFile file ReadMode
+\end{minted}
+\caption{Safe File IO in Haskell}
+\label{lst:safe_file_io_in_haskell}
+\end{listing}
+
+It was as part of this that the decision to use the \mintinline{text}{Data.Text} library was made. 
+Strings in Haskell are, by default, lists of UTF-32 graphemes, and are hence fairly inefficient. 
+The \mintinline{text}{Data.Text} library provides a type for manipulating text as efficient, packed UTF-8 glyphs \citep{haskell_data_text}.
+In light of the pleasant \gls{api} for text manipulation, and the performance benefits, the decision was made to read in the file as \mintinline{haskell}{Text} instead of as a \mintinline{haskell}{String}: \mintinline{haskell}{TI.hGetContents file}.\\
+
+The front-end duties of coordinating the metacompiler pipeline come naturally from the nature of the program.
+The parser is run first, with any parse errors being handled and shown to the user.
+In the case of success, the result of this is passed into the language verification engine, which performs its own processing and returns a result.
+This pipelining of processes is illustrated in \autoref{lst:coordinating_the_metacompiler_pipeline}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=56]{haskell}
+case P.parseMetaspecFile filename contents of
+    Left err -> hPutStr stderr $ P.parseErrorPretty err
+    Right (ast, _) -> do
+        let (result, diagnostic) = verifyLanguage ast
+\end{minted}
+\caption{Coordinating the Metacompiler Pipeline}
+\label{lst:coordinating_the_metacompiler_pipeline}
+\end{listing}
+
+\subsection{Parsing the Command-Line Options} % (fold)
+\label{sub:parsing_the_command_line_options}
+The major implementation challenge of the metacompiler front-end was to determine the most appropriate method to parse the command-line options.
+Haskell provides some native facilities for doing so, but these are clunky, requiring the developer to manually specify help text and other facilities expected of a \gls{cli} program.
+Instead the choice was made to employ \mintinline{text}{optparse-applicative}, a library that provides an declarative interface to the building of command-line options \citep{optparse_applicative}.\\
+
+Building the command-line options in this fashion is an intuitive process, removing much of the challenge from their implementation. 
+The first step is to declare a data-type for containing the options data: in this implementation the choice was made to use record syntax as it provides automatic functions for field accesses, as seen in \autoref{lst:the_cli_options_data_type}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=35]{haskell}
+data CLIOptions = CLIOptions {
+    filename        :: File,
+    reportFlag      :: CmdLineFlag,
+    cleanFlag       :: CmdLineFlag,
+    langName        :: CmdString,
+    langVersion     :: CmdString,
+    verboseFlag     :: CmdLineFlag,
+    logFile         :: Maybe File,
+    outputDirectory :: Maybe File
+} deriving (Eq, Show)
+\end{minted}
+\caption{The CLI Options Data Type}
+\label{lst:the_cli_options_data_type}
+\end{listing}
+
+Once the data-type is designed, it remains to declare two things: a function to construct the options, and a set of functions declaring the command-line arguments.
+Each option is specified in a declarative format, with each function defining the type, flags, format, help text and any other necessary information for the option, as seen in \autoref{lst:applicative_option_creation}.
+The list of implemented options was taken directly from the design, and hence matches those seen in \nameref{ssub:designing_the_command_line_options} on \autopageref{ssub:designing_the_command_line_options}.
+These functions are then combined through sequential application (\mintinline{haskell}{<*>}) to form a parser for the command-line options.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=103]{haskell}
+parseLangName :: Parser CmdString
+parseLangName = optional $ option str (
+        short 'n' <>
+        long "name" <>
+        help "Use the provided name STRING instead of the one embedded in\
+            \ the file." <>
+        metavar "STRING"
+    )
+\end{minted}
+\caption{Applicative Option Creation}
+\label{lst:applicative_option_creation}
+\end{listing}
+
+% subsection parsing_the_command_line_options (end)
+
+% section building_the_metacompiler_front_end (end)
 
 \section{Building the Lexer and Parser} % (fold)
 \label{sec:building_the_lexer_and_parser}
-% The precondition verifier is implemented in separate functions as much as possible. This ensures that it doesn't add unnecessary clutter to the parser itself. 
+
+Without the language \gls{ast} it would be impossible to reliably develop the verification algorithm so, mostly out of necessity, Metaparse itself was the next system component to be implemented. 
+The implementation of Metaparse involved multiple phases of implementation, each of which posed its own unique challenge
+The first was the creation of the AST data-types, which proved to be an exercise in definition rules for Haskell types.
+This was promptly followed by the development of the parser and its rapid evolution to support precondition verification.
+The files referenced 
+
+\subsection{Creating the AST Types} % (fold)
+\label{sub:creating_the_ast_types}
+The nature of a combinator parser is that it closely resembles the grammar that it parses. 
+This means that it exists as a set of functions that each parse some small portion of the grammar, all combined to build an entire parser. 
+Due to the strongly-typed nature of Haskell, this means that there needs to be a system of types representing the \gls{ast}, looking much like the example in \autoref{lst:an_example_ast_data_type}, which can be found in \mintinline{text}{Grammar.hs}.\\
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=101]{haskell}
+data MetaspecDefblock
+    = NameDefblock String
+    | VersionDefblock String
+    | UsingDefblock [MetaspecFeature]
+    | TruthsDefblock SemanticTruthsList
+    | LanguageDefblock StartRule [LanguageRule]
+    deriving (Show, Eq)    
+\end{minted}
+\caption{An Example AST Data-Type}
+\label{lst:an_example_ast_data_type}
+\end{listing}
+
+While this process was initially assumed to be a mostly rote translation of the Metaspec language grammar (see \autoref{cha:designing_the_metalanguage}), this turned out to not be the case in two main ways (as discussed in \nameref{ssub:designing_the_metaparse_ast} on \autopageref{ssub:designing_the_metaparse_ast}):
+\begin{enumerate}
+    \item \textbf{Haskell Data-Type Restrictions:} The structure of Haskell's data-type declarations precludes some kinds of recursive definition.
+    To avoid these problems it is necessary to introduce indirect declarations as seen below.
+\begin{minted}[xleftmargin=1.5cm, firstnumber=181, fontsize=\blockfont]{haskell}
+data SemanticRule
+    = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
+    | EnvironmentAccessRuleProxy EnvironmentAccessRule
+    | SpecialSyntaxRuleProxy SpecialSyntaxRule
+    | SemanticEvaluationRuleList SemanticEvaluationRuleList
+    deriving (Show, Eq)
+\end{minted}
+    In such cases, the actual declaration of the \gls{ast} node type has to be moved out to a different data declaration in order to be properly available elsewhere and avoid recursive definitions.
+\begin{minted}[xleftmargin=1.5cm, firstnumber=198]{haskell}
+data SpecialSyntaxRule = SpecialSyntaxRule
+    SemanticType
+    SemanticSpecialSyntax
+    [AccessBlockOrRule]
+    deriving (Show, Eq)
+\end{minted}
+    \item \textbf{Production Representation:} Certain portions of the language grammar do not correspond directly to constructs that can be created in Haskell data-types.
+    There are multiple parts of the \gls{metaspec} grammar that have had to be extracted appropriately, usually two-element alternations.
+    This is to allow these alternations to be appropriately expressed in lists, and usually involved the \mintinline{haskell}{Either} type to provide the appropriate alternation.
+\begin{minted}[xleftmargin=1.5cm, firstnumber=198]{haskell}
+type AccessBlockOr a = Either SyntaxAccessBlock a
+\end{minted}
+\end{enumerate}
+
+The other key realisation of this process was that, as an \textit{abstract} syntax tree, it does not need to represent much of the concrete syntax of \gls{metaspec} that is used in parsing. 
+Initial versions of the \gls{ast} grammar incorporated notation for portions of concrete syntax that it turns out were unneeded later on. 
+
+% subsection creating_the_ast_types (end)
+
+\subsection{Developing the Parser} % (fold)
+\label{sub:developing_the_parser}
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=28]{haskell}
+spaceConsumer :: ParserST ()
+spaceConsumer = L.space (void spaceChar) lineComment blockComment
+    where
+        lineComment = L.skipLineComment "//"
+        blockComment = L.skipBlockComment "(*" "*)"
+\end{minted}
+\caption{Basic Lexer Functionality}
+\label{lst:basic_lexer_functionality}
+\end{listing}
+
+The process of developing the parser (in reality, the integrated lexer and parser) took place in two parts: development of the lexer functions, and development of the parser itself. 
+Due to the lexer functionality integrated into Megaparsec, it was trivial to create the basic set of lexer functions for parsing \gls{metaspec}. 
+These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- \autoref{sub:comments_in_metaspec}), and the basic parsers for lexemes and terminals of the language.
+Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.
+
+\begin{figure}[!htb]
+\centering
+\begin{minipage}{0.65\textwidth}
+\centering
+\begin{minted}[firstnumber=246]{haskell}
+syntaxPrimary :: ParserST SyntaxPrimary
+syntaxPrimary = syntaxOptional
+    <|> syntaxRepeated
+    <|> syntaxGrouped
+    <|> syntaxSpecial
+    <|> terminalProxy
+    <|> nonTerminalProxy
+\end{minted}
+\end{minipage}
+\begin{minipage}{0.34\textwidth}
+\centering
+\begin{minted}[firstnumber=247]{text}
+syntax-primary = 
+    syntax-optional | 
+    syntax-repeated |
+    syntax-grouped |
+    syntax-special |
+    non-terminal |
+    terminal;
+\end{minted}
+\end{minipage}
+\caption{Comparing the Parser and the Grammar for Syntax Primaries}
+\label{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}
+\end{figure}
+
+With the basic lexing functionality complete, and armed with the data declarations for the \gls{ast}, it was possible to start building the actual language parser. 
+This process was made much more simple than there was any reason to expect through the usage of Megaparsec, with each parsing function almost looking like a description of the corresponding portion of the grammar (in part due to the fact that \mintinline{haskell}{Parser} is an instance of \mintinline{haskell}{Alternative}. 
+The monadic nature of the parser meant that \mintinline{haskell}{do} notation could be used, allowing the sequencing of parsing operations appropriately. 
+This extreme similarity between the grammar and the parser can be quite clearly illustrated through observation of the parser code in \mintinline{text}{Metaparse.hs}, with an example given in \autoref{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}.\\
+
+The obviously readable nature of the parsers for each of the portions of the language led to an appropriate strategy for building Metaparse.
+Starting at the language start symbol, it was possible to build the parser for each production one-by-one, stubbing out the sub-parsers as \mintinline{haskell}{undefined} and relying on the type-system to ensure correctness.
+In practice, this proved to be an excellent implementation strategy, producing very readable parsers such as that seen in \autoref{lst:an_example_parser_combinator_special_syntax_rule}.
+With such an elegant \gls{api}, the parser was mostly simple to build. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=332]{haskell}
+specialSyntaxRule :: ParserST SpecialSyntaxRule
+specialSyntaxRule = do
+    specialType <- semanticType
+    specialOp <- semanticSpecialSyntax
+    semanticBlocks <- specialSyntaxBlock $
+        accessBlockOrRule `sepBy` multilineListSep
+    return (SpecialSyntaxRule specialType specialOp semanticBlocks)
+\end{minted}
+\caption{An Example Parser Combinator --- Special Syntax Rule}
+\label{lst:an_example_parser_combinator_special_syntax_rule}
+\end{listing}
+
+\subsection{Parsers and Lookahead} % (fold)
+\label{sub:parsers_and_lookahead}
+One of the main challenges that was encountered in parsing was down to a badly designed grammar. 
+Combinator parsers have the capability to consume input, and if they do consume tokens on a branch they are then `locked' into that branch by default (in other words, backtracking is off-by-default).
+Unfortunately, the \gls{metaspec} grammar is badly factored in the context of the multiple kinds of semantic rule, as two of them begin with a \mintinline{text}{semantic-type}, as seen in \autoref{lst:the_badly_factored_semantic_grammar}.
+This means that if, in a parser alternation, it starts to parse one, successfully parses a \mintinline{haskell}{SemanticType} (which consumes tokens) and then later fails, it will try the next branch of the alternation.
+However, the \mintinline{haskell}{SemanticType} has already been consumed, and so it cannot match, causing the entire parser to fail. 
+This is emphatically \textit{not} the behaviour that should take place in such cases. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+environment-input-rule = semantic-type, ... ;
+semantic-evaluation-rule = semantic-type, ... ;
+\end{minted}
+\caption{The Badly Factored Semantic Grammar}
+\label{lst:the_badly_factored_semantic_grammar}
+\end{listing}
+
+The initial approach was to return to the drawing board on the language grammar, attempting to factor it differently. 
+However, this brought significant complication to both the language grammar and the \gls{ast} data-types and was discarded due to how it compromised understanding. 
+The solution, instead, was to invoke the arbitrary lookahead parsing facility provided my Megaparsec: this takes the form of \mintinline{haskell}{try}. 
+What this function does is allow a parser that fails to behave as if it has consumed no input. 
+This means that the entire parser will backtrack successfully until it matches the correct branch.
+The keyword is applied to parsers themselves, as seen in \autoref{lst:parsing_with_infinite_lookahead}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=308]{haskell}
+semanticRule :: ParserST SemanticRule
+semanticRule = try semanticEvaluationRuleList
+    <|> try environmentInputRule
+    <|> try environmentAccessRuleProxy
+    <|> specialSyntaxRuleProxy
+\end{minted}
+\caption{Parsing with Infinite Lookahead}
+\label{lst:parsing_with_infinite_lookahead}
+\end{listing}
+
+One might wonder why the use of lookahead was not the first solution considered for solving this problem, but the reason is simple: it is difficult to produce good parser error messages in the presence of lookahead.
+Unfortunately the significant increase in grammatical complexity added by the aforementioned alterations to the factoring of these rules made the use of arbitrary lookahead the better option. 
+
+% subsection parsers_and_lookahead (end)
+
+% subsection developing_the_parser (end)
+
+\subsection{Precondition Verification} % (fold)
+\label{sub:precondition_verification}
+Implementing the precondition verifier was a challenging exercise in the transformation of the algorithm outlined in \nameref{ssub:precondition_verification_in_the_parser} (\autopageref{ssub:precondition_verification_in_the_parser}) into a concrete implementation.
+The first task for implementing these checks was to add a user state to the parser.
+While all parsing functions up to this point used the default Megaparsec \mintinline{haskell}{Parser} type, this would no longer be possible as it provided no useful access to its internal state. 
+To take the parser beyond just being capable of parsing \gls{metaspec}, some work would be required. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=50]{haskell}
+data MetaState = MetaState {
+    importedFeatures      :: [MetaspecFeature],
+    definedNTs            :: [NonTerminalIdentifier],
+    usedNTs               :: S.Set NonTerminalIdentifier,
+    importedTypes         :: [SemanticType],
+    importedSpecialSyntax :: [SemanticSpecialSyntax],
+    parserPosition        :: RulePosition
+} deriving (Show)
+\end{minted}
+\caption{The Parser State}
+\label{lst:the_parser_state}
+\end{listing}
+
+The first step was to redefine the parser type used in the parser and lexer functions. 
+As state was required, the obvious choice was to reach for the \mintinline{haskell}{StateT} monad transformer, so that the parser could still act as a parser. 
+A monad transformer is a monadic type that modifies the behaviour of another monad: in essence, they provide a way to combine the behaviour of multiple monads. 
+From this, it was possible to construct a new type for the parser: \mintinline{haskell}{type ParserST = StateT MetaState Parser}, using the state type defined in \autoref{lst:the_parser_state}.
+This new type and its supporting functions can be seen in \mintinline{text}{Parser.hs}, and contains all of the necessary information to implement the precondition checking algorithm.
+
+\subsubsection{Tracking Rule Position} % (fold)
+\label{ssub:tracking_rule_position}
+Verifying these preconditions was almost a direct implementation of the algorithm explored in \autoref{sub:verifier_precondition_validation}, except for one thing: the parser, by default, has no notion of where it is in parsing the file.
+This means that every \mintinline{text}{non-terminal} gets parsed by the same sub-parser \mintinline{haskell}{nonTerminal}. 
+Unfortunately, the precondition verification algorithm needs to know whether a given non-terminal parse is when the non-terminal is being \textit{defined} or when it is being \textit{used}. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=47]{haskell}
+data RulePosition = Head | Body | None deriving (Show)
+\end{minted}
+\caption{The Rule Position}
+\label{lst:the_rule_position}
+\end{listing}
+
+To solve this problem, a final element was integrated into the parser state, an indicator of where the parser was in a rule, updated as the parser progresses, as seen in \autoref{lst:the_rule_position}.
+This is accompanied by a set of functions for updating this position.
+Assuming the positional indicator is correctly updated, the parser is now able to track whether a given non-terminal parse is being defined or used, and hence the non-terminal can be added to the appropriate lists.
+The process of updating this position is not particularly elegant, and impinges more upon the parser than is ideal, but it is functional and allows the algorithm to operate correctly (see \autoref{lst:updating_the_parser_rule_position}).
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=159]{haskell}
+languageRule :: ParserST LanguageRule
+languageRule = do
+    modify setPositionHead
+    prodName <- nonTerminal
+    void definingSymbol
+    modify setPositionBody
+    ruleBody <- languageRuleBody
+    modify setPositionNone
+    return (LanguageRule prodName ruleBody)
+\end{minted}
+\caption{Updating the Parser Rule Position}
+\label{lst:updating_the_parser_rule_position}
+\end{listing}
+
+% subsubsection tracking_rule_position (end)
+
+\subsubsection{Keeping the Clutter out of the Parser} % (fold)
+\label{ssub:keeping_the_clutter_out_of_the_parser}
+A direct transformation of the precondition checker algorithm from the pseudocode to code would have added far too much clutter to the parser, whose readability owes much to the aesthetic qualities of combinator parsing. 
+To this end, the implementation challenge emerged from the necessity to implement the precondition checks in such a way that it does not add unnecessary clutter to the parser.
+This meant removing as much of the checking functionality as possible from the parser. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=646]{haskell}
+semanticType :: ParserST SemanticType
+semanticType = checkTypeDefined parser
+    where
+        parser = AnyType <$ semanticTypeString "any"
+            <|> ...
+\end{minted}
+\caption{Precondition Verification in the Parser}
+\label{lst:precondition_verification_in_the_parser}
+\end{listing}
+
+In the final result, the intrusion is small, with much of the work factored out into functions. 
+This holds especially true for the checks that can be implemented during the parse (multiple definitions, type and special-syntax availability), which are single functions that do not interfere with the appearance of the parser.
+An example of this can be seen in \autoref{lst:precondition_verification_in_the_parser}, and it is clear that it adds very little visual clutter and hence maintains parser readability.
+
+% subsubsection keeping_the_clutter_out_of_the_parser (end)
+
+% subsection precondition_verification (end)
 
 % section building_the_lexer_and_parser (end)
 
-\subsection{Building the Verification Framework} % (fold)
-\label{sub:building_the_verification_framework}
-% Need to discuss the practicalities of solving the mutually recursive rule problem (the production trace and additional RuleTag types). 
-% The theoretical underpinning of this. 
-% Fun with the state monad for the verification algorithm.
-% Examine the design problem of providing reporting abilities via the RuleTag concept -> not in the core algorithm, so hence an addition to it.
+\section{Building the Verification Framework} % (fold)
+\label{sec:building_the_verification_framework}
+Unlike the development of the parser, developing the verification framework proved to be a much more involved task. 
+Nevertheless, the availability of comprehensive algorithmic documentation (see \autoref{sec:the_core_algorithms}) ensured that it was less of a problem than would otherwise have been expected.
+This is not to say that it was without challenge, however, as providing clear implementations of these verification components, and the requirement to develop a concise method for error reporting proved most interesting.\\
 
-% subsection building_the_verification_framework (end)
+Much like Metaparse, the verification components were developed in a natural order.
+The preprocessor (\autoref{ssub:the_verification_preprocessor}) had to come first, as it provided the data upon which Metaverify itself would operate. 
+Beyond that, each portion of the verification algorithm was developed independently, using a similar `stubbing-out' of functions based approach to the development of the Parser. 
+This modular approach both ensured an extensible design, as specified by Requirement~\reqref{req:Extensibility}, and broke up the seemingly mammoth implementation task into more manageable segments. 
 
-\section{Tooling and Language Choices} % (fold)
-\label{sec:tooling_and_language_choices}
+\subsection{The Verification Preprocessor} % (fold)
+\label{sub:the_verification_preprocessor}
+With the \gls{ast} available from the output of Metaparse, the implementation of this preprocessing step was a simple application of the algorithm outlined in \nameref{ssub:the_verification_preprocessor} on \autopageref{ssub:the_verification_preprocessor}. 
+The main challenge here was \textit{not} the implementation of the core algorithm, but instead establishing an elegant way to manipulate and traverse the strongly-typed \gls{ast} being used as input.\\
 
-\subsection{Reflecting on the Language Choice} % (fold)
-\label{sub:reflecting_on_the_language_choice}
+After experimentation, the implementation in \mintinline{text}{Collate.hs} settled on the use of Haskell's robust pattern-matching facilities to destructure the AST data.
+However, this also introduced a certain lack of elegance. 
+As the top-level language definition blocks were actually defined as different constructors on the \mintinline{haskell}{MetaspecDefblock} type, it proved somewhat inelegant to find the correct structures.
+To do this, the list of definition blocks had to be traversed with use of a predicate to find the correct portions of the \gls{ast} to extract at the preprocessing stage, as seen in \autoref{lst:preprocessing_the_ast}.
 
-% subsection reflecting_on_the_language_choice (end)
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=53]{haskell}
+getDefblock
+    :: [MetaspecDefblock]
+    -> (MetaspecDefblock -> Bool)
+    -> MetaspecDefblock
+getDefblock xs fn = head $ filter fn xs
+\end{minted}
+\caption{Preprocessing the AST}
+\label{lst:preprocessing_the_ast}
+\end{listing}
 
-% section tooling_and_language_choices (end)
+As part of the requirements for the inputs to the verifier, they needed to provide for efficient lookups of language productions by name. 
+To this end, the resultant implementation decided to make use of \mintinline{text}{Data.Map}, a Haskell package providing a key-value store based on size-balanced binary trees (hence providing $\mathcal{O}(n \log n)$ complexity lookups) \citep{data_map}.
+This usage ensured that lookups would be efficient, but also introduced an interesting transformation issue from the \gls{ast} nodes to the map itself.
+The resultant solution, seen in \autoref{lst:building_the_productions_map} uses the generalised monad comprehensions language extension to eliminate intermediary allocations when building the map. 
+This preserved efficiency in construction by avoiding intermediary allocations.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=70]{haskell}
+mapRules r = M.fromList [
+        (getKey v, (Untouched, getBody v))
+        | v <- r,
+        let getKey (LanguageRule x _) = x;
+            getBody (LanguageRule _ x) = x
+    ]
+\end{minted}
+\caption{Building the Productions Map}
+\label{lst:building_the_productions_map}
+\end{listing} 
+
+% subsection the_verification_preprocessor (end)
+
+\subsection{Tracking Error Information} % (fold)
+\label{sub:tracking_error_information}
+As described in \nameref{ssub:reporting_structures} on \autopageref{ssub:reporting_structures}, the design was required to be able to track information about the language being analysed.
+More specifically, this meant retaining additional diagnostic information in the case where the language did \textit{not} terminate.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+data RuleTag
+    = Untouched
+    | Touched
+    | Terminates
+    | DoesNotTerminate
+    deriving (Eq, Show, Ord)
+\end{minted}
+\caption{The Basic RuleTag Definition}
+\label{lst:the_basic_ruletag_definition}
+\end{listing}
+
+The final implementation for this arose from the recognition that, as the verification algorithms all passed around verification results, the nature of the algorithmic result type lent itself well to storing this additional data. 
+Given the elegant method by which the termination results can be combined, it was fairly simple to adapt this method to carry the verification diagnostics with it.
+The implementation itself can be seen in \mintinline{text}{RuleTag.hs}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=26]{haskell}
+type NonTerminationItem = (NonTerminationType, [NonTerminal], String)
+\end{minted}
+\caption{Non-Termination Data Tracking}
+\label{lst:non_termination_data_tracking}
+\end{listing}
+
+The type \mintinline{haskell}{RuleTag} was originally declared as in \autoref{lst:the_basic_ruletag_definition}, and it was a simple task to adapt this to track additional information in the \mintinline{haskell}{DoesNotTerminate} case.
+The definition was altered to define fields for the final case, defining a type as in \autoref{lst:non_termination_data_tracking}.
+Each instance of \mintinline{haskell}{DoesNotTerminate} was then adapted to contain a list of these items, where each item is able to define a reason for the non-termination, an error string to provide additional diagnostic information, and also a list of \mintinline{haskell}{NonTerminal}.
+This final list acts as a trace of where the non-termination for a given rule occurred from, allowing the language designers to better fix issues (Requirement~\reqref{req:GenerationofVerificationReports}).\\
+
+The additional data then had to be accounted for in the definition of \mintinline{haskell}{tagPlus}.
+In each case where a \mintinline{haskell}{DoesNotTerminate} instance is encountered, the diagnostic information contained within is collated and inserted into the new instance, as seen in \autoref{lst:verification_result_combination_with_diagnostic_state}.
+This elegant combination of the termination states from the verification algorithm design with the ability to track diagnostic data resulted in a flexible but intuitive design for the verification diagnostic tracking.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=55]{haskell}
+tagPlus :: RuleTag -> RuleTag -> RuleTag
+tagPlus Untouched _ = Untouched
+tagPlus _ Untouched = Untouched
+tagPlus (DoesNotTerminate xs) (DoesNotTerminate ys) =
+    DoesNotTerminate $ xs ++ ys
+tagPlus x@DoesNotTerminate{} _ = x
+tagPlus _ x@DoesNotTerminate{} = x
+tagPlus Terminates Terminates = Terminates
+tagPlus Touched x = x
+tagPlus x Touched = x
+\end{minted}
+\caption{Verification Result Combination with Diagnostic State}
+\label{lst:verification_result_combination_with_diagnostic_state}
+\end{listing}
+
+% subsection tracking_error_information (end)
+
+\subsection{Developing the Verification Algorithms} % (fold)
+\label{sub:developing_the_verification_algorithms}
+The development of the main verification functionality of Metaverify was almost a direct implementation of the algorithms from \autoref{sec:the_core_algorithms}, with very few significant alterations.
+The majority of the changes took the form of transformations from iterative algorithms to a more functional style, but this always retained the same algorithmic semantics, and thus avoided any issues. 
+This is not to ignore, however, the occasions where the implementation influenced the design of the algorithm, bringing additional elegance or clarity.\\
+
+Much like the aforementioned algorithms, the concrete implementation of the verification process is subdivided into a set of functions, each of which deals with independent Functionality as part of the verification algorithm.
+These functions form a large mutual recursion, in order to efficiently decompose the productions. 
+Alongside the direct implementation of the algorithm are a number of utility functions, all of which help to keep the main body of the algorithm as clear as possible, allowing readers of the code to easily trace the verification flow. \\
+
+There were three main challenges encountered in during the implementation of Metaverify, and these are explored below.
+
+\subsubsection{Creating the Verifier State} % (fold)
+\label{ssub:creating_the_verifier_state}
+As discussed in \autoref{sub:verifier_traversal}, the verification process is inherently stateful.
+This state, however, is only needed in very few places throughout the algorithm as a whole. 
+While it could have been passed as an additional function argument, the management of this would have quickly become boilerplate, and added significant clutter to the flow of the algorithm. \\
+
+To the rescue, yet again, came monad transformers. 
+In this case, however, the underlying monad is just \mintinline{haskell}{Identity}, so the implementation instead used the \mintinline{haskell}{State} monad directly.
+Much as for the parser (see \autoref{lst:precondition_verification_in_the_parser}), the initial task in implementing state for the verifier was to design the state type itself (\autoref{lst:the_verifier_state}), allowing declaration of the monad as \mintinline{haskell}{type VState a = State VerifierState a}.
+This state is supported by a number of utility functions for performing common updates and accesses, such as \mintinline{haskell}{updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState}, which uses partial function application to alter the termination state for a non-terminal. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=54]{haskell}
+data VerifierState = VerifierState {
+    startRule       :: (RuleTag, LanguageRuleBody),
+    productions     :: ProductionMap,
+    truths          :: [NonTerminal],
+    productionTrace :: [NonTerminal]
+} deriving (Eq, Show)
+\end{minted}
+\caption{The Verifier State}
+\label{lst:the_verifier_state}
+\end{listing}
+
+With the state established, it was simple to hoist the entire verifier into a monadic context. 
+Each function now operates in the resultant stateful context, creating signatures akin to \mintinline{haskell}{f :: VState a -> VState b}, though \mintinline{text}{b} is most often \mintinline{haskell}{RuleTag}.
+This use of state allows the main flow of the verifier to remain uncluttered by state management, and brings with it the additional benefit of being able to sequence actions using monadic \mintinline{haskell}{do}-notation. 
+
+% subsubsection creating_the_verifier_state (end)
+
+\subsubsection{The Implementation Influencing Design} % (fold)
+\label{ssub:the_implementation_influencing_design}
+The existence of the `Touched' instance of \mintinline{haskell}{RuleTag} is actually the result of the implementation being fed back into the design. 
+Initially, this state did not exist, but this meant that there were problems verifying mutually recursive productions. \\
+
+In the initial formulation of the algorithm, two productions that mutually recurse would be unable to be verified.
+Consider a set of productions and assume that the latter has defined, terminating semantics: \mintinline{text}{<a> ::= <b> | <c>;} and \mintinline{text}{<b> ::= <a> "+" <a> --> {}}.
+\begin{enumerate}
+    \item Both productions are initially marked as `Untouched'.
+    \item In the process of verifying \mintinline{text}{<a>}, the verifier tries to verify \mintinline{text}{<b>}.
+    \item However, the termination state of \mintinline{text}{<b>} partially depends on the termination state of \mintinline{text}{<a>}, even if all other criteria are satisfied.
+    \item This means that the verifier will again try to verify \mintinline{text}{<a>}, and this mutual infinite recursion continues without ever assigning a result to either production.
+\end{enumerate}
+
+The introduction of the `Touched' state allows this infinite recursion to be broken. 
+If a production is `Touched', then it means that its verification result depends on the verification of its sub-verifications.
+If, as part of verifying these sub-verifications, the algorithm encounters a `Touched' production, then it can assume that it terminates due to the fact that \textit{syntax is guaranteed to be finite}. \\
+
+Having established this refinement to the algorithm it was important to mark all productions appropriately as they were seen.
+This marking can be seen in \autoref{lst:touching_productions_with_defined_semantics}, and was fed back into the algorithmic design itself. 
+This only has to occur in the case of user-defined semantics.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=103]{haskell}
+sequence_ $ (markAsTouched . return) <$> M.keys ntsInSyntax
+\end{minted}
+\caption{Touching Productions with Defined Semantics}
+\label{lst:touching_productions_with_defined_semantics}
+\end{listing}
+
+However, this alone was not enough. 
+In addition to this new termination state, the algorithm was altered to introduce an additional piece of verifier state, the \mintinline{text}{productionTrace}.
+This piece of state is a record of exactly how the verifier got to the non-terminal that it is currently verifying.
+This is combined with the `Touched' tag to prevent the verifier from re-entering a rule and causing infinite recursion, and is updated during every non-terminal verification.\\
+
+It acts like a conventional stack, with a new frame being pushed onto it each time a new non-terminal is encountered.
+These frames are then removed once the context of that non-terminal is exited.
+This can be seen in \autoref{lst:production_stack_manipulation}.
+The resulting stack is checked for presence of the non-terminal that is about to be verified, and if it's on the stack the temporary tag (in all cases this should be `Touched') is returned.
+Together, this is sufficient to prevent the verifier from entering an infinite recursion.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+modify (pushProductionFrame nonTerminal)
+modify popProductionFrame
+\end{minted}
+\caption{Production Stack Manipulation}
+\label{lst:production_stack_manipulation}
+\end{listing}
+
+% subsubsection the_implementation_influencing_design (end)
+
+\subsubsection{Tracing the Non-Terminal Diagnostics} % (fold)
+\label{ssub:tracing_the_non_terminal_diagnostics}
+As part of the diagnostic information associated with the tracking of termination failures (see \autoref{sub:tracking_error_information}), the algorithm was required to provide a `trace'.
+In this context, the trace is a list of non-terminals that shows exactly where the non-termination occurs.
+If production \mintinline{text}{<a>} does not terminate due to \mintinline{text}{<b>} which itself does not terminate due to some failure on production \mintinline{text}{<c>}, the trace would show \mintinline{text}{<b> -> <c>}.
+The intent behind this is to help the \gls{dsl} designer better diagnose the issues with their language.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=557]{haskell}
+    case termResult of
+        (DoesNotTerminate xs) ->
+            return $ DoesNotTerminate $ addTrace nonTerminal <$> xs
+        other -> return other
+    where
+        addTrace nonTerm (termKind, failTrace, msg) =
+            (termKind, nonTerm : failTrace, msg)
+\end{minted}
+\caption{Adding to the Non-Termination Trace}
+\label{lst:adding_to_the_non_termination_trace}
+\end{listing}
+
+Implementing this proved to be a little more challenging than initially anticipated. 
+As discussed in \autoref{sub:tracking_error_information}, the additional context contained within the \mintinline{haskell}{DoesNotTerminate} tag type is used to store this trace information.
+However, this meant applying additional non-terminals to the trace every time the context changed.
+In the end, the most sensible implementation of this involved the addition of a new `frame' at the end of every relevant call to the non-terminal verification procedure. 
+This was done via mapping over the list of diagnostic information contained in the \mintinline{haskell}{DoesNotTerminate} instance, and adding a new non-terminal to the traces. 
+This is seen in \autoref{lst:adding_to_the_non_termination_trace}.
+
+% subsubsection tracing_the_non_terminal_diagnostics (end)
+
+% subsection developing_the_verification_algorithms (end)
+
+% section building_the_verification_framework (end)
 
 % chapter implementation (end)

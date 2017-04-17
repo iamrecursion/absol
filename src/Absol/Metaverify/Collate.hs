@@ -22,13 +22,6 @@ import           Absol.Metaparse.Grammar
 import           Absol.Metaverify.State
 import           Data.Maybe              (fromJust)
 
--------------------------------------------------------------------------------
---
--- TODO Need to get the AST for each non-terminal, the set of truths and the
--- start rule.
---
--------------------------------------------------------------------------------
-
 -- | Collates the data from the AST required for the verification algorithm.
 collateASTData :: Metaspec -> VerifierState
 collateASTData (Metaspec defblocks) =

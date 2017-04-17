@@ -164,7 +164,9 @@ verifyEnvironmentInputRule input = do
             if null result then
                 return $ Terminates `tagPlus` subResult
             else
-                return $ (DoesNotTerminate $ (resultToErr NonExistentSubterms) <$> result)
+                return $ 
+                    (DoesNotTerminate $ 
+                        (resultToErr NonExistentSubterms) <$> result)
                     `tagPlus` subResult
         _ -> return Terminates
 

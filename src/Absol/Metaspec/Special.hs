@@ -33,8 +33,6 @@ module Absol.Metaspec.Special
 
 import           Absol.Metaparse.Grammar
 
--- TODO A type-families approach would be better.
-
 -- | Gets the types defined by a particular feature.
 getTypes :: MetaspecFeature -> [SemanticType]
 getTypes FeatureBase = [AnyType, NoneType, BoolType]

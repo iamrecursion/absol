@@ -208,14 +208,12 @@ It needs to record data as follows:
 \end{itemize}
 
 With the parser capable of tracking this data, the verification algorithm is able to operate.
-For details of the precondition verification algorithm itself, see \autoref{sub:verifier_precondition_validation} on \autopageref{sub:verifier_precondition_validation}. 
+For details of the precondition verification algorithm itself, see \autoref{ssub:the_precondition_checking_algorithm} on \autopageref{ssub:the_precondition_checking_algorithm}.
 
 % subsubsection precondition_verification_in_the_parser (end)
 
 \subsubsection{The Final Design for Metaparse} % (fold)
 \label{ssub:the_final_design_for_metaparse}
-% Establish the final design elements for the parser as a descriptive list.
-
 Combining the results of the two-stage design process illustrated in the previous sections, the final design for Metaparse is as follows:
 \begin{itemize}
     \item \textbf{Integrated Lexer and Parser:} The parsing process will use an integrated set of lexer primitives to allow a one-pass parse of the input \gls{metaspec} specification. 
@@ -233,10 +231,6 @@ Combining the results of the two-stage design process illustrated in the previou
 
 \subsection{Metaverify --- The Verification Engine} % (fold)
 \label{sub:metaverify_the_verification_engine}
-% Talk about the different modules, the verification preprocessor, the recursive nature of the algorithm for traversing the metaspec AST.
-% Much like Metaparse, it did not make sense to separate the two kinds of verification that had to take place.
-% Despite the fact that they are relatively disparate algorithms
-
 Metaverify is the second of the main subsystems in \gls{absol} and it is intended to perform verification of the input language. 
 Verification, in the case of the metacompiler, means determining whether the language is guaranteed to always terminate and, in cases where it does not, providing diagnostics as to why.
 This component aims to satisfy Requirements~\reqref{req:VerifySemanticForm}, \reqref{req:VerifySemanticGuards} and \reqref{req:GenerationofVerificationReports}, and hence has the following goals:
@@ -265,9 +259,9 @@ At a high level this means it is an algorithm (with no dependence on state) with
 \end{itemize}
 
 Due to the fact that the methods for traversing an \gls{ast} data-structure are inherently tied to the representation of the structure, it is somewhat difficult to represent this algorithm in a general format.
-The algorithm is also responsible for collating these outputs in such a fashion that they are associated with the required tracking data for their termination state (for the contents of this data see \autoref{ssub:reporting_structures}).
+The algorithm is also responsible for collating these outputs in such a fashion that they are associated with the required tracking data for their termination state (for the contents of this data see \nameref{ssub:reporting_structures}).
 This tracking data is known to the project as a \textit{tag}, and these are described in more detail later. 
-The best algorithmic representation can thus be seen in \autoref{alg:the_verification_preprocessor_algorithm}, which assumes the existence of a number of functions as follows: 
+The best algorithmic representation can thus be seen in \autoref{alg:the_verification_preprocessor_algorithm}, which assumes the existence of a number of functions as follows:
 \begin{itemize}
     \item \textbf{findStartRule} --- This function finds the start rule in the AST and extracts it, before associating it with a tag.
     \item \textbf{defaultTag} --- generates a default tag for the rule (see \autoref{ssub:reporting_structures} for more information).
@@ -319,7 +313,7 @@ The state for this algorithm provides three main functions:
 \begin{itemize}
     \item \textbf{Tracking Verification Status:} The state must contain the current state of the verification for the language, including the tags for each production in the language.
     \item \textbf{Containing Algorithmic Resources:} The state must contain the information required by the verification algorithm.
-    This predominantly means the outputs of the preprocessor algorithm as discussed in \autoref{ssub:the_verification_preprocessor}.
+    This predominantly means the outputs of the preprocessor algorithm as discussed in \nameref{ssub:the_verification_preprocessor}.
     \item \textbf{Tracking Temporary State:} As the algorithm progresses, certain portions of it need some awareness of where they have been.
     This helps to prevent mutual recursion between productions and other such non-terminating behaviour. 
 \end{itemize}
@@ -328,9 +322,6 @@ The state for this algorithm provides three main functions:
 
 \subsubsection{Reporting Structures} % (fold)
 \label{ssub:reporting_structures}
-% The RuleTag concept should be discussed here. 
-% But the expansion of it: how it is designed in practice. 
-
 While the generation of the reports themselves (Requirement~\reqref{req:GenerationofVerificationReports}) is nothing but an exercise in pretty-printing (and thus required no real design work), the recursive nature of the algorithm posed some difficulty for collating this data in the first place. 
 Tracking the termination states, as defined in the verification algorithm (\autoref{ssub:termination_states}), is one of the more interesting design challenges for the Metaverify component.\\
 
@@ -340,7 +331,7 @@ However, this is not as simple as it might appear at first glance: in the cases 
 This is further complicated by the fact that the verification algorithms might involve arbitrary degrees of recursion. 
 Consider, a production \mintinline{text}{<p> ::= <a> | <b> | <c>} where the algorithm recurses on each of the non-terminals in the alternation, for example. 
 As each of these may have a different termination result, the result for \mintinline{text}{<p>} is the result of combining all the sub-results. 
-The termination result combination is specified in \autoref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
+The termination result combination is specified in Subsection~\ref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
 In the case of a non-termination, the following data should be retained:
 \begin{itemize}
     \item The type of the non-termination.
@@ -361,9 +352,9 @@ At each combination point where the recursive calls return, therefore, two thing
 From the above design work, the final design for the Metaverify system component can be understood as follows:
 \begin{itemize}
     \item \textbf{Verification Preprocessor:} The component must implement a preprocessor to transform the \gls{ast} into an appropriate form for verification.
-    \item \textbf{Verification State:} Metaverify must provide a mechanism for tracking the state that the algorithm requires to operate (see \autoref{ssub:designing_the_verification_engine}).
+    \item \textbf{Verification State:} Metaverify must provide a mechanism for tracking the state that the algorithm requires to operate (see \nameref{ssub:designing_the_verification_engine}).
     \item \textbf{Reporting Structures:} The verification engine must be able to accurately track the termination state (and associated metadata) of all of the portions of the language that it is verifying. 
-    This is done via a reporting structure as discussed in \autoref{ssub:reporting_structures}.
+    This is done via a reporting structure as discussed in \nameref{ssub:reporting_structures}.
 \end{itemize}
 
 % subsubsection finalising_the_metaverify_design (end)
@@ -420,7 +411,7 @@ Being so crucial to the functionality and success of the project, these underwen
 Much as for the design of the system components themselves, the algorithmic designs evolved over time, and so this section aims to present the final algorithms as well as discuss any changes that occurred over time. \\
 
 The core algorithms can be separated into two main parts.
-The first is the precondition validation algorithm that takes place at parse time (see \autoref{ssub:precondition_verification_in_the_parser}).
+The first is the precondition validation algorithm that takes place at parse time (see \nameref{ssub:precondition_verification_in_the_parser} on \autopageref{ssub:precondition_verification_in_the_parser}).
 This ensures that the \gls{ast} resultant from parsing the language does not contain certain states permitted by the grammar but not by the verification algorithms preconditions. 
 The second is the validation algorithm itself.
 This is separated into the inference and validation sections, the latter of which is further subdivided into validation for the different kinds of semantic rules encountered. \\
@@ -462,8 +453,8 @@ These preconditions are as follows, where scope is defined in all cases as in th
     As special syntactic forms provide language semantics, not having the syntax in scope when it is used would lead to undefined semantics for programs in the \gls{dsl}. 
 \end{itemize}
 
-Verifying that these preconditions hold is, as mentioned previously, performed as part of Metaparse (\autoref{ssub:precondition_verification_in_the_parser}).
-The verification is a stateful process, and hence the parser is required to track the following information:
+Verifying that these preconditions hold is, as mentioned previously, performed as part of Metaparse (\nameref{ssub:precondition_verification_in_the_parser} on \autopageref{ssub:precondition_verification_in_the_parser}).
+The verification is a stateful process, and hence the parser is required to track the following information: the non-terminals defined and used, and the types and special syntax in scope. 
 
 \subsubsection{The Precondition Checking Algorithm} % (fold)
 \label{ssub:the_precondition_checking_algorithm}
@@ -881,7 +872,7 @@ However, it is not sufficient for the convergence relation to be inductively def
 In order to show totality, it has to be possible to show, by induction on the structure of $M$, that the rules by which $\to$ is defined are defined in such a way that the \textit{convergence hypothesis} for $M$ is given in terms of sub-programs of $M$.
 If this is the case, then $M$ terminates as long as each sub-program terminates.
 By induction, $M$ then terminates as long as the base-case semantics terminate.
-This is formalised in \autoref{ssub:an_inductive_proof_of_the_theory}.\\
+This is formalised in \nameref{ssub:an_inductive_proof_of_the_theory} below.\\
 
 In the case of \gls{metaspec}, the program $M$ is a given instance of the language semantics, which provides the initial impetus for the proof mechanism. 
 The proof mechanism for these semantics thus has to be capable of ensuring that the convergence hypothesis for a semantics $M$ is given purely in terms of sub-terms of $M$. 
@@ -895,7 +886,7 @@ It hence has to be capable of showing three things.
 \end{itemize}
 
 With this theoretical foundation established, it is now possible to design an algorithm for verifying the convergence hypothesis.
-This can be seen in \autoref{ssub:verifying_the_user_defined_semantic_form}. 
+The development of this algorithm is outlined throughout this section.
 
 \subsubsection{An Inductive Proof of the Theory} % (fold)
 \label{ssub:an_inductive_proof_of_the_theory}
@@ -909,7 +900,7 @@ Define a program $M$ whose semantics are defined inductively as a sequence $M_0,
     By the inductive hypothesis, the subprograms of $M_j$ ($M_{j-1}$) terminate, and thus $M_j$ terminates.
 \end{itemize}
 
-It has thus been shown, by induction, that as long as the convergence hypothesis for the language semantics holds
+It has thus been shown, by induction, that as long as the convergence hypothesis for the language semantics holds, then the language will always terminate.
 
 % subsubsection an_inductive_proof_of_the_theory (end)
 
@@ -1053,9 +1044,6 @@ The algorithm for checking these criteria on the evaluation definitions in the s
 
 \subsection{Guard Checking} % (fold)
 \label{sub:guard_checking}
-% Discuss both the original intent, some attempted algorithmic designs
-% Reference back to the section ruling full validation as out of scope. 
-% Explain the (very simple) reasoning behind the final algorithm. 
 In order to verify the guards for a given set of program semantics, the algorithm had to ensure that two criteria held:
 \begin{enumerate}
     \item \textbf{The Completeness Criteria:} There must be a set of semantics defined for every possible combination of values of the guard variables, and hence there must be a guard admitting every possible combination of these values.
@@ -1538,7 +1526,7 @@ They are as follows:
     \item \textbf{Random Number Generation:} It could be useful to be able to generate random numbers.
     Such a feature would likely include probabilistic distributions to assist in mathematical modelling.
     \item \textbf{Maybe:} A `Maybe' type, similar to that in Haskell.
-    This would aid in the representation of error conditions in functions.
+    This would aid in the representation of error conditions in types and functions.
     \item \textbf{Either:} Also similar to Haskell, this would allow the representation of alternates in result types, and hence also assist in the representation of error conditions.
     \item \textbf{State:} The provision of a user controlled state (and associated operations) that can be passed around functions and interacted with entirely separately from the semantic environment.
     \item \textbf{Special Numbers:} A feature providing additional number types such as complex numbers, financial numbers and arbitrary precision floating-point types.
