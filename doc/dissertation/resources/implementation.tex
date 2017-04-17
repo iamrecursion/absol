@@ -294,7 +294,7 @@ While this process was initially assumed to be a mostly rote translation of the 
 \begin{enumerate}
     \item \textbf{Haskell Data-Type Restrictions:} The structure of Haskell's data-type declarations precludes some kinds of recursive definition.
     To avoid these problems it is necessary to introduce indirect declarations as seen below.
-\begin{minted}[xleftmargin=1.5cm, firstnumber=181]{haskell}
+\begin{minted}[xleftmargin=1.5cm, firstnumber=181, fontsize=\blockfont]{haskell}
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
@@ -546,6 +546,242 @@ An example of this can be seen in \autoref{lst:precondition_verification_in_the_
 % Fun with the state monad for the verification algorithm.
 % Examine the design problem of providing reporting abilities via the RuleTag concept -> not in the core algorithm, so hence an addition to it.
 % Building one portion of the verifier at a time.
+
+Unlike the development of the parser, developing the verification framework proved to be a much more involved task. 
+Nevertheless, the availability of comprehensive algorithmic documentation (see \autoref{sec:the_core_algorithms}) ensured that it was less of a problem than would otherwise have been expected.
+This is not to say that it was without challenge, however, as providing clear implementations of these verification components, and the requirement to develop a concise method for error reporting proved most interesting.\\
+
+Much like Metaparse, the verification components were developed in a natural order.
+The preprocessor (\autoref{ssub:the_verification_preprocessor}) had to come first, as it provided the data upon which Metaverify itself would operate. 
+Beyond that, each portion of the verification algorithm was developed independently, using a similar `stubbing-out' of functions based approach to the development of the Parser. 
+This modular approach both ensured an extensible design, as specified by Requirement~\reqref{req:Extensibility}, and broke up the seemingly mammoth implementation task into more manageable segments. 
+
+\subsection{The Verification Preprocessor} % (fold)
+\label{sub:the_verification_preprocessor}
+With the \gls{ast} available from the output of Metaparse, the implementation of this preprocessing step was a simple application of the algorithm outlined in \autoref{ssub:the_verification_preprocessor}. 
+The main challenge here was \textit{not} the implementation of the core algorithm, but instead establishing an elegant way to manipulate and traverse the strongly-typed \gls{ast} being used as input.\\
+
+After experimentation, the implementation in \mintinline{text}{Collate.hs} settled on the use of Haskell's robust pattern-matching facilities to destructure the AST data.
+However, this also introduced a certain lack of elegance. 
+As the top-level language definition blocks were actually defined as different constructors on the \mintinline{haskell}{MetaspecDefblock} type, it proved somewhat inelegant to find the correct structures.
+To do this, the list of definition blocks had to be traversed with use of a predicate to find the correct portions of the \gls{ast} to extract at the preprocessing stage, as seen in \autoref{lst:preprocessing_the_ast}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=53]{haskell}
+getDefblock
+    :: [MetaspecDefblock]
+    -> (MetaspecDefblock -> Bool)
+    -> MetaspecDefblock
+getDefblock xs fn = head $ filter fn xs
+\end{minted}
+\caption{Preprocessing the AST}
+\label{lst:preprocessing_the_ast}
+\end{listing}
+
+As part of the requirements for the inputs to the verifier, they needed to provide for efficient lookups of language productions by name. 
+To this end, the resultant implementation decided to make use of \mintinline{text}{Data.Map}, a Haskell package providing a key-value store based on size-balanced binary trees (hence providing $\mathcal{O}(n \log n)$ complexity lookups) \citep{data_map}.
+This usage ensured that lookups would be efficient, but also introduced an interesting transformation issue from the \gls{ast} nodes to the map itself.
+The resultant solution, seen in \autoref{lst:building_the_productions_map} uses the generalised monad comprehensions language extension to eliminate intermediary allocations when building the map. 
+This preserved efficiency in construction by avoiding intermediary allocations.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=70]{haskell}
+mapRules r = M.fromList [
+        (getKey v, (Untouched, getBody v))
+        | v <- r,
+        let getKey (LanguageRule x _) = x;
+            getBody (LanguageRule _ x) = x
+    ]
+\end{minted}
+\caption{Building the Productions Map}
+\label{lst:building_the_productions_map}
+\end{listing} 
+
+% subsection the_verification_preprocessor (end)
+
+\subsection{Tracking Error Information} % (fold)
+\label{sub:tracking_error_information}
+As described in \autoref{ssub:reporting_structures}, the design was required to be able to track information about the language being analysed.
+More specifically, this meant retaining additional diagnostic information in the case where the language did \textit{not} terminate.\\
+
+The final implementation for this arose from the recognition that, as the verification algorithms all passed around verification results, the nature of the algorithmic result type lent itself well to storing this additional data. 
+Given the elegant method by which the termination results can be combined, it was fairly simple to adapt this method to carry the verification diagnostics with it.
+The implementation itself can be seen in \mintinline{text}{RuleTag.hs}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+data RuleTag
+    = Untouched
+    | Touched
+    | Terminates
+    | DoesNotTerminate
+    deriving (Eq, Show, Ord)
+\end{minted}
+\caption{The Basic RuleTag Definition}
+\label{lst:the_basic_ruletag_definition}
+\end{listing}
+
+The type \mintinline{haskell}{RuleTag} was originally declared as in \autoref{lst:the_basic_ruletag_definition}, and it was a simple task to adapt this to track additional information in the \mintinline{haskell}{DoesNotTerminate} case.
+The definition was altered to define fields for the final case, defining a type as in \autoref{lst:non_termination_data_tracking}.
+Each instance of \mintinline{haskell}{DoesNotTerminate} was then adapted to contain a list of these items, where each item is able to define a reason for the non-termination, an error string to provide additional diagnostic information, and also a list of \mintinline{haskell}{NonTerminal}.
+This final list acts as a trace of where the non-termination for a given rule occurred from, allowing the language designers to better fix issues (Requirement~\reqref{req:GenerationofVerificationReports}).
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=26]{haskell}
+type NonTerminationItem = (NonTerminationType, [NonTerminal], String)
+\end{minted}
+\caption{Non-Termination Data Tracking}
+\label{lst:non_termination_data_tracking}
+\end{listing}
+
+The additional data then had to be accounted for in the definition of \mintinline{haskell}{tagPlus}.
+In each case where a \mintinline{haskell}{DoesNotTerminate} instance is encountered, the diagnostic information contained within is collated and inserted into the new instance, as seen in \autoref{lst:verification_result_combination_with_diagnostic_state}.
+This elegant combination of the termination states from the verification algorithm design with the ability to track diagnostic data resulted in a flexible but intuitive design for the verification diagnostic tracking.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=55]{haskell}
+tagPlus :: RuleTag -> RuleTag -> RuleTag
+tagPlus Untouched _ = Untouched
+tagPlus _ Untouched = Untouched
+tagPlus (DoesNotTerminate xs) (DoesNotTerminate ys) =
+    DoesNotTerminate $ xs ++ ys
+tagPlus x@DoesNotTerminate{} _ = x
+tagPlus _ x@DoesNotTerminate{} = x
+tagPlus Terminates Terminates = Terminates
+tagPlus Touched x = x
+tagPlus x Touched = x
+\end{minted}
+\caption{Verification Result Combination with Diagnostic State}
+\label{lst:verification_result_combination_with_diagnostic_state}
+\end{listing}
+
+% subsection tracking_error_information (end)
+
+\subsection{Developing the Verification Algorithms} % (fold)
+\label{sub:developing_the_verification_algorithms}
+The development of the main verification functionality of Metaverify was almost a direct implementation of the algorithms from \autoref{sec:the_core_algorithms}, with few significant alterations.
+The majority of the changes took the form of transformations from iterative algorithms to a more functional style, but this always retained the same algorithmic semantics, and thus avoided any issues. 
+This is not to ignore, however, the occasions where the implementation influenced the design of the algorithm, bringing additional elegance or clarity.\\
+
+Much like the aforementioned algorithms, the concrete implementation of the verification process is subdivided into a set of functions, each of which deals with independent Functionality as part of the verification algorithm.
+These functions form a large mutual recursion, in order to efficiently decompose the productions. 
+Alongside the direct implementation of the algorithm are a number of utility functions, all of which help to keep the main body of the algorithm as clear as possible, allowing readers of the code to easily trace the verification flow. \\
+
+There were three main challenges encountered in during the implementation of Metaverify, and these are explored below.
+
+\subsubsection{Creating the Verifier State} % (fold)
+\label{ssub:creating_the_verifier_state}
+As discussed in \autoref{sub:verifier_traversal}, the verification process is inherently stateful.
+This state, however, is only needed in very few places throughout the algorithm as a whole. 
+While it could have been passed as an additional function argument, the management of this would have quickly become boilerplate, and added significant clutter to the flow of the algorithm. \\
+
+To the rescue, yet again, came monad transformers. 
+In this case, however, the underlying monad is just \mintinline{haskell}{Identity}, so the implementation instead used the \mintinline{haskell}{State} monad directly.
+Much as for the parser (see \autoref{lst:precondition_verification_in_the_parser}), the initial task in implementing state for the verifier was to design the state type itself (\autoref{lst:the_verifier_state}), allowing declaration of the monad as \mintinline{haskell}{type VState a = State VerifierState a}.
+This state is supported by a number of utility functions for performing common updates and accesses, such as \mintinline{haskell}{updateRuleTag :: RuleTag -> NonTerminal -> VerifierState -> VerifierState}, which uses partial function application to alter the termination state for a non-terminal. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=54]{haskell}
+data VerifierState = VerifierState {
+    startRule       :: (RuleTag, LanguageRuleBody),
+    productions     :: ProductionMap,
+    truths          :: [NonTerminal],
+    productionTrace :: [NonTerminal]
+} deriving (Eq, Show)
+\end{minted}
+\caption{The Verifier State}
+\label{lst:the_verifier_state}
+\end{listing}
+
+With the state established, it was simple to hoist the entire verifier into a monadic context. 
+Each function now operates in the resultant stateful context, creating signatures akin to \mintinline{haskell}{f :: VState a -> VState b}, though \mintinline{text}{b} is most often \mintinline{haskell}{RuleTag}.
+This use of state allows the main flow of the verifier to remain uncluttered by state management, and brings with it the additional benefit of being able to sequence actions using monadic \mintinline{haskell}{do}-notation. 
+
+% subsubsection creating_the_verifier_state (end)
+
+\subsubsection{The Implementation Influencing Design} % (fold)
+\label{ssub:the_implementation_influencing_design}
+The existence of the `Touched' instance of \mintinline{haskell}{RuleTag} is actually the result of the implementation being fed back into the design. 
+Initially, this state did not exist, but this meant that there were problems verifying mutually recursive productions. \\
+
+In the initial formulation of the algorithm, two productions that mutually recurse would be unable to be verified.
+Consider \mintinline{text}{<a> ::= <b> | <c>;} and \mintinline{text}{<b> ::= <a> "+" <a> --> {}} (assuming the latter has defined semantics that terminate).
+\begin{enumerate}
+    \item Both productions are initially marked as `Untouched'.
+    \item In the process of verifying \mintinline{text}{<a>}, the verifier tries to verify \mintinline{text}{<b>}.
+    \item However, the termination state of \mintinline{text}{<b>} partially depends on the termination state of \mintinline{text}{<a>}, even if all other criteria are satisfied.
+    \item This means that the verifier will again try to verify \mintinline{text}{<a>}, and this mutual infinite recursion continues without ever assigning a result to either production.
+\end{enumerate}
+
+The introduction of the `Touched' state allows this infinite recursion to be broken. 
+If a production is `Touched', then it means that its verification result depends on the verification of its sub-verifications.
+If, as part of verifying these sub-verifications, the algorithm encounters a `Touched' production, then it can assume that it terminates due to the fact that \textit{syntax is guaranteed to be finite}. \\
+
+Having established this refinement to the algorithm it was important to mark all productions appropriately as they were seen.
+This marking can be seen in \autoref{lst:touching_productions_with_defined_semantics}, and was fed back into the algorithmic design itself. 
+This only has to occur in the case of user-defined semantics.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=103]{haskell}
+sequence_ $ (markAsTouched . return) <$> M.keys ntsInSyntax
+\end{minted}
+\caption{Touching Productions with Defined Semantics}
+\label{lst:touching_productions_with_defined_semantics}
+\end{listing}
+
+However, this alone was not enough. 
+In addition to this new termination state, the algorithm was altered to introduce an additional piece of verifier state, the \mintinline{text}{productionTrace}.
+This piece of state is a record of exactly how the verifier got to the non-terminal that it is currently verifying.
+This is combined with the `Touched' tag to prevent the verifier from re-entering a rule and causing infinite recursion, and is updated during every non-terminal verification.\\
+
+It acts like a conventional stack, with a new frame being pushed onto it each time a new non-terminal is encountered.
+These frames are then removed once the context of that non-terminal is exited.
+This can be seen in \autoref{lst:production_stack_manipulation}.
+The resulting stack is checked for presence of the non-terminal that is about to be verified, and if it's on the stack the temporary tag (in all cases this should be `Touched') is returned.
+Together, this is sufficient to prevent the verifier from entering an infinite recursion.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{haskell}
+modify (pushProductionFrame nonTerminal)
+modify popProductionFrame
+\end{minted}
+\caption{Production Stack Manipulation}
+\label{lst:production_stack_manipulation}
+\end{listing}
+
+% subsubsection the_implementation_influencing_design (end)
+
+\subsubsection{Tracing the Non-Terminal Diagnostics} % (fold)
+\label{ssub:tracing_the_non_terminal_diagnostics}
+As part of the diagnostic information associated with the tracking of termination failures (see \autoref{sub:tracking_error_information}), the algorithm was required to provide a `trace'.
+In this context, the trace is a list of non-terminals that shows exactly where the non-termination occurs.
+If production \mintinline{text}{<a>} does not terminate due to \mintinline{text}{<b>} which itself does not terminate due to some failure on production \mintinline{text}{<c>}, the trace would show \mintinline{text}{<b> -> <c>}.
+The intent behind this is to help the \gls{dsl} designer better diagnose the issues with their language.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=557]{haskell}
+    case termResult of
+        (DoesNotTerminate xs) ->
+            return $ DoesNotTerminate $ addTrace nonTerminal <$> xs
+        other -> return other
+    where
+        addTrace nonTerm (termKind, failTrace, msg) =
+            (termKind, nonTerm : failTrace, msg)
+\end{minted}
+\caption{Adding to the Non-Termination Trace}
+\label{lst:adding_to_the_non_termination_trace}
+\end{listing}
+
+Implementing this proved to be a little more challenging than initially anticipated. 
+As discussed in \autoref{sub:tracking_error_information}, the additional context contained within the \mintinline{haskell}{DoesNotTerminate} tag type is used to store this trace information.
+However, this meant applying additional non-terminals to the trace every time the context changed.
+In the end, the most sensible implementation of this involved the addition of a new `frame' at the end of every relevant call to the non-terminal verification procedure. 
+This was done via mapping over the list of diagnostic information contained in the \mintinline{haskell}{DoesNotTerminate} instance, and adding a new non-terminal to the traces. 
+This is seen in \autoref{lst:adding_to_the_non_termination_trace}.
+
+% subsubsection tracing_the_non_terminal_diagnostics (end)
+
+% subsection developing_the_verification_algorithms (end)
 
 % section building_the_verification_framework (end)
 

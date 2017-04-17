@@ -10,7 +10,7 @@
 -- Portability : GHC
 --
 -- Contains a type used for tagging each production with its verification state.
--- The type RuleTag is an instance of Monoid.
+-- The type RuleTag is an instance of Monoid for practicality.
 --
 -------------------------------------------------------------------------------
 module Absol.Metaverify.RuleTag

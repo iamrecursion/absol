@@ -340,7 +340,7 @@ However, this is not as simple as it might appear at first glance: in the cases 
 This is further complicated by the fact that the verification algorithms might involve arbitrary degrees of recursion. 
 Consider, a production \mintinline{text}{<p> ::= <a> | <b> | <c>} where the algorithm recurses on each of the non-terminals in the alternation, for example. 
 As each of these may have a different termination result, the result for \mintinline{text}{<p>} is the result of combining all the sub-results. 
-The termination result combination is specified in \autoref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
+The termination result combination is specified in Subsection~\ref{ssub:termination_states}, so the design problem here is how to retain the correct non-termination data. 
 In the case of a non-termination, the following data should be retained:
 \begin{itemize}
     \item The type of the non-termination.
