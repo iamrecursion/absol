@@ -3,12 +3,6 @@
 % Make sure to focus on the MAIN issues with implementation.
 % Follow the same architectural ordering as the design section.
 
-% This section will:
-% \begin{itemize}
-%     \item Follow a similar structure to algorithms, using code listings to illustrate how the abstract algorithms were turned into a concrete system. 
-%     \item Examine the compromises or changes to the algorithm that had to take place.
-% \end{itemize}
-
 \chapter{Implementation} % (fold)
 \label{cha:implementation}
 Despite its highly theoretical nature, the project also involved a significant implementation in order to provide a proof-of-concept for the theory and algorithms behind the language proof mechanism. 
@@ -239,7 +233,7 @@ data CLIOptions = CLIOptions {
 
 Once the data-type is designed, it remains to declare two things: a function to construct the options, and a set of functions declaring the command-line arguments.
 Each option is specified in a declarative format, with each function defining the type, flags, format, help text and any other necessary information for the option, as seen in \autoref{lst:applicative_option_creation}.
-The list of implemented options was taken directly from the design, and hence matches those seen in \autoref{ssub:designing_the_command_line_options}.
+The list of implemented options was taken directly from the design, and hence matches those seen in \nameref{ssub:designing_the_command_line_options} on \autopageref{ssub:designing_the_command_line_options}.
 These functions are then combined through sequential application (\mintinline{haskell}{<*>}) to form a parser for the command-line options.
 
 \begin{listing}[!htb]
@@ -290,7 +284,7 @@ data MetaspecDefblock
 \label{lst:an_example_ast_data_type}
 \end{listing}
 
-While this process was initially assumed to be a mostly rote translation of the Metaspec language grammar (see \autoref{cha:designing_the_metalanguage}), this turned out to not be the case in two main ways (as discussed in \autoref{ssub:designing_the_metaparse_ast}:
+While this process was initially assumed to be a mostly rote translation of the Metaspec language grammar (see \autoref{cha:designing_the_metalanguage}), this turned out to not be the case in two main ways (as discussed in \nameref{ssub:designing_the_metaparse_ast} on \autopageref{ssub:designing_the_metaparse_ast}):
 \begin{enumerate}
     \item \textbf{Haskell Data-Type Restrictions:} The structure of Haskell's data-type declarations precludes some kinds of recursive definition.
     To avoid these problems it is necessary to introduce indirect declarations as seen below.
@@ -312,7 +306,7 @@ data SpecialSyntaxRule = SpecialSyntaxRule
 \end{minted}
     \item \textbf{Production Representation:} Certain portions of the language grammar do not correspond directly to constructs that can be created in Haskell data-types.
     There are multiple parts of the \gls{metaspec} grammar that have had to be extracted appropriately, usually two-element alternations.
-    This is to allow these alternations to be appropriately expressed in lists, and usually involved the \mintinline{haskell}{either} type to provide the appropriate alternation.
+    This is to allow these alternations to be appropriately expressed in lists, and usually involved the \mintinline{haskell}{Either} type to provide the appropriate alternation.
 \begin{minted}[xleftmargin=1.5cm, firstnumber=198]{haskell}
 type AccessBlockOr a = Either SyntaxAccessBlock a
 \end{minted}
@@ -325,15 +319,6 @@ Initial versions of the \gls{ast} grammar incorporated notation for portions of 
 
 \subsection{Developing the Parser} % (fold)
 \label{sub:developing_the_parser}
-% Lexer Functions then Parser itself. 
-% Having to use lookahead. 
-% Designing state into the parser (two stage impl)
-
-The process of developing the parser (in reality, the integrated lexer and parser) took place in two parts: development of the lexer functions, and development of the parser itself. 
-Due to the lexer functionality integrated into Megaparsec, it was trivial to create the basic set of lexer functions for parsing \gls{metaspec}. 
-These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- \autoref{sub:comments_in_metaspec}), and the basic parsers for lexemes and terminals of the language.
-Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.
-
 \begin{listing}[!htb]
 \begin{minted}[firstnumber=28]{haskell}
 spaceConsumer :: ParserST ()
@@ -346,10 +331,10 @@ spaceConsumer = L.space (void spaceChar) lineComment blockComment
 \label{lst:basic_lexer_functionality}
 \end{listing}
 
-With the basic lexing functionality complete, and armed with the data declarations for the \gls{ast}, it was possible to start building the actual language parser. 
-This process was made much more simple than there was any reason to expect through the usage of Megaparsec, with each parsing function almost looking like a description of the corresponding portion of the grammar (in part due to the fact that \mintinline{haskell}{Parser} is an instance of \mintinline{haskell}{Alternative}. 
-The monadic nature of the parser meant that \mintinline{haskell}{do} notation could be used, allowing the sequencing of parsing operations appropriately. 
-This extreme similarity between the grammar and the parser can be quite clearly illustrated through observation of the parser code in \mintinline{text}{Metaparse.hs}, with an example given in \autoref{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}.\\
+The process of developing the parser (in reality, the integrated lexer and parser) took place in two parts: development of the lexer functions, and development of the parser itself. 
+Due to the lexer functionality integrated into Megaparsec, it was trivial to create the basic set of lexer functions for parsing \gls{metaspec}. 
+These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- \autoref{sub:comments_in_metaspec}), and the basic parsers for lexemes and terminals of the language.
+Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.
 
 \begin{figure}[!htb]
 \centering
@@ -380,6 +365,11 @@ syntax-primary =
 \caption{Comparing the Parser and the Grammar for Syntax Primaries}
 \label{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}
 \end{figure}
+
+With the basic lexing functionality complete, and armed with the data declarations for the \gls{ast}, it was possible to start building the actual language parser. 
+This process was made much more simple than there was any reason to expect through the usage of Megaparsec, with each parsing function almost looking like a description of the corresponding portion of the grammar (in part due to the fact that \mintinline{haskell}{Parser} is an instance of \mintinline{haskell}{Alternative}. 
+The monadic nature of the parser meant that \mintinline{haskell}{do} notation could be used, allowing the sequencing of parsing operations appropriately. 
+This extreme similarity between the grammar and the parser can be quite clearly illustrated through observation of the parser code in \mintinline{text}{Metaparse.hs}, with an example given in \autoref{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}.\\
 
 The obviously readable nature of the parsers for each of the portions of the language led to an appropriate strategy for building Metaparse.
 Starting at the language start symbol, it was possible to build the parser for each production one-by-one, stubbing out the sub-parsers as \mintinline{haskell}{undefined} and relying on the type-system to ensure correctness.
@@ -446,7 +436,7 @@ Unfortunately the significant increase in grammatical complexity added by the af
 
 \subsection{Precondition Verification} % (fold)
 \label{sub:precondition_verification}
-Implementing the precondition verifier was a challenging exercise in the transformation of an algorithm (see \autoref{ssub:precondition_verification_in_the_parser}) into a concrete implementation.
+Implementing the precondition verifier was a challenging exercise in the transformation of the algorithm outlined in \nameref{ssub:precondition_verification_in_the_parser} (\autopageref{ssub:precondition_verification_in_the_parser}) into a concrete implementation.
 The first task for implementing these checks was to add a user state to the parser.
 While all parsing functions up to this point used the default Megaparsec \mintinline{haskell}{Parser} type, this would no longer be possible as it provided no useful access to its internal state. 
 To take the parser beyond just being capable of parsing \gls{metaspec}, some work would be required. 
@@ -474,10 +464,8 @@ This new type and its supporting functions can be seen in \mintinline{text}{Pars
 
 \subsubsection{Tracking Rule Position} % (fold)
 \label{ssub:tracking_rule_position}
-% How did the NT tracker come about - why was it insufficient to track all nt parses the same way? -> they are all parsed the same, but they have different semantic meaning for the precondition verification. 
-
-Verifying these preconditions was almost a direct implementation of the algorithm explored in \autoref{sub:verifier_precondition_validation}, except for one thing. 
-The parser, by default, has no notion of where it is in parsing the file: every \mintinline{text}{non-terminal} gets parsed by the same sub-parser \mintinline{haskell}{nonTerminal}. 
+Verifying these preconditions was almost a direct implementation of the algorithm explored in \autoref{sub:verifier_precondition_validation}, except for one thing: the parser, by default, has no notion of where it is in parsing the file.
+This means that every \mintinline{text}{non-terminal} gets parsed by the same sub-parser \mintinline{haskell}{nonTerminal}. 
 Unfortunately, the precondition verification algorithm needs to know whether a given non-terminal parse is when the non-terminal is being \textit{defined} or when it is being \textit{used}. 
 
 \begin{listing}[!htb]
@@ -541,12 +529,6 @@ An example of this can be seen in \autoref{lst:precondition_verification_in_the_
 
 \section{Building the Verification Framework} % (fold)
 \label{sec:building_the_verification_framework}
-% Need to discuss the practicalities of solving the mutually recursive rule problem (the production trace and additional RuleTag types). 
-% The theoretical underpinning of this. 
-% Fun with the state monad for the verification algorithm.
-% Examine the design problem of providing reporting abilities via the RuleTag concept -> not in the core algorithm, so hence an addition to it.
-% Building one portion of the verifier at a time.
-
 Unlike the development of the parser, developing the verification framework proved to be a much more involved task. 
 Nevertheless, the availability of comprehensive algorithmic documentation (see \autoref{sec:the_core_algorithms}) ensured that it was less of a problem than would otherwise have been expected.
 This is not to say that it was without challenge, however, as providing clear implementations of these verification components, and the requirement to develop a concise method for error reporting proved most interesting.\\
@@ -558,7 +540,7 @@ This modular approach both ensured an extensible design, as specified by Require
 
 \subsection{The Verification Preprocessor} % (fold)
 \label{sub:the_verification_preprocessor}
-With the \gls{ast} available from the output of Metaparse, the implementation of this preprocessing step was a simple application of the algorithm outlined in \autoref{ssub:the_verification_preprocessor}. 
+With the \gls{ast} available from the output of Metaparse, the implementation of this preprocessing step was a simple application of the algorithm outlined in \nameref{ssub:the_verification_preprocessor} on \autopageref{ssub:the_verification_preprocessor}. 
 The main challenge here was \textit{not} the implementation of the core algorithm, but instead establishing an elegant way to manipulate and traverse the strongly-typed \gls{ast} being used as input.\\
 
 After experimentation, the implementation in \mintinline{text}{Collate.hs} settled on the use of Haskell's robust pattern-matching facilities to destructure the AST data.
@@ -601,12 +583,8 @@ mapRules r = M.fromList [
 
 \subsection{Tracking Error Information} % (fold)
 \label{sub:tracking_error_information}
-As described in \autoref{ssub:reporting_structures}, the design was required to be able to track information about the language being analysed.
-More specifically, this meant retaining additional diagnostic information in the case where the language did \textit{not} terminate.\\
-
-The final implementation for this arose from the recognition that, as the verification algorithms all passed around verification results, the nature of the algorithmic result type lent itself well to storing this additional data. 
-Given the elegant method by which the termination results can be combined, it was fairly simple to adapt this method to carry the verification diagnostics with it.
-The implementation itself can be seen in \mintinline{text}{RuleTag.hs}.
+As described in \nameref{ssub:reporting_structures} on \autopageref{ssub:reporting_structures}, the design was required to be able to track information about the language being analysed.
+More specifically, this meant retaining additional diagnostic information in the case where the language did \textit{not} terminate.
 
 \begin{listing}[!htb]
 \begin{minted}[numbers=none]{haskell}
@@ -621,10 +599,9 @@ data RuleTag
 \label{lst:the_basic_ruletag_definition}
 \end{listing}
 
-The type \mintinline{haskell}{RuleTag} was originally declared as in \autoref{lst:the_basic_ruletag_definition}, and it was a simple task to adapt this to track additional information in the \mintinline{haskell}{DoesNotTerminate} case.
-The definition was altered to define fields for the final case, defining a type as in \autoref{lst:non_termination_data_tracking}.
-Each instance of \mintinline{haskell}{DoesNotTerminate} was then adapted to contain a list of these items, where each item is able to define a reason for the non-termination, an error string to provide additional diagnostic information, and also a list of \mintinline{haskell}{NonTerminal}.
-This final list acts as a trace of where the non-termination for a given rule occurred from, allowing the language designers to better fix issues (Requirement~\reqref{req:GenerationofVerificationReports}).
+The final implementation for this arose from the recognition that, as the verification algorithms all passed around verification results, the nature of the algorithmic result type lent itself well to storing this additional data. 
+Given the elegant method by which the termination results can be combined, it was fairly simple to adapt this method to carry the verification diagnostics with it.
+The implementation itself can be seen in \mintinline{text}{RuleTag.hs}.
 
 \begin{listing}[!htb]
 \begin{minted}[firstnumber=26]{haskell}
@@ -633,6 +610,11 @@ type NonTerminationItem = (NonTerminationType, [NonTerminal], String)
 \caption{Non-Termination Data Tracking}
 \label{lst:non_termination_data_tracking}
 \end{listing}
+
+The type \mintinline{haskell}{RuleTag} was originally declared as in \autoref{lst:the_basic_ruletag_definition}, and it was a simple task to adapt this to track additional information in the \mintinline{haskell}{DoesNotTerminate} case.
+The definition was altered to define fields for the final case, defining a type as in \autoref{lst:non_termination_data_tracking}.
+Each instance of \mintinline{haskell}{DoesNotTerminate} was then adapted to contain a list of these items, where each item is able to define a reason for the non-termination, an error string to provide additional diagnostic information, and also a list of \mintinline{haskell}{NonTerminal}.
+This final list acts as a trace of where the non-termination for a given rule occurred from, allowing the language designers to better fix issues (Requirement~\reqref{req:GenerationofVerificationReports}).\\
 
 The additional data then had to be accounted for in the definition of \mintinline{haskell}{tagPlus}.
 In each case where a \mintinline{haskell}{DoesNotTerminate} instance is encountered, the diagnostic information contained within is collated and inserted into the new instance, as seen in \autoref{lst:verification_result_combination_with_diagnostic_state}.
@@ -659,7 +641,7 @@ tagPlus x Touched = x
 
 \subsection{Developing the Verification Algorithms} % (fold)
 \label{sub:developing_the_verification_algorithms}
-The development of the main verification functionality of Metaverify was almost a direct implementation of the algorithms from \autoref{sec:the_core_algorithms}, with few significant alterations.
+The development of the main verification functionality of Metaverify was almost a direct implementation of the algorithms from \autoref{sec:the_core_algorithms}, with very few significant alterations.
 The majority of the changes took the form of transformations from iterative algorithms to a more functional style, but this always retained the same algorithmic semantics, and thus avoided any issues. 
 This is not to ignore, however, the occasions where the implementation influenced the design of the algorithm, bringing additional elegance or clarity.\\
 
@@ -705,7 +687,7 @@ The existence of the `Touched' instance of \mintinline{haskell}{RuleTag} is actu
 Initially, this state did not exist, but this meant that there were problems verifying mutually recursive productions. \\
 
 In the initial formulation of the algorithm, two productions that mutually recurse would be unable to be verified.
-Consider \mintinline{text}{<a> ::= <b> | <c>;} and \mintinline{text}{<b> ::= <a> "+" <a> --> {}} (assuming the latter has defined semantics that terminate).
+Consider a set of productions and assume that the latter has defined, terminating semantics: \mintinline{text}{<a> ::= <b> | <c>;} and \mintinline{text}{<b> ::= <a> "+" <a> --> {}}.
 \begin{enumerate}
     \item Both productions are initially marked as `Untouched'.
     \item In the process of verifying \mintinline{text}{<a>}, the verifier tries to verify \mintinline{text}{<b>}.
