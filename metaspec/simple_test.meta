@@ -4,7 +4,7 @@ name : simple_test;
 version : 0.0.1a;
 
 using : {
-    number,
+    // number,
     base,
     traverse
 };
@@ -61,8 +61,6 @@ language : {
         number n : {n = n1 * n1}(n2 == 2) :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
         number n : {n = n1 ^ n2}() :
-            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
-        number n : {n = n1 ^ n3, n3 = n3 * 0 + n2}() :
             {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
     };
 

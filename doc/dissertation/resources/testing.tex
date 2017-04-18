@@ -93,8 +93,8 @@ These test cases were kept throughout development, and can be seen in \autoref{c
 While most of the tests that took place operated successfully, often due to the correct Haskell type-signatures constraining function behaviour, there were some occurrences where this manual testing approach was able to expose significant problems.
 These usually occurred either with the \textit{algorithms} underlying the metacompiler or the \textit{implementation} of these algorithms.
 
-\subsection{Discovering Infinite Recursion in Mutually Recursive Productions} % (fold)
-\label{sub:discovering_infinite_recursion_in_mutually_recursive_productions}
+\subsection{Infinite Recursion in Mutually Recursive Productions} % (fold)
+\label{sub:infinite_recursion_in_mutually_recursive_productions}
 As mentioned in \nameref{ssub:the_implementation_influencing_design} on \autopageref{ssub:the_implementation_influencing_design}, it was not uncommon for the development process to influence the design of the underlying algorithms.
 In the particular case highlighted in the above section, the verification engine was failing to terminate for a set of mutually recursive productions specifically designed to test behaviour in this case. 
 They are as seen in \autoref{lst:the_test_case_for_mutually_recursive_semantic_verification}, and are still visible in the metaspec test file:
@@ -116,7 +116,7 @@ In this case it is obvious that the verification for \mintinline{text}{<arith-ex
 This test case, was initially written into the file at the time of testing the parser itself, but once the development of user-semantic verification occurred for Metaverify, it was able to expose the issue in verifying such productions.
 The metacompiler was observed to hang, and using the test case contained within the testing file it was possible to diagnose the issue and implement the solution as described in the final version of the non-terminal verification algorithm (see \autoref{sub:verifier_traversal}).
 
-% subsection discovering_infinite_recursion_in_mutually_recursive_productions (end)
+% subsection infinite_recursion_in_mutually_recursive_productions (end)
 
 \subsection{False Successes for Semantic Evaluations} % (fold)
 \label{sub:false_successes_for_semantic_evaluations}
@@ -160,27 +160,130 @@ Incorrect Semantic Form.
 
 \section{Testing Error States} % (fold)
 \label{sec:testing_error_states}
-% Focus on testing outcomes of interest.
 In general, the testing approach focused on establishing that each feature of the metacompiler worked as expected as it was completed. 
-The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach. 
+The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach. \\
 
-\subsection{Parser Errors} % (fold)
-\label{sub:parser_errors}
-Initial testing focused on the 
+As Metaparse was the first system component requiring testing to be developed, initial testing focused on the correct operation of the parser.
+As discussed in \autoref{sub:metaparse_ast_generation}, the parser in \gls{absol} has two main functions:
+\begin{itemize}
+    \item Parsing the \gls{metaspec}
+    \item Ensuring that the preconditions are met for the verifier.
+\end{itemize}
 
-% subsection parser_errors (end)
+Each of these pieces of functionality was manually tested as it was developed. 
 
-\subsection{Verification Errors} % (fold)
-\label{sub:verification_errors}
+\subsection{Syntax Errors} % (fold)
+\label{sub:syntax_errors}
+All of the syntax error detection and reporting functionality built into \gls{absol} comes as a result of the use of Megaparsec, which provides these abilities by default.
+As a result, testing this was as simple as introducing syntax errors into the input file and ensuring that the resultant parse error made sense. 
+Consider the introduction of the syntax error in \autoref{lst:introducing_a_syntax_error}, which omits the closing \mintinline{text}{>} of a non-terminal. 
+The resultant error, shown in \autoref{lst:the_syntax_error_diagnostic}, correctly diagnoses what's wrong as part of the built in functionality of Megaparsec. 
 
-% subsection verification_errors (end)
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=26]{text}
+<my-number> ::= <integer> | <floating ;
+\end{minted}
+\caption{Introducing a Syntax Error}
+\label{lst:introducing_a_syntax_error}
+\end{listing}
 
-\subsection{Testing Metacompiler Reporting} % (fold)
-\label{sub:testing_metacompiler_reporting}
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+metaspec/simple_test.meta:26:38:
+unexpected space
+expecting '>' or alphanumeric character
+\end{minted}
+\caption{The Syntax Error Diagnostic}
+\label{lst:the_syntax_error_diagnostic}
+\end{listing}
 
-% subsection testing_metacompiler_reporting (end)
+While the syntax error reporting behaviour does degrade in the presence of backtracking parsing, testing shows that it is still able to retain some fairly sensible diagnostics in the case of errors in the backtracking portion of the parser. 
+If you omit the type before a special syntax rule, for example, it has enough context to suggest a list of types: \mintinline{text}{expecting "any", "bool", ...}, an appropriate suggestion based on the parser structure and language grammar.
+
+% subsection syntax_errors (end)
+
+\subsection{Precondition Verification Errors} % (fold)
+\label{sub:precondition_verification_errors}
+More interesting is the testing of the precondition verification algorithm.
+The errors here are fully part of the \gls{absol} implementation and thus not provided by a library. 
+This means that it was very important to test both that the errors manifested as expected, \textit{and} that they provided the appropriate diagnostic information.
+The precondition verification algorithm aims to check four different criteria (see \autoref{sub:verifier_precondition_validation}), each of which was tested independently
+
+\subsubsection{Testing Used Non-Terminals Defined In Scope} % (fold)
+\label{ssub:testing_used_non_terminals_defined_in_scope}
+To test this it is as simple as introducing the usage of a non-terminal into the language definition that does not exist in the language scope. 
+Conversely, it is possible to remove the import for a given non-terminal from the \mintinline{text}{using} definition block for the language.
+To test this a non-terminal \mintinline{text}{<tmp>} is added to the start-rule production of the test file. 
+This means that the non-terminal is used but never defined, and should hence cause an error.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+metaspec/simple_test.meta:82:1:
+The following Non-Terminals are used but not defined: <bar>... 
+\end{minted}
+\caption{Error for a Non-Terminal Used While Not In-Scope}
+\label{lst:error_for_a_non_terminal_used_while_not_in_scope}
+\end{listing}
+
+Doing this results in the error seen in \autoref{lst:error_for_a_non_terminal_used_while_not_in_scope}, which correctly diagnoses the issue.
+In the context where the missing non-terminal is defined by a language feature, it would also be capable of suggesting the corresponding import to the \gls{dsl} designer.
+
+% subsubsection testing_used_non_terminals_defined_in_scope (end)
+
+\subsubsection{Testing the Single Definition Principle} % (fold)
+\label{ssub:testing_the_single_definition_principle}
+Much like the above, it is very simple to test.
+To do so it is sufficient to introduce a secondary definition for a non-terminal that has already been defined. 
+In this case, a duplicate definition of \mintinline{text}{<integer>} is added.
+This non-terminal is defined by the \mintinline{text}{number} language feature.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+metaspec/simple_test.meta:28:11:
+Non-Terminal with name "integer" already defined. Defined by language feature(s): number.
+\end{minted}
+\caption{Error for Duplicate Non-Terminal Definitions}
+\label{lst:error_for_duplicate_non_terminal_definitions}
+\end{listing}
+
+As seen in \autoref{lst:error_for_duplicate_non_terminal_definitions}, this produces a helpful error. 
+In this case, the error is able to recognise that, rather than being defined in the document body itself, the non-terminal was originally defined by a language feature, and that information is provided. 
+
+% subsubsection testing_the_single_definition_principle (end)
+
+\subsection{Testing Types and Special-Syntax in Scope} % (fold)
+\label{sub:testing_types_and_special_syntax_in_scope}
+Much like the other portions of the precondition verifier, the testing of both of these was simple. 
+The basic test file makes use of the \mintinline{text}{map} special syntax, as well as heavy use of the \mintinline{text}{<integer>} type, and so removing the relevant imports produced errors as seen in \autoref{lst:error_for_types_and_special_syntax_missing_from_scope}.
+In both cases, the missing elements are defined by language features, and so the metacompiler is able to suggest the relevant imports to help the \gls{dsl} designer. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+metaspec/simple_test.meta:74:12:
+Special Syntax "map" not in scope. Please import one of the following: traverse.
+
+metaspec/simple_test.meta:14:14:
+Type "integer" not in scope. Defined in language feature(s): number.
+\end{minted}
+\caption{Error for Types and Special-Syntax Missing from Scope}
+\label{lst:error_for_types_and_special_syntax_missing_from_scope}
+\end{listing}
+
+% subsection testing_types_and_special_syntax_in_scope (end)
+
+% subsection precondition_verification_errors (end)
 
 % section testing_error_states (end)
+
+\section{Testing Metaverify Errors} % (fold)
+\label{sec:testing_metaverify_errors}
+Much like Metaparse, the verification engine also underwent manual testing to ensure that it detected all the possible conditions that it was meant to detect. 
+This, too, used the same testing methodology to help establish whether Metaverify was able to operate correctly, and thus that its conclusions were also correct.\\
+
+Metaverify was the second system component that was developed for \gls{absol} that required testing.
+However, it was developed piece-by-piece so the testing approach focused on each portion of the verification algorithm in turn. 
+
+% section testing_metaverify_errors (end)
 
 \section{An Example Language} % (fold)
 \label{sec:an_example_language}

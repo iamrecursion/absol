@@ -346,12 +346,12 @@ environmentAccessRule = do
     semType <- semanticType
     void semanticEnvironmentSymbol
     void environmentAccessSymbol
-    accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
+    accessBlocks <- syntaxAccessBlock `sepBy1` environmentAccessSymbol
     return (EnvironmentAccessRule semType accessBlocks)
 
 semanticEvaluationRuleList :: ParserST SemanticRule
 semanticEvaluationRuleList = do
-    rules <- semanticEvaluationRule `sepBy` multilineAlternative
+    rules <- semanticEvaluationRule `sepBy1` multilineAlternative
     return $ SemanticEvaluationRuleList rules
 
 -- | Parses a semantic evaluation rule.
