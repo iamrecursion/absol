@@ -533,34 +533,38 @@ verifyNonTerminal :: VState NonTerminal -> VState RuleTag
 verifyNonTerminal nt = do
     nonTerminal <- nt
     prodMap <- gets productions
+    truths <- gets truths
     let ntRule = M.lookup nonTerminal prodMap
 
-    -- Production stack frame
-    modify (pushProductionFrame nonTerminal)
-    prodTrace <- gets productionTrace
-    termResult <- case ntRule of
-        Nothing -> checkTruthsForTermination nt
-        Just (tag, body) -> do
-            case tag of
-                Terminates -> return tag
-                (DoesNotTerminate _) -> return tag
-                -- Only process if there is no termination tag assigned
-                _ -> do
-                    modify (updateRuleTag Touched nonTerminal)
-                    if nonTerminal `elem` tail prodTrace then
-                        return tag
-                    else do
-                        ntTag <- verifyRule $ return body
-                        modify (updateRuleTag ntTag nonTerminal)
-                        return ntTag
-    modify popProductionFrame
-    case termResult of
-        (DoesNotTerminate xs) ->
-            return $ DoesNotTerminate $ addTrace nonTerminal <$> xs
-        other -> return other
-    where
-        addTrace nonTerm (termKind, failTrace, msg) =
-            (termKind, nonTerm : failTrace, msg)
+    if nonTerminal `elem` truths then do
+        return Terminates
+    else do
+        -- Production stack frame
+        modify (pushProductionFrame nonTerminal)
+        prodTrace <- gets productionTrace
+        termResult <- case ntRule of
+            Nothing -> checkTruthsForTermination nt
+            Just (tag, body) -> do
+                case tag of
+                    Terminates -> return tag
+                    (DoesNotTerminate _) -> return tag
+                    -- Only process if there is no termination tag assigned
+                    _ -> do
+                        modify (updateRuleTag Touched nonTerminal)
+                        if nonTerminal `elem` tail prodTrace then
+                            return tag
+                        else do
+                            ntTag <- verifyRule $ return body
+                            modify (updateRuleTag ntTag nonTerminal)
+                            return ntTag
+        modify popProductionFrame
+        case termResult of
+            (DoesNotTerminate xs) ->
+                return $ DoesNotTerminate $ addTrace nonTerminal <$> xs
+            other -> return other
+        where
+            addTrace nonTerm (termKind, failTrace, msg) =
+                (termKind, nonTerm : failTrace, msg)
 
 -- | Checks if a given non-terminal terminates in the truths block.
 --

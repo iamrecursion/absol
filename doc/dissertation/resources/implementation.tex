@@ -11,9 +11,6 @@ This section aims to illustrate the implementation process, methodologies and to
 
 \section{The Implementation Process} % (fold)
 \label{sec:the_implementation_process}
-% A discussion of the process taken, with an examinatio of both its flaws and benefits
-% Talk about how the design influenced the process of implementation
-
 The process of implementing \gls{absol} started almost as soon as the high-level system architecture (see \autoref{fig:absol_high_level_architectural_diagram} on \autopageref{fig:absol_high_level_architectural_diagram}) was completed. 
 While the core focus of the project was assuredly on the underlying algorithms and the system design itself, the importance of the proof-of-concept implementation cannot be understated. 
 In order to best support the development of a system so closely tied to its theoretical work, the recognition of the inherent interplay between the design and implementation was key. \\
@@ -84,10 +81,6 @@ The development of \gls{absol} did not make use of such software as it was initi
 
 \subsubsection{Reflecting on the Choice of Haskell} % (fold)
 \label{ssub:reflecting_on_the_choice_of_haskell}
-% Fantastic choice for the task at hand,
-% Failings around debugging due to laziness. 
-% Talk about the use of language extensions -> useful features to build more concise code, but also the downside of it -> creating a 'dialect'
-
 As the entire project was implemented in Haskell there has been significant time to reflect on this choice of language for the development of \gls{absol}.
 Broadly, the choice of Haskell has been an immensely positive one for the project as a whole, and it is unlikely that any other language would have provided the same combination of features that made this implementation so smooth.
 This can be attributed to the following reasons:
@@ -257,7 +250,6 @@ parseLangName = optional $ option str (
 
 \section{Building the Lexer and Parser} % (fold)
 \label{sec:building_the_lexer_and_parser}
-
 Without the language \gls{ast} it would be impossible to reliably develop the verification algorithm so, mostly out of necessity, Metaparse itself was the next system component to be implemented. 
 The implementation of Metaparse involved multiple phases of implementation, each of which posed its own unique challenge
 The first was the creation of the AST data-types, which proved to be an exercise in definition rules for Haskell types.
@@ -394,7 +386,7 @@ specialSyntaxRule = do
 \label{sub:parsers_and_lookahead}
 One of the main challenges that was encountered in parsing was down to a badly designed grammar. 
 Combinator parsers have the capability to consume input, and if they do consume tokens on a branch they are then `locked' into that branch by default (in other words, backtracking is off-by-default).
-Unfortunately, the \gls{metaspec} grammar is badly factored in the context of the multiple kinds of semantic rule, as two of them begin with a \mintinline{text}{semantic-type}, as seen in \autoref{lst:the_badly_factored_semantic_grammar}.
+Unfortunately, the \gls{metaspec} grammar is badly factored in the context of the multiple kinds of semantic rule, as three of them begin with a \mintinline{text}{semantic-type}, as seen in \autoref{lst:the_badly_factored_semantic_grammar}.
 This means that if, in a parser alternation, it starts to parse one, successfully parses a \mintinline{haskell}{SemanticType} (which consumes tokens) and then later fails, it will try the next branch of the alternation.
 However, the \mintinline{haskell}{SemanticType} has already been consumed, and so it cannot match, causing the entire parser to fail. 
 This is emphatically \textit{not} the behaviour that should take place in such cases. 
@@ -402,6 +394,7 @@ This is emphatically \textit{not} the behaviour that should take place in such c
 \begin{listing}[!htb]
 \begin{minted}[numbers=none]{text}
 environment-input-rule = semantic-type, ... ;
+environment-access-rule = semantic-type, ... ;
 semantic-evaluation-rule = semantic-type, ... ;
 \end{minted}
 \caption{The Badly Factored Semantic Grammar}

@@ -343,15 +343,15 @@ specialSyntaxRule = do
 -- in the semantic environment.
 environmentAccessRule :: ParserST EnvironmentAccessRule
 environmentAccessRule = do
-    semType <- option Nothing maybeSemanticType
+    semType <- semanticType
     void semanticEnvironmentSymbol
     void environmentAccessSymbol
-    accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
+    accessBlocks <- syntaxAccessBlock `sepBy1` environmentAccessSymbol
     return (EnvironmentAccessRule semType accessBlocks)
 
 semanticEvaluationRuleList :: ParserST SemanticRule
 semanticEvaluationRuleList = do
-    rules <- semanticEvaluationRule `sepBy` multilineAlternative
+    rules <- semanticEvaluationRule `sepBy1` multilineAlternative
     return $ SemanticEvaluationRuleList rules
 
 -- | Parses a semantic evaluation rule.
@@ -548,7 +548,7 @@ semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
             <|> SpecialSyntaxFold <$ specialSyntaxString "fold"
             <|> SpecialSyntaxFilter <$ specialSyntaxString "filter"
             <|> SpecialSyntaxDeffun <$ specialSyntaxString "deffun"
-            <|> SpecialSyntaxDefproc <$ specialSyntaxString "callproc"
+            <|> SpecialSyntaxDefproc <$ specialSyntaxString "defproc"
             <|> SpecialSyntaxCallfun <$ specialSyntaxString "callfun"
             <|> SpecialSyntaxEnvStore <$ specialSyntaxString "envStore"
             <|> SpecialSyntaxEnvGet <$ specialSyntaxString "envGet"
@@ -560,6 +560,7 @@ semanticSpecialSyntax = checkSpecialSyntaxAvailable parseExpr
             <|> SpecialSyntaxRev <$ specialSyntaxString "rev"
             <|> SpecialSyntaxSplit <$ specialSyntaxString "split"
             <|> SpecialSyntaxJoin <$ specialSyntaxString "join"
+            <|> SpecialSyntaxSemanticsOf <$ specialSyntaxString "semanticsOf"
 
 -- | Parses a list of semantic restrictions.
 --
@@ -663,10 +664,3 @@ semanticType = checkTypeDefined parser
             <|> StringType <$ semanticTypeString "string"
             <|> ListType <$ semanticTypeString "list"
             <|> MatrixType <$ semanticTypeString "matrix"
-
--- | Parses a semantic type that may not exist.
---
--- There are certain expressions where the inclusion of the type is optional.
--- This parser supports their parsing.
-maybeSemanticType :: ParserST (Maybe SemanticType)
-maybeSemanticType = Just <$> semanticType

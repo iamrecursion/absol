@@ -624,28 +624,32 @@ It is stored as part of the state available to the verification algorithm and ha
 \begin{algorithmic}
 \Function{verifyNonTerminal}{nonTerminal}
     \State \Call{pushFrame}{nonTerminal}
-    \If{\Call{find}(productions, nonTerminal)}
-        \Comment Non-Terminal exists
-        \State (tag, ruleBody) $\gets$ \Call{get}(productions, nonTerminal)
-        \If{tag == Terminates $\lor$ tag == DoesNotTerminate}
-            \State \Return{tag}
-        \Else
-            \State \Call{set}{productions, nonTerminal, Touched}
-            \State traceTail $\gets$ \Call{tail}{productionTrace}
-            \If{\Call{elem}{nonTerminal, traceTail}}
-                \Comment Avoid infinite loop
-                \State \Return{tag} 
-                \Comment works as tagged `Touched'
-            \Else
-                \State result $\gets$ \Call{verifyRule}{ruleBody}
-                \Comment see \autoref{alg:the_main_verification_traversal_algorithm}
-                \State \Call{setTag}{productions, nonTerminal result}
-                \State \Return{result}
-            \EndIf
-        \EndIf
+    \If{\Call{elem}{nonTerminal, truths}}
+        \State \Return{Terminates}
     \Else
-        \Comment must exist in the truths block
-        \State \Return{\Call{checkTruthsForTermination}{nonTerminal}}
+        \If{\Call{find}(productions, nonTerminal)}
+            \Comment Non-Terminal exists
+            \State (tag, ruleBody) $\gets$ \Call{get}(productions, nonTerminal)
+            \If{tag == Terminates $\lor$ tag == DoesNotTerminate}
+                \State \Return{tag}
+            \Else
+                \State \Call{set}{productions, nonTerminal, Touched}
+                \State traceTail $\gets$ \Call{tail}{productionTrace}
+                \If{\Call{elem}{nonTerminal, traceTail}}
+                    \Comment Avoid infinite loop
+                    \State \Return{tag} 
+                    \Comment works as tagged `Touched'
+                \Else
+                    \State result $\gets$ \Call{verifyRule}{ruleBody}
+                    \Comment see \autoref{alg:the_main_verification_traversal_algorithm}
+                    \State \Call{setTag}{productions, nonTerminal result}
+                    \State \Return{result}
+                \EndIf
+            \EndIf
+        \Else
+            \Comment must exist in the truths block
+            \State \Return{\Call{checkTruthsForTermination}{nonTerminal}}
+        \EndIf
     \EndIf
 \EndFunction
 \Function{checkTruthsForTermination}{nonTerminal}
@@ -715,6 +719,7 @@ To this end, the inference algorithm implements this idea, allowing an alternati
 
 This means that the inference will not take place if there is more than one terminal or non-terminal, or in the presence of any syntax indicating grouping or optionality. 
 However, the inference will still operate in the presence of one syntactic construct.
+It should be noted, however, that a rule for which semantics cannot be inferred can be trivially said to terminate through the inclusion of a ground-truth for the rule. 
 If syntactic exception is present, this only serves to restrict the expressions that will match the production, and it has no impact on the semantics of the production.\\
 
 The algorithm used to perform this inference is used as part of the main verification flow, and can be seen in \autoref{alg:the_semantic_inference_algorithm}.
@@ -1341,6 +1346,9 @@ This feature defines the following operations over the set of types it defines:
     \item \mintinline{text}{nodeLength(nodeList)} --- Gets the number of nodes contained by a non-terminal. 
     This is useful in the context of function definitions and function calls where the executed semantics may differ based on the number of arguments given. 
     As all syntax is finite, determining the length of a finite syntax list is also finite and hence guaranteed to terminate. 
+    \item \mintinline{text}{semanticsOf(list)} --- Given a list of non-terminals (enclosed in \mintinline{text}{{}}), it gives the production the semantics of the list items evaluated sequentially.
+    As the list is finite, it is clear that this has defined semantics as long as each list item also has defined semantics.
+    If given a non-list portion of the syntax it is evaluated directly, and if given comma-separated values they are evaluated in order according to the above rules. 
 \end{itemize}
 
 % subsubsection operations_and_syntax_base (end)
@@ -1510,6 +1518,7 @@ They are defined as follows, and are intended to be used to create frameworks wi
     \item \mintinline{text}{callfun(name, args)} --- Calls a function named \mintinline{text}{name}, with arguments given by \mintinline{text}{args}.
     This call is a \gls{noop} when executed from any place other than inside a defined procedure. 
     This ensures that no recursive function calls (direct or indirect) can be made, and thus ensures that the language using these constructs will always terminate.
+    % Additionally, this syntax can be used to defer execution of a given piece of semantics until another
 \end{itemize}
 
 % subsection feature_funcall (end)

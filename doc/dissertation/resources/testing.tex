@@ -1,48 +1,694 @@
-% The process of testing, with an examination of the testing strategy. 
-% Why was this strategy chosen over other possible strategies.
-% Deficiencies in the testing strategy, 
-% Focus on testing outcomes of interest.
-% Evaluation of the techniques in hindsigh.
-% How automation could've improved testing (HUnit, Haskell-based Fuzzers)
+
+
+% This section will:
+% \begin{itemize}
+%     \item Provide examples of use of the language
+%     \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
+% \end{itemize}
+
+% Testing both interleaved and not
 
 \chapter{Testing} % (fold)
 \label{cha:testing}
-This section will:
-\begin{itemize}
-    \item Provide examples of use of the language
-    \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
-\end{itemize}
+Like any well-designed piece of software, \gls{absol} underwent a significant amount of testing during its development.
+As \gls{absol} was mainly developed as an embodiment of the theoretical algorithms developed as part of the project, rather than as a software product itself, the ad-hoc testing approach seemed to prove sufficient for the context of the project.\\
+
+This chapter of the document aims to both outline the testing approach taken, with an examination of how it integrated with the development process.
+It also provides examples of the tests carried out with an examination of their result. 
+Finally, it provides an example of a language developed in \gls{metaspec} and verified by \gls{absol}, with a description of that language's development process, in order to showcase the utility of the metacompiler toolchain.
 
 \section{The General Testing Approach} % (fold)
 \label{sec:the_general_testing_approach}
 % Discuss the brief consideration of user testing and examine why it was dismissed (due to the project state and requirement for significant expertise to utilise the system). 
+% Integrated throughout development
+% The process of testing, with an examination of the testing strategy. 
+% Why was this strategy chosen over other possible strategies.
+% Haskell's strong type safety acting as some kind of test suite, though not on parity with a dependently-typed approach. 
 
-% Talk about bugs found through testing and how they influenced development/
+\gls{absol} is a large software system, and like any large software system it is likely to have bugs.
+This meant that having some testing approach was paramount in order to ensure that the software operated correctly.
+With the clear need for testing, the choice to be made was as to what kind of testing.\\
+
+Initial examination of the testing ecosystem in Haskell highlighted two main complementary testing approaches that could be unified by tooling.
+Both of these testing approaches could be unified under a common testing toolchain integrated with Stack in the form of Tasty \citep{tasty_haskell}. 
+Tasty is a testing framework for Haskell that provides the ability to combine diverse testing approaches into a single test suite that can be run from within the Stack build tool. 
+The approaches were as follows:
+\begin{itemize}
+    \item \textbf{HUnit:} Akin to the JUint framework for Java, HUnit provides a unit testing framework for Haskell that allows software engineers to write tests in terms of assertions on results of functions \citep{hunit}.
+    \item \textbf{QuickCheck:} An automated property-based testing framework for Haskell, QuickCheck provides specifications of function behaviour that are then automatically tested over a large random search space \citep{quick_check}.
+    With integrated QuickCheck support in Megaparsec, this would have integrated nicely with an automated testing approach.
+\end{itemize}
+
+However, despite the obviously robust support for software testing provided by the Haskell ecosystem, the project did not take an automated approach.
+While it would have brought significant benefits to the project, initial evaluation of such a testing strategy in the context of the non-product nature of the \gls{absol} toolchain indicated that the effort to maintain the tests would outweigh the benefits they would bring.
+This seemed to be especially true of the QuickCheck specifications, which are written in a \gls{dsl} themselves. \\
+
+As an alternative, the project decided to rely on a dual-pronged approach that combined manual software testing with the significant strengths of Haskell as a language: its strong type-safety:
+\begin{itemize}
+    \item \textbf{Haskell's Type-Safety:} It is often heard in folklore around Haskell that ``if it compiles, it probably works''. 
+    This quote stems from the fact that in specifying the type of a function, and keeping functions small and composable, it is possible to encode a significant amount of information about the function itself.
+    This meant that the first part of this testing approach involved the strict specification of types for all functions, not relying on Haskell's robust type-inference mechanism.
+    If the resultant code compiled then there was some guarantee of safety.
+    It should be noted that this is not on par with the kinds of tests that can be encoded in the type system using a \gls{dependently_typed} system.
+    \item \textbf{Manual Testing:} The type-safety alone, however, was far from sufficient. 
+    While it can guarantee that the functions making up a program operate in the correct domain, it cannot necessarily show that the behaviour of these functions is \textit{correct}.
+    In order to ensure correctness, the decision was made to additionally perform manual testing using a test file.
+    This test file would be modified to test the piece of functionality that was currently a concern.
+    The test file was also intended to act as some kind of regression test, as no working piece of syntax or semantics would have been removed from it. 
+\end{itemize}
+
+The main benefit of such a testing approach, and the main reason why it was chosen over more formal automated testing was that it required little maintenance effort.
+In a project so constrained for time, this was seen as a large boon. 
+To this end, this was the chosen approach for the project, with the hope that it would be sufficient. 
+The chosen testing strategy was interleaved with the development process, testing each feature as they were developed. 
+
+\subsection{Examining the Testing Approach in Hindsight} % (fold)
+\label{sub:examining_the_testing_approach_in_hindsight}
+While the testing approach chosen did \textit{help} the development of \gls{absol} it turned out to be woefully insufficient in hindsight.
+The main failure of the chosen testing approach was that it provided very little in the way of \textit{regression testing}: tests to ensure that further development did not break or alter the function of existing features. \\
+
+The \gls{metaspec} test file, which can be seen in \autoref{cha:the_absol_testing_file} on \autopageref{cha:the_absol_testing_file}, was able to act as some kind of regression testing.
+This file was used to test the new features as they were added, testing both accepting and rejecting scenarios.
+However, as a feature became `finished' or development moved on from that point, the corresponding part of the file had to be left in an `accepting' state, meaning that it only tested the success criteria.
+This meant that while the test file acted somewhat like a regression test, it would only detect breakages where something correct or valid was no longer accepted by \gls{absol}.
+As a result, it entirely ignored functionality in the cases where things should be broken.\\
+
+In order to attempt to compensate for this difficulty, manual breakages were introduced to the file at regular intervals in order to examine the behaviour in these cases. 
+However, it was all too easy to forget to re-test a certain case, and this led to multiple occasions where alterations to the verification engine or parser caused breakages that were not detected until much later.
+This late discovery of bugs often made fixing them more difficult due to the mental context switch involved. \\
+
+In hindsight, it would have been far better to have applied the extra work required to maintain both HUnit and QuickCheck tests for \gls{absol}.
+A fully automated test suite would have acted as an efficient regression testing mechanism, and also provided other testing guarantees that would potentially have allowed more rapid feature development. 
+The HUnit-based tests would have been able to check the behaviour of the support modules and Metaverify, while sets of QuickCheck properties could have helped automate the testing of both the parser and the verification engine.
+Overall, the chosen testing strategy turned out to be a large misstep during the development of \gls{absol}.
+
+% subsection examining_the_testing_approach_in_hindsight (end)
 
 % section the_general_testing_approach (end)
 
+\section{Testing During Development} % (fold)
+\label{sec:testing_during_development}
+Testing during the development process took place using manual test cases created in \gls{metaspec} (the language) itself.
+These test cases were kept throughout development, and can be seen in \autoref{cha:the_absol_testing_file}.
+While most of the tests that took place operated successfully, often due to the correct Haskell type-signatures constraining function behaviour, there were some occurrences where this manual testing approach was able to expose significant problems.
+These usually occurred either with the \textit{algorithms} underlying the metacompiler or the \textit{implementation} of these algorithms.
+
+\subsection{Infinite Recursion in Mutually Recursive Productions} % (fold)
+\label{sub:infinite_recursion_in_mutually_recursive_productions}
+As mentioned in \nameref{ssub:the_implementation_influencing_design} on \autopageref{ssub:the_implementation_influencing_design}, it was not uncommon for the development process to influence the design of the underlying algorithms.
+In the particular case highlighted in the above section, the verification engine was failing to terminate for a set of mutually recursive productions specifically designed to test behaviour in this case. 
+They are as seen in \autoref{lst:the_test_case_for_mutually_recursive_semantic_verification}, and are still visible in the metaspec test file:
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<arith-expr> ::= <my-number> | <arith-op> ;
+...
+<arith-op> ::= 
+    <arith-expr> "+" <arith-expr> --> {
+        number n : {n = n1 + n2}() :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+    } | ... ;
+\end{minted}
+\caption{The Test Case for Mutually Recursive Semantic Verification}
+\label{lst:the_test_case_for_mutually_recursive_semantic_verification}
+\end{listing}
+
+In this case it is obvious that the verification for \mintinline{text}{<arith-expr>} depends on the verification for \mintinline{text}{<arith-op>}, and the converse is also true. 
+This test case, was initially written into the file at the time of testing the parser itself, but once the development of user-semantic verification occurred for Metaverify, it was able to expose the issue in verifying such productions.
+The metacompiler was observed to hang, and using the test case contained within the testing file it was possible to diagnose the issue and implement the solution as described in the final version of the non-terminal verification algorithm (see \autoref{sub:verifier_traversal}).
+
+% subsection infinite_recursion_in_mutually_recursive_productions (end)
+
+\subsection{False Successes for Semantic Evaluations} % (fold)
+\label{sub:false_successes_for_semantic_evaluations}
+Another case where the testing approach was able to identify an issue was in one of the rules for verification of the user-defined semantics. 
+While \autoref{alg:verification_of_the_semantic_evaluation_criterion} had provided the correct set of criteria to validate these evaluations since it was designed (see \autoref{ssub:verifying_the_evaluation_criterion} on \autopageref{ssub:verifying_the_evaluation_criterion}), the testing approach highlighted a bug in the implementation of one of the criteria checks.\\
+
+As stated in the above section, all temporary variables declared in the evaluation list must only be used \textit{to the left} of where they were declared. 
+The test case created to check this verification was working as intended was as seen in \autoref{lst:testing_part_of_the_semantic_evaluation_criteria}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<arith-op> ::= 
+    ... |
+    <arith-expr> "^" <arith-expr> --> {
+        ... |
+        number n : {n = n1 ^ n3, n3 = n3 * 0 + n2}() :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+    };
+\end{minted}
+\caption{Testing Part of the Semantic Evaluation Criteria}
+\label{lst:testing_part_of_the_semantic_evaluation_criteria}
+\end{listing}
+
+This test case was designed to fail immediately, but it turned out that it validated without issue. 
+Careful tracing of this result through the verification algorithm allowed the discovery that the collation algorithm for obtaining the variables used after each definition had not been implemented properly. 
+Fixing this implementation allowed the metacompiler to act as expected, failing the language with this semantic rule:
+
+\begin{minted}[numbers=none]{text}
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <statement> -> <arith-expr> -> <arith-op>
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <statement> -> <assignment> -> <arith-expr> -> <arith-op>
+\end{minted}
+
+% subsection false_successes_for_semantic_evaluations (end)
+
+% section testing_during_development (end)
+
 \section{Testing Error States} % (fold)
 \label{sec:testing_error_states}
+In general, the testing approach focused on establishing that each feature of the metacompiler worked as expected as it was completed. 
+The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach. \\
 
-\subsection{Parser Errors} % (fold)
-\label{sub:parser_errors}
+As Metaparse was the first system component requiring testing to be developed, initial testing focused on the correct operation of the parser.
+As discussed in \autoref{sub:metaparse_ast_generation}, the parser in \gls{absol} has two main functions:
+\begin{itemize}
+    \item Parsing the \gls{metaspec}
+    \item Ensuring that the preconditions are met for the verifier.
+\end{itemize}
 
-% subsection parser_errors (end)
+Each of these pieces of functionality was manually tested as it was developed. 
 
-\subsection{Verification Errors} % (fold)
-\label{sub:verification_errors}
+\subsection{Syntax Errors} % (fold)
+\label{sub:syntax_errors}
+All of the syntax error detection and reporting functionality built into \gls{absol} comes as a result of the use of Megaparsec, which provides these abilities by default.
+As a result, testing this was as simple as introducing syntax errors into the input file and ensuring that the resultant parse error made sense. 
+Consider the introduction of the syntax error in \autoref{lst:introducing_a_syntax_error}, which omits the closing \mintinline{text}{>} of a non-terminal. 
+The resultant error, shown in \autoref{lst:the_syntax_error_diagnostic}, correctly diagnoses what's wrong as part of the built in functionality of Megaparsec. 
 
-% subsection verification_errors (end)
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=26]{text}
+<my-number> ::= <integer> | <floating ;
+\end{minted}
+\caption{Introducing a Syntax Error}
+\label{lst:introducing_a_syntax_error}
+\end{listing}
 
-\subsection{Testing Metacompiler Reporting} % (fold)
-\label{sub:testing_metacompiler_reporting}
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+metaspec/simple_test.meta:26:38:
+unexpected space
+expecting '>' or alphanumeric character
+\end{minted}
+\caption{The Syntax Error Diagnostic}
+\label{lst:the_syntax_error_diagnostic}
+\end{listing}
 
-% subsection testing_metacompiler_reporting (end)
+While the syntax error reporting behaviour does degrade in the presence of backtracking parsing, testing shows that it is still able to retain some fairly sensible diagnostics in the case of errors in the backtracking portion of the parser. 
+If you omit the type before a special syntax rule, for example, it has enough context to suggest a list of types: \mintinline{text}{expecting "any", "bool", ...}, an appropriate suggestion based on the parser structure and language grammar.
+
+% subsection syntax_errors (end)
+
+\subsection{Precondition Verification Errors} % (fold)
+\label{sub:precondition_verification_errors}
+More interesting is the testing of the precondition verification algorithm.
+The errors here are fully part of the \gls{absol} implementation and thus not provided by a library. 
+This means that it was very important to test both that the errors manifested as expected, \textit{and} that they provided the appropriate diagnostic information.
+The precondition verification algorithm aims to check four different criteria (see \autoref{sub:verifier_precondition_validation}), each of which was tested independently
+
+\subsubsection{Testing Used Non-Terminals Defined In Scope} % (fold)
+\label{ssub:testing_used_non_terminals_defined_in_scope}
+To test this it is as simple as introducing the usage of a non-terminal into the language definition that does not exist in the language scope. 
+Conversely, it is possible to remove the import for a given non-terminal from the \mintinline{text}{using} definition block for the language.
+To test this a non-terminal \mintinline{text}{<tmp>} is added to the start-rule production of the test file. 
+This means that the non-terminal is used but never defined, and should hence cause an error.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+metaspec/simple_test.meta:82:1:
+The following Non-Terminals are used but not defined: <bar>... 
+\end{minted}
+\caption{Error for a Non-Terminal Used While Not In-Scope}
+\label{lst:error_for_a_non_terminal_used_while_not_in_scope}
+\end{listing}
+
+Doing this results in the error seen in \autoref{lst:error_for_a_non_terminal_used_while_not_in_scope}, which correctly diagnoses the issue.
+In the context where the missing non-terminal is defined by a language feature, it would also be capable of suggesting the corresponding import to the \gls{dsl} designer.
+
+% subsubsection testing_used_non_terminals_defined_in_scope (end)
+
+\subsubsection{Testing the Single Definition Principle} % (fold)
+\label{ssub:testing_the_single_definition_principle}
+Much like the above, it is very simple to test.
+To do so it is sufficient to introduce a secondary definition for a non-terminal that has already been defined. 
+In this case, a duplicate definition of \mintinline{text}{<integer>} is added.
+This non-terminal is defined by the \mintinline{text}{number} language feature.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+metaspec/simple_test.meta:28:11:
+Non-Terminal with name "integer" already defined. Defined by language feature(s): number.
+\end{minted}
+\caption{Error for Duplicate Non-Terminal Definitions}
+\label{lst:error_for_duplicate_non_terminal_definitions}
+\end{listing}
+
+As seen in \autoref{lst:error_for_duplicate_non_terminal_definitions}, this produces a helpful error. 
+In this case, the error is able to recognise that, rather than being defined in the document body itself, the non-terminal was originally defined by a language feature, and that information is provided. 
+
+% subsubsection testing_the_single_definition_principle (end)
+
+\subsection{Testing Types and Special-Syntax in Scope} % (fold)
+\label{sub:testing_types_and_special_syntax_in_scope}
+Much like the other portions of the precondition verifier, the testing of both of these was simple. 
+The basic test file makes use of the \mintinline{text}{map} special syntax, as well as heavy use of the \mintinline{text}{<integer>} type, and so removing the relevant imports produced errors as seen in \autoref{lst:error_for_types_and_special_syntax_missing_from_scope}.
+In both cases, the missing elements are defined by language features, and so the metacompiler is able to suggest the relevant imports to help the \gls{dsl} designer. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+metaspec/simple_test.meta:74:12:
+Special Syntax "map" not in scope. Please import one of the following: traverse.
+
+metaspec/simple_test.meta:14:14:
+Type "integer" not in scope. Defined in language feature(s): number.
+\end{minted}
+\caption{Error for Types and Special-Syntax Missing from Scope}
+\label{lst:error_for_types_and_special_syntax_missing_from_scope}
+\end{listing}
+
+% subsection testing_types_and_special_syntax_in_scope (end)
+
+% subsection precondition_verification_errors (end)
 
 % section testing_error_states (end)
 
+\section{Testing Metaverify Errors} % (fold)
+\label{sec:testing_metaverify_errors}
+Having established that the parser worked properly, it was time to develop the verification engine. 
+Much like Metaparse, the verification engine also underwent manual testing to ensure that it detected all the possible conditions that it was meant to detect. 
+This, too, used the same testing methodology to help establish whether Metaverify was able to operate correctly, and thus that its conclusions were also correct.\\
+
+Metaverify was the second system component that was developed for \gls{absol} that required testing.
+However, it was developed piece-by-piece so the testing approach focused on each portion of the verification algorithm in turn. 
+
+\subsection{Testing the Semantic Inference} % (fold)
+\label{sub:testing_the_semantic_inference}
+One of the major features of the verification algorithm is its ability to infer the semantics for simple productions that just consist of alternations. 
+Ensuring this operates correctly requires both checking that it does not infer semantics when it reasonably cannot, but also that it will infer semantics correctly where possible.
+The first test was to ensure that productions of the form where it \textit{should} operate correctly had their semantics inferred. \\
+
+The test file used for most of the testing of the toolchain contains multiple examples of productions who satisfy the required form for semantic inference. 
+One of these can be seen in \autoref{lst:a_production_with_inferred_semantics} below. 
+When executing the metacompiler on this file, the semantics of the language are verified correctly, stating that it terminates.
+This implies that the semantic inference is working in this case. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=29]{text}
+<arith-expr> ::= <my-number> | <arith-op> ;
+\end{minted}
+\caption{A Production with Inferred Semantics}
+\label{lst:a_production_with_inferred_semantics}
+\end{listing}
+
+It remains to be shown, however, that the inference fails in appropriate cases.
+In any situation other than a single non-terminal or terminal in an alternation, the inference engine should fail with an appropriate message. 
+Altering the above production to read \mintinline{text}{... | <arith-op> "+" ;} introduces a situation in which the inference algorithm should fail, and indeed it does (as seen in \autoref{lst:inference_failure}).
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+Unable to infer semantics for rule.
+    REASON: Cannot infer semantics for rule.
+    IN: <statement> -> <arith-expr>
+\end{minted}
+\caption{Inference Failure}
+\label{lst:inference_failure}
+\end{listing}
+
+% subsection testing_the_semantic_inference (end)
+
+\subsection{Testing the Alternative Semantic Forms} % (fold)
+\label{sub:testing_the_alternative_semantic_forms}
+The second kind of semantic verification that was developed were the special types of semantic rule.
+This was broadly because their verification is generally simple, revolving around special-case semantic proofs, and the termination of the non-terminals involved.
+The termination of all special semantic forms (special syntax rules, environment input rules and environment access rules) is guaranteed as long as the involved non-terminals terminate and exist in the associated syntactic production. \\
+
+As the verification procedure is the same for each of these, the following example pertains only to the verification of special-syntax rules. 
+The test file can already be shown to terminate with the valid special-syntax rule on line 73, but this does not show that it fails appropriately.
+Consider a production (defined in the test file) as shown in, and introduce some semantic failure into \mintinline{text}{<arith-op>}.
+As shown in \autoref{lst:a_failing_special_syntax_rule}, this produces the appropriate errors in the metacompiler output. 
+
+\subsubsection{Testing Special-Syntax Rules} % (fold)
+\label{ssub:testing_special_syntax_rules}
+The termination of special syntax rules 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <ssr-fail>
+STATUS: Does not terminate.
+
+Refers to non-existent subterms.
+    REASON: Non-terminal <arith-op> with index 2 is not defined in this production.
+    IN:
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <arith-op>
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <arith-op>
+\end{minted}
+\caption{A Failing Special-Syntax Rule}
+\label{lst:a_failing_special_syntax_rule}
+\end{listing}
+
+The other kinds of alternative semantic form were similarly tested, and the verification algorithms for each kind of semantics all appeared to operate correctly.
+This meant that they detected the appropriate error conditions and produced the correct corresponding error messages.
+
+% subsubsection testing_special_syntax_rules (end)
+
+\subsection{Testing the User-Defined Semantics Checks} % (fold)
+\label{sub:testing_the_user_defined_semantics_checks}
+Testing the verification algorithm for the user-defined semantics is a touch more involved due to the number of separate components that exist within it. 
+Each of these individual component tests was developed individually, and so was tested individually. 
+
+\subsubsection{Testing Sub-Term Criterion Verification} % (fold)
+\label{ssub:testing_sub_term_criterion_verification}
+The sub-term criterion states that all sub-evaluations in a rule must be strict subterms of the main body, and that the semantics of these sub-terms also terminate. 
+The implementation is a direct adaptation of the algorithm in \nameref{ssub:verifying_the_sub_term_criterion} on \autopageref{ssub:verifying_the_sub_term_criterion}, and this provides the grounds to test the implementation.\\
+
+Introducing a sub-term that does not exist in the syntax should result in an error as it is not a sub-term of the evaluated semantics.
+Introducing a bad index into the \mintinline{text}{<arith-op> production} does indeed result in an appropriate error, as seen in \autoref{lst:failing_due_to_a_non_existent_sub_term}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Refers to non-existent subterms.
+    REASON: Non-terminal <arith-expr> with index 2 is not defined in this production.
+    IN:
+\end{minted}
+\caption{Failing Due to a Non-Existent Sub-Term}
+\label{lst:failing_due_to_a_non_existent_sub_term}
+\end{listing}
+
+By the same token, adapting the semantic rule to contain non-terminating productions will also cause the verification to fail.
+
+% subsubsection testing_sub_term_criterion_verification (end)
+
+\subsubsection{Testing the Evaluation Criterion} % (fold)
+\label{ssub:testing_the_evaluation_criterion}
+The second main component of verifying the user semantic form is ensuring that the evaluation rules match the required form (described in \nameref{ssub:verifying_the_evaluation_criterion} on \autopageref{ssub:verifying_the_evaluation_criterion}).
+It is possible to break this criterion in multiple ways, and so it is not worth showcasing all of the tests that were run on it here.\\
+
+Instead, this demonstration will focus on a case where the conditions are broken by using a non-existent evaluation variable as part of the computation.
+Working from the basic, valid, test file, the evaluation on line 42 can be transformed to read as in \autoref{lst:testing_the_evaluation_criterion} to introduce a dependency on a non-existent variable \mintinline{text}{n3}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=42]{text}
+<arith-expr> "+" <arith-expr> --> {
+    number n : {n = n1 + n3}() :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+} | ...
+\end{minted}
+\caption{Testing the Evaluation Criterion}
+\label{lst:testing_the_evaluation_criterion}
+\end{listing}
+
+Running the metacompiler on this file with the alteration produces an error in the output, as expected. 
+The error can be seen in \autoref{lst:failure_to_verify_the_semantic_operations}, and it clearly diagnoses the issue. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN:
+\end{minted}
+\caption{Failure to Verify the Semantic Operations}
+\label{lst:failure_to_verify_the_semantic_operations}
+\end{listing}
+
+% subsubsection testing_the_evaluation_criterion (end)
+
+\subsubsection{Testing the Guard Checking} % (fold)
+\label{ssub:testing_the_guard_checking}
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=58]{text}
+ <arith-expr> "^" <arith-expr> --> {
+    number n : {n = 1}(n1 == 1) :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+    number n : {n = n1 * n1}(n2 == 2) :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+\end{minted}
+\caption{A Set of Invalid Guards}
+\label{lst:a_set_of_invalid_guards}
+\end{listing}
+
+The final element of checking the user-defined semantics is to ensure that there is always a semantic rule to execute, no matter the values of the guards. 
+This is fairly simple to perform in this mode, checking just that there is a catch-all guard, as discussed in \autoref{sub:guard_checking}. 
+This makes checking that it works as intended simple - remove the catch-all guard from a set of semantic rules and check that it detects it appropriately.
+It is simple enough to alter the semantic rules beginning on line 58 of the test file to not include the catch-all guard, as seen in \autoref{lst:a_set_of_invalid_guards}. \\
+
+Executing the metacompiler on the file containing the error produces a diagnostic message as expected.
+This message can be seen in \autoref{lst:an_invalid_guards_error}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Guards incomplete.
+    REASON: Guards must contain a catch-all clause.
+    IN:
+\end{minted}
+\caption{An Invalid Guards Error}
+\label{lst:an_invalid_guards_error}
+\end{listing}
+
+% subsubsection testing_the_guard_checking (end)
+
+% subsection testing_the_user_defined_semantics_checks (end)
+
+% section testing_metaverify_errors (end)
+
 \section{An Example Language} % (fold)
 \label{sec:an_example_language}
+The other main component to testing \gls{absol} was the creation of a (potentially) useful \gls{dsl} as a proof-of-concept for the metacompiler system. 
+This section aims to outline the process through which a simple \gls{dsl} could be created, and demonstrate the final language here. 
+
+\subsection{The Idea for the Language} % (fold)
+\label{sub:the_idea_for_the_language}
+The notion for this language, known as \textit{spreadsheet}, is that it provides a \gls{dsl} for the manipulation of homogeneous, spreadsheet-based data. 
+This means that it needs to be able to:
+\begin{itemize}
+    \item Ingest and output `spreadsheets' to the host language via the FFI (and so package \mintinline{text}{funcall} is needed).
+    \item Perform basic operations over spreadsheets, allowing users to define functions to apply to rows and columns (\mintinline{text}{traverse}) will be required. 
+    \item The spreadsheets should be able to contain numeric data for processing (hence \mintinline{text}{number} is required). 
+\end{itemize}
+
+Considering all of these language design goals, another import required will be \mintinline{text}{matrix}, providing a table-like container for homogeneous data. 
+Finally, \mintinline{text}{base} should be 
+
+% subsection the_idea_for_the_language (end)
+
+\subsection{Designing the Example Language} % (fold)
+\label{sub:designing_the_example_language}
+This section aims to guide the reader through the design process for this language, emphasising the use of the various features of \gls{metaspec} to produce a language that is successfully verified by \gls{absol}. 
+The design process involves multiple stages. 
+
+\subsubsection{Specifying the Language Metadata} % (fold)
+\label{ssub:specifying_the_language_metadata}
+The metadata fields in a \gls{metaspec} provide a foundation from which to develop the language in question. 
+To that end, the language is contextualised with a name and initial version, and the established list of imports is added to the \mintinline{text}{using} defblock. 
+In addition to this, it is worth inserting both the truths defblock (though empty), and the language defblock with a basic start-rule. 
+Doing this ensures that you can check if the language parses and terminates in its current state.
+From this, the current state of the language is seen in \autoref{lst:the_initial_version_of_spreadsheet}. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall
+};
+
+truths : {
+
+};
+
+language : {
+
+<<spreadsheet>> ::= "";
+
+};
+\end{minted}
+\caption{The Initial Version of Spreadsheet}
+\label{lst:the_initial_version_of_spreadsheet}
+\end{listing}
+
+% subsubsection specifying_the_language_metadata (end)
+
+\subsubsection{Designing the Language Itself} % (fold)
+\label{ssub:designing_the_language_itself}
+Designing the language itself is a difficult process to describe as it relies on both experience and intuition. 
+It was built using a top-down process, envisioning what the user would be required to do to write useful programs in `spreadsheet', and developing the productions from there.
+Nevertheless, the development of the \gls{dsl} relied heavily on the metacompiler to provide feedback about the termination state of the language. 
+At any given time it was possible to run the metacompiler on it, and let the analysis explain what is invalid and needs to be improved, changed or completed. 
+The final definition of `spreadsheet' can be seen below:
+
+\begin{minted}[fontsize=\blockfont]{text}
+
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall,
+    string
+};
+
+truths : {
+    {number n <= <number>},
+    {matrix n <= <matrix>},
+    {any n <= <nondigit>},
+    {any n <= <digit>},
+
+    // Termination for literals
+    {any n <= <proc-name>},
+    {any n <= <variable-name>}
+};
+
+language : {
+
+<<spreadsheet>> ::= <procedure-def> | <function-def> ;
+
+// The procedure definitions are available in the host language. 
+<procedure-def> ::= 
+    "proc " <proc-name> "(" <argument-list> ")" "{" <proc-body> "}" ";" --> {
+        // Suppress any value returned.
+        none defproc(<proc-name>[0], <argument-list>[0], <proc-body>[0])
+    };
+
+// Restricted form for procedure naming, is a literal so is in truths
+<proc-name> ::= <nondigit> { <nondigit> | <digit> | "-" | "_" };
+
+// The argument list is a list of literals or variables
+<argument-list> ::= <arg-nt> { "," <arg-nt> } --> {
+    any semanticsOf(<arg-nt>[0], <arg-nt>[1])
+};
+
+// Argument non-terminals can either be literals or variables
+<arg-nt> ::= <literal> | <variable-name> ;
+
+// These have default terminating semantics by the truths
+<literal> ::= <matrix> | <number> ;
+
+// Variable names take a standard form
+<variable-name> ::= { <utf-8-char> } ;
+
+// The procedure body is a list of statements.
+<proc-body> ::= { <statement> } --> {
+    any semanticsOf(<statement>[0])
+};
+
+// Statements make up the program in the language
+<statement> ::= <process-sheet> | <reduce-sheet> | <binary-op> ;
+
+// Process-sheet allows the programmer to specify a function to operate on
+<process-sheet> ::= 
+    "process " "(" <function-name> "," <arg-nt> "," <dim> ")" --> {
+    any map(<function-name>[0], <arg-nt>[0], <dim>[0])
+};
+
+// Reduce-sheet allows reduction of the rows or columns of the sheet with a 
+// function and value
+<reduce-sheet> ::= 
+    "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
+        any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], <dim>[0])
+    };
+
+// Dimension markers for traversal
+<dim> ::= "0" | "1" ;
+
+// Mathematical operations to provide to process-sheet and reduce-sheet
+<binary-op> ::= <number> "+" <number> --> {
+        number n : {n = n1 + n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "-" <number> --> {
+        number n : {n = n1 - n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "*" <number> --> {
+        number n : {n = n1 * n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "/" <number> --> {
+        number n : {n = n1 / n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    };
+
+// Functions may only have single expressions in their bodies. 
+<function-def> ::= 
+    "fun " <function-name> "(" <argument-list> ")" "{" <fun-body> "}" ";" --> {
+        none deffun(<function-name>[0], <argument-list>[0], <fun-body>[0])
+    };
+
+// These both get inferred semantics.
+<function-name> ::= <proc-name> ;
+<fun-body> ::= <statement> ;
+
+};
+
+\end{minted}
+
+% subsubsection designing_the_language_itself (end)
+
+% subsection designing_the_example_language (end)
+
+\subsection{Reflecting on the Language Design Process} % (fold)
+\label{sub:reflecting_on_the_language_design_process}
+Overall, the process of designing this language was fairly simple.
+Using the design documentation specified in \autoref{sec:special_language_features} on \autopageref{sec:special_language_features} it was clearly possible to define the language as required:
+\begin{itemize}
+    \item \textbf{Truths:} It was quite clear that when a production was only intended to have a literal meaning that it should be put in the \mintinline{text}{truths} definition block.
+    Choosing the type for this was sometimes non-obvious, however, but if in doubt the \mintinline{text}{any} type would suffice as it would be bound properly at \gls{dsl} compile-time.
+    \item \textbf{Meta-Thinking:} The main issue in defining the language was to think at the \textit{language} level, rather than the \textit{program} level.
+    There were multiple occurrences where behaviour became confused between the language and a program in that language, requiring alterations to the language definition. 
+    \item \textbf{Metaspec Deficiencies:} It was an oversight to not allow for the definition of constants as arguments to the special-syntax forms. 
+    This would allow the creation of more elegant interfaces to some of these forms, and hence a better experience for the language designer.
+    An example of this is illustrated in \autoref{lst:an_alternative_definition_for_reduce_sheet}, which would allow a more fluent interface for users by using better domain terminology, rather than syntax enforced by the special syntax form. 
+\end{itemize}
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<reduce-sheet> ::= 
+    "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
+        any n : {n = n1}(n2 == "rows") : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 0)},
+            {any n2 <= <dim>[0]} |
+        any n : {n = n1}(n2 == "cols") : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 1)},
+            {any n2 <= <dim>[0]} |
+        any n : {n = n1}() : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 0)},
+            {any n2 <= <dim>[0]}
+    };
+
+<dim> ::= "rows" | "cols" ;
+\end{minted}
+\caption{An Alternative Definition for \texttt{<reduce-sheet>}}
+\label{lst:an_alternative_definition_for_reduce_sheet}
+\end{listing}
+
+% subsection reflecting_on_the_language_design_process (end)
 
 % section an_example_language (end)
 

@@ -217,10 +217,11 @@ data SemanticSpecialSyntax
     | SpecialSyntaxRev
     | SpecialSyntaxSplit
     | SpecialSyntaxJoin
+    | SpecialSyntaxSemantics
     deriving (Show, Eq)
 
 data EnvironmentAccessRule = EnvironmentAccessRule
-    (Maybe SemanticType)
+    SemanticType
     [SyntaxAccessBlock]
     deriving (Show, Eq)
 

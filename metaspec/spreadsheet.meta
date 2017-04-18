@@ -1,0 +1,106 @@
+
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall,
+    string
+};
+
+truths : {
+    {number n <= <number>},
+    {matrix n <= <matrix>},
+    {any n <= <nondigit>},
+    {any n <= <digit>},
+
+    // Termination for literals
+    {any n <= <proc-name>},
+    {any n <= <variable-name>}
+};
+
+language : {
+
+<<spreadsheet>> ::= <procedure-def> | <function-def> ;
+
+// The procedure definitions are available in the host language. 
+<procedure-def> ::= 
+    "proc " <proc-name> "(" <argument-list> ")" "{" <proc-body> "}" ";" --> {
+        // Suppress any value returned.
+        none defproc(<proc-name>[0], <argument-list>[0], <proc-body>[0])
+    };
+
+// Restricted form for procedure naming, is a literal so is in truths
+<proc-name> ::= <nondigit> { <nondigit> | <digit> | "-" | "_" };
+
+// The argument list is a list of literals or variables
+<argument-list> ::= <arg-nt> { "," <arg-nt> } --> {
+    any semanticsOf(<arg-nt>[0], <arg-nt>[1])
+};
+
+// Argument non-terminals can either be literals or variables
+<arg-nt> ::= <literal> | <variable-name> ;
+
+// These have default terminating semantics by the truths
+<literal> ::= <matrix> | <number> ;
+
+// Variable names take a standard form
+<variable-name> ::= { <utf-8-char> } ;
+
+// The procedure body is a list of statements.
+<proc-body> ::= { <statement> } --> {
+    any semanticsOf(<statement>[0])
+};
+
+// Statements make up the program in the language
+<statement> ::= <process-sheet> | <reduce-sheet> | <binary-op> ;
+
+// Process-sheet allows the programmer to specify a function to operate on
+<process-sheet> ::= 
+    "process " "(" <function-name> "," <arg-nt> "," <dim> ")" --> {
+    any map(<function-name>[0], <arg-nt>[0], <dim>[0])
+};
+
+// Reduce-sheet allows reduction of the rows or columns of the sheet with a 
+// function and value
+<reduce-sheet> ::= 
+    "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
+        any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], <dim>[0])
+    };
+
+// Dimension markers for traversal
+<dim> ::= "0" | "1" ;
+
+// Mathematical operations to provide to process-sheet and reduce-sheet
+<binary-op> ::= <number> "+" <number> --> {
+        number n : {n = n1 + n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "-" <number> --> {
+        number n : {n = n1 - n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "*" <number> --> {
+        number n : {n = n1 * n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "/" <number> --> {
+        number n : {n = n1 / n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    };
+
+// Functions may only have single expressions in their bodies. 
+<function-def> ::= 
+    "fun " <function-name> "(" <argument-list> ")" "{" <fun-body> "}" ";" --> {
+        none deffun(<function-name>[0], <argument-list>[0], <fun-body>[0])
+    };
+
+// These both get inferred semantics.
+<function-name> ::= <proc-name> ;
+<fun-body> ::= <statement> ;
+
+};
