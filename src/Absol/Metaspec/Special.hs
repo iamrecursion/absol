@@ -94,7 +94,8 @@ getSpecialSyntax FeatureBase =
         SpecialSyntaxEnvStore,
         SpecialSyntaxEnvGet,
         SpecialSyntaxEnvGetDefault,
-        SpecialSyntaxNodeLength
+        SpecialSyntaxNodeLength,
+        SpecialSyntaxSemanticsOf
     ]
 getSpecialSyntax FeatureNumber = 
     [
@@ -139,6 +140,7 @@ toSpecialSyntaxName SpecialSyntaxFloor = "floor"
 toSpecialSyntaxName SpecialSyntaxRev = "rev"
 toSpecialSyntaxName SpecialSyntaxSplit = "split"
 toSpecialSyntaxName SpecialSyntaxJoin = "join"
+toSpecialSyntaxName SpecialSyntaxSemanticsOf = "semanticsOf"
 
 -- | Checks if a given feature provides a non-terminal.
 providesNonTerminal :: NonTerminalIdentifier -> MetaspecFeature -> Bool

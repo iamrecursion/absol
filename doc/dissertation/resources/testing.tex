@@ -475,14 +475,220 @@ This section aims to outline the process through which a simple \gls{dsl} could 
 
 \subsection{The Idea for the Language} % (fold)
 \label{sub:the_idea_for_the_language}
+The notion for this language, known as \textit{spreadsheet}, is that it provides a \gls{dsl} for the manipulation of homogeneous, spreadsheet-based data. 
+This means that it needs to be able to:
+\begin{itemize}
+    \item Ingest and output `spreadsheets' to the host language via the FFI (and so package \mintinline{text}{funcall} is needed).
+    \item Perform basic operations over spreadsheets, allowing users to define functions to apply to rows and columns (\mintinline{text}{traverse}) will be required. 
+    \item The spreadsheets should be able to contain numeric data for processing (hence \mintinline{text}{number} is required). 
+\end{itemize}
 
+Considering all of these language design goals, another import required will be \mintinline{text}{matrix}, providing a table-like container for homogeneous data. 
+Finally, \mintinline{text}{base} should be 
 
 % subsection the_idea_for_the_language (end)
 
 \subsection{Designing the Example Language} % (fold)
 \label{sub:designing_the_example_language}
+This section aims to guide the reader through the design process for this language, emphasising the use of the various features of \gls{metaspec} to produce a language that is successfully verified by \gls{absol}. 
+The design process involves multiple stages. 
+
+\subsubsection{Specifying the Language Metadata} % (fold)
+\label{ssub:specifying_the_language_metadata}
+The metadata fields in a \gls{metaspec} provide a foundation from which to develop the language in question. 
+To that end, the language is contextualised with a name and initial version, and the established list of imports is added to the \mintinline{text}{using} defblock. 
+In addition to this, it is worth inserting both the truths defblock (though empty), and the language defblock with a basic start-rule. 
+Doing this ensures that you can check if the language parses and terminates in its current state.
+From this, the current state of the language is seen in \autoref{lst:the_initial_version_of_spreadsheet}. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall
+};
+
+truths : {
+
+};
+
+language : {
+
+<<spreadsheet>> ::= "";
+
+};
+\end{minted}
+\caption{The Initial Version of Spreadsheet}
+\label{lst:the_initial_version_of_spreadsheet}
+\end{listing}
+
+% subsubsection specifying_the_language_metadata (end)
+
+\subsubsection{Designing the Language Itself} % (fold)
+\label{ssub:designing_the_language_itself}
+Designing the language itself is a difficult process to describe as it relies on both experience and intuition. 
+It was built using a top-down process, envisioning what the user would be required to do to write useful programs in `spreadsheet', and developing the productions from there.
+Nevertheless, the development of the \gls{dsl} relied heavily on the metacompiler to provide feedback about the termination state of the language. 
+At any given time it was possible to run the metacompiler on it, and let the analysis explain what is invalid and needs to be improved, changed or completed. 
+The final definition of `spreadsheet' can be seen below:
+
+\begin{minted}[fontsize=\blockfont]{text}
+
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall,
+    string
+};
+
+truths : {
+    {number n <= <number>},
+    {matrix n <= <matrix>},
+    {any n <= <nondigit>},
+    {any n <= <digit>},
+
+    // Termination for literals
+    {any n <= <proc-name>},
+    {any n <= <variable-name>}
+};
+
+language : {
+
+<<spreadsheet>> ::= <procedure-def> | <function-def> ;
+
+// The procedure definitions are available in the host language. 
+<procedure-def> ::= 
+    "proc " <proc-name> "(" <argument-list> ")" "{" <proc-body> "}" ";" --> {
+        // Suppress any value returned.
+        none defproc(<proc-name>[0], <argument-list>[0], <proc-body>[0])
+    };
+
+// Restricted form for procedure naming, is a literal so is in truths
+<proc-name> ::= <nondigit> { <nondigit> | <digit> | "-" | "_" };
+
+// The argument list is a list of literals or variables
+<argument-list> ::= <arg-nt> { "," <arg-nt> } --> {
+    any semanticsOf(<arg-nt>[0], <arg-nt>[1])
+};
+
+// Argument non-terminals can either be literals or variables
+<arg-nt> ::= <literal> | <variable-name> ;
+
+// These have default terminating semantics by the truths
+<literal> ::= <matrix> | <number> ;
+
+// Variable names take a standard form
+<variable-name> ::= { <utf-8-char> } ;
+
+// The procedure body is a list of statements.
+<proc-body> ::= { <statement> } --> {
+    any semanticsOf(<statement>[0])
+};
+
+// Statements make up the program in the language
+<statement> ::= <process-sheet> | <reduce-sheet> | <binary-op> ;
+
+// Process-sheet allows the programmer to specify a function to operate on
+<process-sheet> ::= 
+    "process " "(" <function-name> "," <arg-nt> "," <dim> ")" --> {
+    any map(<function-name>[0], <arg-nt>[0], <dim>[0])
+};
+
+// Reduce-sheet allows reduction of the rows or columns of the sheet with a 
+// function and value
+<reduce-sheet> ::= 
+    "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
+        any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], <dim>[0])
+    };
+
+// Dimension markers for traversal
+<dim> ::= "0" | "1" ;
+
+// Mathematical operations to provide to process-sheet and reduce-sheet
+<binary-op> ::= <number> "+" <number> --> {
+        number n : {n = n1 + n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "-" <number> --> {
+        number n : {n = n1 - n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "*" <number> --> {
+        number n : {n = n1 * n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    } |
+    <number> "/" <number> --> {
+        number n : {n = n1 / n2}() :
+            {number n1 <= <number>[0]}, {number n2 <= <number>[1]}
+    };
+
+// Functions may only have single expressions in their bodies. 
+<function-def> ::= 
+    "fun " <function-name> "(" <argument-list> ")" "{" <fun-body> "}" ";" --> {
+        none deffun(<function-name>[0], <argument-list>[0], <fun-body>[0])
+    };
+
+// These both get inferred semantics.
+<function-name> ::= <proc-name> ;
+<fun-body> ::= <statement> ;
+
+};
+
+\end{minted}
+
+% subsubsection designing_the_language_itself (end)
 
 % subsection designing_the_example_language (end)
+
+\subsection{Reflecting on the Language Design Process} % (fold)
+\label{sub:reflecting_on_the_language_design_process}
+Overall, the process of designing this language was fairly simple.
+Using the design documentation specified in \autoref{sec:special_language_features} on \autopageref{sec:special_language_features} it was clearly possible to define the language as required:
+\begin{itemize}
+    \item \textbf{Truths:} It was quite clear that when a production was only intended to have a literal meaning that it should be put in the \mintinline{text}{truths} definition block.
+    Choosing the type for this was sometimes non-obvious, however, but if in doubt the \mintinline{text}{any} type would suffice as it would be bound properly at \gls{dsl} compile-time.
+    \item \textbf{Meta-Thinking:} The main issue in defining the language was to think at the \textit{language} level, rather than the \textit{program} level.
+    There were multiple occurrences where behaviour became confused between the language and a program in that language, requiring alterations to the language definition. 
+    \item \textbf{Metaspec Deficiencies:} It was an oversight to not allow for the definition of constants as arguments to the special-syntax forms. 
+    This would allow the creation of more elegant interfaces to some of these forms, and hence a better experience for the language designer.
+    An example of this is illustrated in \autoref{lst:an_alternative_definition_for_reduce_sheet}, which would allow a more fluent interface for users by using better domain terminology, rather than syntax enforced by the special syntax form. 
+\end{itemize}
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<reduce-sheet> ::= 
+    "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
+        any n : {n = n1}(n2 == "rows") : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 0)},
+            {any n2 <= <dim>[0]} |
+        any n : {n = n1}(n2 == "cols") : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 1)},
+            {any n2 <= <dim>[0]} |
+        any n : {n = n1}() : 
+            {any n1 <= any fold(<function-name>[0], <arg-nt>[0], <arg-nt>[1], 0)},
+            {any n2 <= <dim>[0]}
+    };
+
+<dim> ::= "rows" | "cols" ;
+\end{minted}
+\caption{An Alternative Definition for \texttt{<reduce-sheet>}}
+\label{lst:an_alternative_definition_for_reduce_sheet}
+\end{listing}
+
+% subsection reflecting_on_the_language_design_process (end)
 
 % section an_example_language (end)
 
