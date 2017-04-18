@@ -1,31 +1,172 @@
-% The process of testing, with an examination of the testing strategy. 
-% Why was this strategy chosen over other possible strategies.
-% Deficiencies in the testing strategy, 
-% Focus on testing outcomes of interest.
-% Evaluation of the techniques in hindsigh.
-% How automation could've improved testing (HUnit, Haskell-based Fuzzers)
+
+
+% This section will:
+% \begin{itemize}
+%     \item Provide examples of use of the language
+%     \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
+% \end{itemize}
+
+% Testing both interleaved and not
 
 \chapter{Testing} % (fold)
 \label{cha:testing}
-This section will:
-\begin{itemize}
-    \item Provide examples of use of the language
-    \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
-\end{itemize}
+Like any well-designed piece of software, \gls{absol} underwent a significant amount of testing during its development.
+As \gls{absol} was mainly developed as an embodiment of the theoretical algorithms developed as part of the project, rather than as a software product itself, the ad-hoc testing approach seemed to prove sufficient for the context of the project.\\
+
+This chapter of the document aims to both outline the testing approach taken, with an examination of how it integrated with the development process.
+It also provides examples of the tests carried out with an examination of their result. 
+Finally, it provides an example of a language developed in \gls{metaspec} and verified by \gls{absol}, with a description of that language's development process, in order to showcase the utility of the metacompiler toolchain.
 
 \section{The General Testing Approach} % (fold)
 \label{sec:the_general_testing_approach}
 % Discuss the brief consideration of user testing and examine why it was dismissed (due to the project state and requirement for significant expertise to utilise the system). 
+% Integrated throughout development
+% The process of testing, with an examination of the testing strategy. 
+% Why was this strategy chosen over other possible strategies.
+% Haskell's strong type safety acting as some kind of test suite, though not on parity with a dependently-typed approach. 
 
-% Talk about bugs found through testing and how they influenced development/
+\gls{absol} is a large software system, and like any large software system it is likely to have bugs.
+This meant that having some testing approach was paramount in order to ensure that the software operated correctly.
+With the clear need for testing, the choice to be made was as to what kind of testing.\\
+
+Initial examination of the testing ecosystem in Haskell highlighted two main complementary testing approaches that could be unified by tooling.
+Both of these testing approaches could be unified under a common testing toolchain integrated with Stack in the form of Tasty \citep{tasty_haskell}. 
+Tasty is a testing framework for Haskell that provides the ability to combine diverse testing approaches into a single test suite that can be run from within the Stack build tool. 
+The approaches were as follows:
+\begin{itemize}
+    \item \textbf{HUnit:} Akin to the JUint framework for Java, HUnit provides a unit testing framework for Haskell that allows software engineers to write tests in terms of assertions on results of functions \citep{hunit}.
+    \item \textbf{QuickCheck:} An automated property-based testing framework for Haskell, QuickCheck provides specifications of function behaviour that are then automatically tested over a large random search space \citep{quick_check}.
+    With integrated QuickCheck support in Megaparsec, this would have integrated nicely with an automated testing approach.
+\end{itemize}
+
+However, despite the obviously robust support for software testing provided by the Haskell ecosystem, the project did not take an automated approach.
+While it would have brought significant benefits to the project, initial evaluation of such a testing strategy in the context of the non-product nature of the \gls{absol} toolchain indicated that the effort to maintain the tests would outweigh the benefits they would bring.
+This seemed to be especially true of the QuickCheck specifications, which are written in a \gls{dsl} themselves. \\
+
+As an alternative, the project decided to rely on a dual-pronged approach that combined manual software testing with the significant strengths of Haskell as a language: its strong type-safety:
+\begin{itemize}
+    \item \textbf{Haskell's Type-Safety:} It is often heard in folklore around Haskell that ``if it compiles, it probably works''. 
+    This quote stems from the fact that in specifying the type of a function, and keeping functions small and composable, it is possible to encode a significant amount of information about the function itself.
+    This meant that the first part of this testing approach involved the strict specification of types for all functions, not relying on Haskell's robust type-inference mechanism.
+    If the resultant code compiled then there was some guarantee of safety.
+    It should be noted that this is not on par with the kinds of tests that can be encoded in the type system using a \gls{dependently_typed} system.
+    \item \textbf{Manual Testing:} The type-safety alone, however, was far from sufficient. 
+    While it can guarantee that the functions making up a program operate in the correct domain, it cannot necessarily show that the behaviour of these functions is \textit{correct}.
+    In order to ensure correctness, the decision was made to additionally perform manual testing using a test file.
+    This test file would be modified to test the piece of functionality that was currently a concern.
+    The test file was also intended to act as some kind of regression test, as no working piece of syntax or semantics would have been removed from it. 
+\end{itemize}
+
+The main benefit of such a testing approach, and the main reason why it was chosen over more formal automated testing was that it required little maintenance effort.
+In a project so constrained for time, this was seen as a large boon. 
+To this end, this was the chosen approach for the project, with the hope that it would be sufficient. 
+The chosen testing strategy was interleaved with the development process, testing each feature as they were developed. 
+
+\subsection{Examining the Testing Approach in Hindsight} % (fold)
+\label{sub:examining_the_testing_approach_in_hindsight}
+While the testing approach chosen did \textit{help} the development of \gls{absol} it turned out to be woefully insufficient in hindsight.
+The main failure of the chosen testing approach was that it provided very little in the way of \textit{regression testing}: tests to ensure that further development did not break or alter the function of existing features. \\
+
+The \gls{metaspec} test file, which can be seen in \autoref{cha:the_absol_testing_file} on \autopageref{cha:the_absol_testing_file}, was able to act as some kind of regression testing.
+This file was used to test the new features as they were added, testing both accepting and rejecting scenarios.
+However, as a feature became `finished' or development moved on from that point, the corresponding part of the file had to be left in an `accepting' state, meaning that it only tested the success criteria.
+This meant that while the test file acted somewhat like a regression test, it would only detect breakages where something correct or valid was no longer accepted by \gls{absol}.
+As a result, it entirely ignored functionality in the cases where things should be broken.\\
+
+In order to attempt to compensate for this difficulty, manual breakages were introduced to the file at regular intervals in order to examine the behaviour in these cases. 
+However, it was all too easy to forget to re-test a certain case, and this led to multiple occasions where alterations to the verification engine or parser caused breakages that were not detected until much later.
+This late discovery of bugs often made fixing them more difficult due to the mental context switch involved. \\
+
+In hindsight, it would have been far better to have applied the extra work required to maintain both HUnit and QuickCheck tests for \gls{absol}.
+A fully automated test suite would have acted as an efficient regression testing mechanism, and also provided other testing guarantees that would potentially have allowed more rapid feature development. 
+The HUnit-based tests would have been able to check the behaviour of the support modules and Metaverify, while sets of QuickCheck properties could have helped automate the testing of both the parser and the verification engine.
+Overall, the chosen testing strategy turned out to be a large misstep during the development of \gls{absol}.
+
+% subsection examining_the_testing_approach_in_hindsight (end)
 
 % section the_general_testing_approach (end)
 
+\section{Testing During Development} % (fold)
+\label{sec:testing_during_development}
+Testing during the development process took place using manual test cases created in \gls{metaspec} (the language) itself.
+These test cases were kept throughout development, and can be seen in \autoref{cha:the_absol_testing_file}.
+While most of the tests that took place operated successfully, often due to the correct Haskell type-signatures constraining function behaviour, there were some occurrences where this manual testing approach was able to expose significant problems.
+These usually occurred either with the \textit{algorithms} underlying the metacompiler or the \textit{implementation} of these algorithms.
+
+\subsection{Discovering Infinite Recursion in Mutually Recursive Productions} % (fold)
+\label{sub:discovering_infinite_recursion_in_mutually_recursive_productions}
+As mentioned in \nameref{ssub:the_implementation_influencing_design} on \autopageref{ssub:the_implementation_influencing_design}, it was not uncommon for the development process to influence the design of the underlying algorithms.
+In the particular case highlighted in the above section, the verification engine was failing to terminate for a set of mutually recursive productions specifically designed to test behaviour in this case. 
+They are as seen in \autoref{lst:the_test_case_for_mutually_recursive_semantic_verification}, and are still visible in the metaspec test file:
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<arith-expr> ::= <my-number> | <arith-op> ;
+...
+<arith-op> ::= 
+    <arith-expr> "+" <arith-expr> --> {
+        number n : {n = n1 + n2}() :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+    } | ... ;
+\end{minted}
+\caption{The Test Case for Mutually Recursive Semantic Verification}
+\label{lst:the_test_case_for_mutually_recursive_semantic_verification}
+\end{listing}
+
+In this case it is obvious that the verification for \mintinline{text}{<arith-expr>} depends on the verification for \mintinline{text}{<arith-op>}, and the converse is also true. 
+This test case, was initially written into the file at the time of testing the parser itself, but once the development of user-semantic verification occurred for Metaverify, it was able to expose the issue in verifying such productions.
+The metacompiler was observed to hang, and using the test case contained within the testing file it was possible to diagnose the issue and implement the solution as described in the final version of the non-terminal verification algorithm (see \autoref{sub:verifier_traversal}).
+
+% subsection discovering_infinite_recursion_in_mutually_recursive_productions (end)
+
+\subsection{False Successes for Semantic Evaluations} % (fold)
+\label{sub:false_successes_for_semantic_evaluations}
+Another case where the testing approach was able to identify an issue was in one of the rules for verification of the user-defined semantics. 
+While \autoref{alg:verification_of_the_semantic_evaluation_criterion} had provided the correct set of criteria to validate these evaluations since it was designed (see \autoref{ssub:verifying_the_evaluation_criterion} on \autopageref{ssub:verifying_the_evaluation_criterion}), the testing approach highlighted a bug in the implementation of one of the criteria checks.\\
+
+As stated in the above section, all temporary variables declared in the evaluation list must only be used \textit{to the left} of where they were declared. 
+The test case created to check this verification was working as intended was as seen in \autoref{lst:testing_part_of_the_semantic_evaluation_criteria}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+<arith-op> ::= 
+    ... |
+    <arith-expr> "^" <arith-expr> --> {
+        ... |
+        number n : {n = n1 ^ n3, n3 = n3 * 0 + n2}() :
+            {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+    };
+\end{minted}
+\caption{Testing Part of the Semantic Evaluation Criteria}
+\label{lst:testing_part_of_the_semantic_evaluation_criteria}
+\end{listing}
+
+This test case was designed to fail immediately, but it turned out that it validated without issue. 
+Careful tracing of this result through the verification algorithm allowed the discovery that the collation algorithm for obtaining the variables used after each definition had not been implemented properly. 
+Fixing this implementation allowed the metacompiler to act as expected, failing the language with this semantic rule:
+
+\begin{minted}[numbers=none]{text}
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <statement> -> <arith-expr> -> <arith-op>
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <statement> -> <assignment> -> <arith-expr> -> <arith-op>
+\end{minted}
+
+% subsection false_successes_for_semantic_evaluations (end)
+
+% section testing_during_development (end)
+
 \section{Testing Error States} % (fold)
 \label{sec:testing_error_states}
+% Focus on testing outcomes of interest.
+In general, the testing approach focused on establishing that each feature of the metacompiler worked as expected as it was completed. 
+The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach. 
 
 \subsection{Parser Errors} % (fold)
 \label{sub:parser_errors}
+Initial testing focused on the 
 
 % subsection parser_errors (end)
 
@@ -43,6 +184,7 @@ This section will:
 
 \section{An Example Language} % (fold)
 \label{sec:an_example_language}
+The other main component to testing \gls{absol} was the creation of a (potentially) useful \gls{dsl} as a proof-of-concept for the metacompiler system. 
 
 % section an_example_language (end)
 

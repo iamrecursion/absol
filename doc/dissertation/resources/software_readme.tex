@@ -22,21 +22,37 @@ Each of these files is given relative to the project root in \mintinline{text}{a
         \item \mintinline{text}{./src/Absol/Metaspec.hs}
         \item \mintinline{text}{./src/Absol/Metaspec/Special.hs}
     \end{itemize}
-    \item \textbf{Metaverify:}
+    \item \textbf{Metaverify:} 
+    \begin{itemize}
+        \item \mintinline{text}{./src/Absol/Metaverify.hs}
+        \item \mintinline{text}{./src/Absol/Metaverify/Collate.hs}
+        \item \mintinline{text}{./src/Absol/Metaverify/Diagnostics.hs}
+        \item \mintinline{text}{./src/Absol/Metaverify/RuleTag.hs}
+        \item \mintinline{text}{./src/Absol/Metaverify/State.hs}
+    \end{itemize}
     \item \textbf{Misc:} There are also stub implementation files for other components of the metacompiler toolchain that have since been declared as out of project scope. 
 \end{itemize}
 
-% TODO complete this section
-
 % section the_project_structure (end)
+
+\subsection{System Requirements} % (fold)
+\label{sub:system_requirements}
+In order to both build and execute \gls{absol} you will need to have the following software available:
+\begin{itemize}
+    \item \textbf{Stack:} The Haskell build management tool is able to handle the downloading and installing of both the required compiler version and required libraries.
+\end{itemize}
+
+% subsection system_requirements (end)
 
 \subsection{Building the Metacompiler} % (fold)
 \label{sub:building_the_metacompiler}
+% TODO how to build absol
 
 % subsection building_the_metacompiler (end)
 
 \subsection{Executing the Metacompiler} % (fold)
 \label{sub:executing_the_metacompiler}
+% TODO how to execute absol
 
 % subsection executing_the_metacompiler (end)
 

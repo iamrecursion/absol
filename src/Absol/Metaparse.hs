@@ -343,7 +343,7 @@ specialSyntaxRule = do
 -- in the semantic environment.
 environmentAccessRule :: ParserST EnvironmentAccessRule
 environmentAccessRule = do
-    semType <- option Nothing maybeSemanticType
+    semType <- semanticType
     void semanticEnvironmentSymbol
     void environmentAccessSymbol
     accessBlocks <- syntaxAccessBlock `sepBy` environmentAccessSymbol
@@ -663,10 +663,3 @@ semanticType = checkTypeDefined parser
             <|> StringType <$ semanticTypeString "string"
             <|> ListType <$ semanticTypeString "list"
             <|> MatrixType <$ semanticTypeString "matrix"
-
--- | Parses a semantic type that may not exist.
---
--- There are certain expressions where the inclusion of the type is optional.
--- This parser supports their parsing.
-maybeSemanticType :: ParserST (Maybe SemanticType)
-maybeSemanticType = Just <$> semanticType

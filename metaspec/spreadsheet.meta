@@ -1,0 +1,22 @@
+
+name : spreadsheet;
+
+version : 0.0.1;
+
+using : {
+    base,
+    number,
+    matrix,
+    traverse,
+    funcall
+};
+
+truths : {
+
+};
+
+language : {
+
+<<spreadsheet>> ::= "+";
+
+};

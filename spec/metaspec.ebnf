@@ -295,6 +295,7 @@ syntax-access-list =
     syntax-access-block, { semantic-list-delimiter, syntax-access-block };
 
 environment-access-rule = 
+    semantic-type,
     semantic-environment-symbol,
     environment-access-symbol,
     syntax-access-block,
@@ -343,7 +344,6 @@ semantic-operation-assignment =
     semantic-assign,
     semantic-operation;
 
-// Revise this section in response to live code changes
 semantic-operation 
     = semantic-identifier
     | semantic-value
