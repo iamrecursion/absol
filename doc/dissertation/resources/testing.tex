@@ -277,17 +277,212 @@ Type "integer" not in scope. Defined in language feature(s): number.
 
 \section{Testing Metaverify Errors} % (fold)
 \label{sec:testing_metaverify_errors}
+Having established that the parser worked properly, it was time to develop the verification engine. 
 Much like Metaparse, the verification engine also underwent manual testing to ensure that it detected all the possible conditions that it was meant to detect. 
 This, too, used the same testing methodology to help establish whether Metaverify was able to operate correctly, and thus that its conclusions were also correct.\\
 
 Metaverify was the second system component that was developed for \gls{absol} that required testing.
 However, it was developed piece-by-piece so the testing approach focused on each portion of the verification algorithm in turn. 
 
+\subsection{Testing the Semantic Inference} % (fold)
+\label{sub:testing_the_semantic_inference}
+One of the major features of the verification algorithm is its ability to infer the semantics for simple productions that just consist of alternations. 
+Ensuring this operates correctly requires both checking that it does not infer semantics when it reasonably cannot, but also that it will infer semantics correctly where possible.
+The first test was to ensure that productions of the form where it \textit{should} operate correctly had their semantics inferred. \\
+
+The test file used for most of the testing of the toolchain contains multiple examples of productions who satisfy the required form for semantic inference. 
+One of these can be seen in \autoref{lst:a_production_with_inferred_semantics} below. 
+When executing the metacompiler on this file, the semantics of the language are verified correctly, stating that it terminates.
+This implies that the semantic inference is working in this case. 
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=29]{text}
+<arith-expr> ::= <my-number> | <arith-op> ;
+\end{minted}
+\caption{A Production with Inferred Semantics}
+\label{lst:a_production_with_inferred_semantics}
+\end{listing}
+
+It remains to be shown, however, that the inference fails in appropriate cases.
+In any situation other than a single non-terminal or terminal in an alternation, the inference engine should fail with an appropriate message. 
+Altering the above production to read \mintinline{text}{... | <arith-op> "+" ;} introduces a situation in which the inference algorithm should fail, and indeed it does (as seen in \autoref{lst:inference_failure}).
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+Unable to infer semantics for rule.
+    REASON: Cannot infer semantics for rule.
+    IN: <statement> -> <arith-expr>
+\end{minted}
+\caption{Inference Failure}
+\label{lst:inference_failure}
+\end{listing}
+
+% subsection testing_the_semantic_inference (end)
+
+\subsection{Testing the Alternative Semantic Forms} % (fold)
+\label{sub:testing_the_alternative_semantic_forms}
+The second kind of semantic verification that was developed were the special types of semantic rule.
+This was broadly because their verification is generally simple, revolving around special-case semantic proofs, and the termination of the non-terminals involved.
+The termination of all special semantic forms (special syntax rules, environment input rules and environment access rules) is guaranteed as long as the involved non-terminals terminate and exist in the associated syntactic production. \\
+
+As the verification procedure is the same for each of these, the following example pertains only to the verification of special-syntax rules. 
+The test file can already be shown to terminate with the valid special-syntax rule on line 73, but this does not show that it fails appropriately.
+Consider a production (defined in the test file) as shown in, and introduce some semantic failure into \mintinline{text}{<arith-op>}.
+As shown in \autoref{lst:a_failing_special_syntax_rule}, this produces the appropriate errors in the metacompiler output. 
+
+\subsubsection{Testing Special-Syntax Rules} % (fold)
+\label{ssub:testing_special_syntax_rules}
+The termination of special syntax rules 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <ssr-fail>
+STATUS: Does not terminate.
+
+Refers to non-existent subterms.
+    REASON: Non-terminal <arith-op> with index 2 is not defined in this production.
+    IN:
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <arith-op>
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN: <arith-op>
+\end{minted}
+\caption{A Failing Special-Syntax Rule}
+\label{lst:a_failing_special_syntax_rule}
+\end{listing}
+
+The other kinds of alternative semantic form were similarly tested, and the verification algorithms for each kind of semantics all appeared to operate correctly.
+This meant that they detected the appropriate error conditions and produced the correct corresponding error messages.
+
+% subsubsection testing_special_syntax_rules (end)
+
+\subsection{Testing the User-Defined Semantics Checks} % (fold)
+\label{sub:testing_the_user_defined_semantics_checks}
+Testing the verification algorithm for the user-defined semantics is a touch more involved due to the number of separate components that exist within it. 
+Each of these individual component tests was developed individually, and so was tested individually. 
+
+\subsubsection{Testing Sub-Term Criterion Verification} % (fold)
+\label{ssub:testing_sub_term_criterion_verification}
+The sub-term criterion states that all sub-evaluations in a rule must be strict subterms of the main body, and that the semantics of these sub-terms also terminate. 
+The implementation is a direct adaptation of the algorithm in \nameref{ssub:verifying_the_sub_term_criterion} on \autopageref{ssub:verifying_the_sub_term_criterion}, and this provides the grounds to test the implementation.\\
+
+Introducing a sub-term that does not exist in the syntax should result in an error as it is not a sub-term of the evaluated semantics.
+Introducing a bad index into the \mintinline{text}{<arith-op> production} does indeed result in an appropriate error, as seen in \autoref{lst:failing_due_to_a_non_existent_sub_term}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Refers to non-existent subterms.
+    REASON: Non-terminal <arith-expr> with index 2 is not defined in this production.
+    IN:
+\end{minted}
+\caption{Failing Due to a Non-Existent Sub-Term}
+\label{lst:failing_due_to_a_non_existent_sub_term}
+\end{listing}
+
+By the same token, adapting the semantic rule to contain non-terminating productions will also cause the verification to fail.
+
+% subsubsection testing_sub_term_criterion_verification (end)
+
+\subsubsection{Testing the Evaluation Criterion} % (fold)
+\label{ssub:testing_the_evaluation_criterion}
+The second main component of verifying the user semantic form is ensuring that the evaluation rules match the required form (described in \nameref{ssub:verifying_the_evaluation_criterion} on \autopageref{ssub:verifying_the_evaluation_criterion}).
+It is possible to break this criterion in multiple ways, and so it is not worth showcasing all of the tests that were run on it here.\\
+
+Instead, this demonstration will focus on a case where the conditions are broken by using a non-existent evaluation variable as part of the computation.
+Working from the basic, valid, test file, the evaluation on line 42 can be transformed to read as in \autoref{lst:testing_the_evaluation_criterion} to introduce a dependency on a non-existent variable \mintinline{text}{n3}.
+
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=42]{text}
+<arith-expr> "+" <arith-expr> --> {
+    number n : {n = n1 + n3}() :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+} | ...
+\end{minted}
+\caption{Testing the Evaluation Criterion}
+\label{lst:testing_the_evaluation_criterion}
+\end{listing}
+
+Running the metacompiler on this file with the alteration produces an error in the output, as expected. 
+The error can be seen in \autoref{lst:failure_to_verify_the_semantic_operations}, and it clearly diagnoses the issue. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Incorrect Semantic Form.
+    REASON: Malformed semantic operation(s).
+    IN:
+\end{minted}
+\caption{Failure to Verify the Semantic Operations}
+\label{lst:failure_to_verify_the_semantic_operations}
+\end{listing}
+
+% subsubsection testing_the_evaluation_criterion (end)
+
+\subsubsection{Testing the Guard Checking} % (fold)
+\label{ssub:testing_the_guard_checking}
+\begin{listing}[!htb]
+\begin{minted}[firstnumber=58]{text}
+ <arith-expr> "^" <arith-expr> --> {
+    number n : {n = 1}(n1 == 1) :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
+    number n : {n = n1 * n1}(n2 == 2) :
+        {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
+\end{minted}
+\caption{A Set of Invalid Guards}
+\label{lst:a_set_of_invalid_guards}
+\end{listing}
+
+The final element of checking the user-defined semantics is to ensure that there is always a semantic rule to execute, no matter the values of the guards. 
+This is fairly simple to perform in this mode, checking just that there is a catch-all guard, as discussed in \autoref{sub:guard_checking}. 
+This makes checking that it works as intended simple - remove the catch-all guard from a set of semantic rules and check that it detects it appropriately.
+It is simple enough to alter the semantic rules beginning on line 58 of the test file to not include the catch-all guard, as seen in \autoref{lst:a_set_of_invalid_guards}. \\
+
+Executing the metacompiler on the file containing the error produces a diagnostic message as expected.
+This message can be seen in \autoref{lst:an_invalid_guards_error}.
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+PRODUCTION: <arith-op>
+STATUS: Does not terminate.
+
+Guards incomplete.
+    REASON: Guards must contain a catch-all clause.
+    IN:
+\end{minted}
+\caption{An Invalid Guards Error}
+\label{lst:an_invalid_guards_error}
+\end{listing}
+
+% subsubsection testing_the_guard_checking (end)
+
+% subsection testing_the_user_defined_semantics_checks (end)
+
 % section testing_metaverify_errors (end)
 
 \section{An Example Language} % (fold)
 \label{sec:an_example_language}
 The other main component to testing \gls{absol} was the creation of a (potentially) useful \gls{dsl} as a proof-of-concept for the metacompiler system. 
+This section aims to outline the process through which a simple \gls{dsl} could be created, and demonstrate the final language here. 
+
+\subsection{The Idea for the Language} % (fold)
+\label{sub:the_idea_for_the_language}
+
+
+% subsection the_idea_for_the_language (end)
+
+\subsection{Designing the Example Language} % (fold)
+\label{sub:designing_the_example_language}
+
+% subsection designing_the_example_language (end)
 
 % section an_example_language (end)
 
