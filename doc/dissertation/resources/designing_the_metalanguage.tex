@@ -184,7 +184,8 @@ Requirement~\reqref{req:Comments} states that these comments need not have any s
 This meant that the commenting syntax could be very simple, allowing the parser to strip them directly, rather than be parsed.
 To this end, it is stated in the language specification that all comments are removed in a preprocessing step. \\
 
-The choice of \mintinline{text}{line-comment-start-symbol}, \mintinline{text}{block-comment-start-symbol} and \mintinline{text}{block-comment-end-symbol} was effectively arbitrary.
+The choice of \mintinline{text}{line-comment-start-symbol}, \mintinline{text}{block-comment-start-symbol} and \\
+\mintinline{text}{block-comment-end-symbol} was effectively arbitrary.
 The block comment style was taken directly from \gls{ebnf}, as specified in \cite{standard1996ebnf}, but there was no line comment style to go on as EBNF does not provide one. 
 As a result, comments themselves are defined as follows, with both a line comment and block comment style provided:
 \begin{listing}[!htb]
@@ -681,7 +682,7 @@ The environment was conceptualised as an unscoped key-value store to allow for v
 
 Syntactically, the environment was represented by a special reserved symbol in \gls{metaspec}, \mintinline{text}{e}. 
 The notion behind this was to ensure that all environment stores and accesses could be found at a glance by the user, aiding their understanding of any stateful behaviour in the language semantics. 
-Unfortunately this has turned out to not be entirely true, as some special syntax calls define elements in the environment without direct use of the symbol.\\
+Unfortunately this has turned out to not be entirely true, as some special syntax calls define (or access) elements in the environment without direct use of the symbol.\\
 
 Beyond that, the store into the environment uses a newly introduced operator \mintinline{text}{<--}. 
 This operator was designed to visually mimic the \mintinline{haskell}{<-} monadic extraction operator, and aims to imply getting something out of the syntax and storing it somewhere else. 

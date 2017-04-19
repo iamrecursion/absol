@@ -1088,10 +1088,26 @@ While it was later discovered that such a problem could be solved via an applica
 
 However, it was not possible to just \textit{assume} that the guards for a given set of semantics were complete, as this could lead to a language where the semantics were not total, and hence to erroneous verification of the language.
 A simple (and unfortunately inelegant) solution was proposed to avoid this: ensure that every set of guards had at least one guard that admitted all values.
-In other words, the goal of guard checking became ensuring that each set of guards had at least one `catch-all' guard. \\
+In other words, the goal of guard checking became ensuring that each set of guards had at least one `catch-all' guard. 
+
+\begin{listing}[!htb]
+\begin{minted}[numbers=none]{text}
+<ifthen> ::= "if" <condition> "then" <statement> "else" <statement> --> {
+    any n : {n = n2}(n1 == true) :
+        {n1 <= <condition>[0]}, {n2 <= <statement>[0]} |
+    any n : {n = n2}(n1 == false) :
+        {n1 <= <condition>[0]}, {n2 <= <statement>[1]} |
+    any n : {n = n2}() :
+        {n1 <= <condition>[0]}, {n2 <= <statement>[0]}
+};
+\end{minted}
+\caption{The Inelegance of Catch-All Guards}
+\label{lst:the_inelegance_of_catch_all_guards}
+\end{listing}
 
 This is particularly inelegant as, even in cases where the \gls{dsl} creator has been able to create a complete set of guards, they still have to add some kind of semantic expression for the catch-all case. 
-However, while ugly, this does not impact on the potential for functionality within the language as guards are evaluated \textit{top-to-bottom}, with the first guard that is satisfied being evaluated. 
+This inelegance can be seen in \autoref{lst:the_inelegance_of_catch_all_guards}, where a default case has to be provided despite completeness. 
+While ugly, however, this does not impact on the potential for functionality within the language as guards are evaluated \textit{top-to-bottom}, with the first guard that is satisfied being evaluated. 
 As a result, the finalised method for checking guard completeness can be found in \autoref{alg:guard_completeness_checking}.
 
 \begin{algorithm}[!htb]
