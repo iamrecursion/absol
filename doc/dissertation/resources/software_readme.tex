@@ -35,25 +35,57 @@ Each of these files is given relative to the project root in \mintinline{text}{a
 
 % section the_project_structure (end)
 
+\section{Building and Executing ABSOL} % (fold)
+\label{sec:building_and_executing_absol}
+To build and execute the metacompiler please follow the instructions in the following sections.
+
 \subsection{System Requirements} % (fold)
 \label{sub:system_requirements}
 In order to both build and execute \gls{absol} you will need to have the following software available:
 \begin{itemize}
     \item \textbf{Stack:} The Haskell build management tool is able to handle the downloading and installing of both the required compiler version and required libraries.
+    \item \textbf{Internet Connection:} Stack requires access to the internet to download and build the packages that are depended upon by \gls{absol}. 
 \end{itemize}
 
 % subsection system_requirements (end)
 
 \subsection{Building the Metacompiler} % (fold)
 \label{sub:building_the_metacompiler}
-% TODO how to build absol
+Building \gls{absol} is a simple prospect as long as the system requirements are met.
+It can be done as follows:
+\begin{enumerate}
+    \item Open a terminal.
+    \item Navigate to the root directory of the project as described in \autoref{sec:the_project_structure}.
+    \item Execute the command \mintinline{text}{stack setup}. This will download and install the appropriate versions of GHC and its support libraries. 
+    \item Execute the command \mintinline{text}{stack build}. 
+\end{enumerate}
+
+This will result in a binary being built for your particular system configuration.
+The binary can then be executed as described in \autoref{sub:executing_the_metacompiler}.
 
 % subsection building_the_metacompiler (end)
 
 \subsection{Executing the Metacompiler} % (fold)
 \label{sub:executing_the_metacompiler}
-% TODO how to execute absol
+Once the metacompiler has been built, it can be executed on a provided test file or one of your own creation.
+Test files are provided in the \mintinline{text}{./metaspec/} directory. 
+One of these is the example language developed in \autoref{sec:an_example_language}, while the other is the test file discussed in \autoref{sec:testing_during_development}.
+The metacompiler can be executed as follows (assuming that you have a terminal open in the same directory as described above):
+\begin{enumerate}
+    \item Choose a metaspec file and note its relative path to your current directory. 
+    This is denoted \mintinline{text}{FILE} in the following command.
+    \item First run \mintinline{text}{stack exec absol -- --help}. 
+    This will display the help text for all of the command-line options.
+    \item Next run \mintinline{text}{stack exec absol -- FILE -l}.
+    This will execute the metacompiler on \mintinline{text}{FILE} in verbose reporting mode. 
+\end{enumerate}
+
+If you have used one of the example files you will see that the metacompiler is able to verify the file such that it terminates.
+Please feel free to introduce errors into either of these files to examine how the metacompiler behaves in the presence of errors. 
+If you continue to include the \mintinline{text}{-l} flag in these circumstances you will see comprehensive diagnostic information about whatever error you introduce. 
 
 % subsection executing_the_metacompiler (end)
+
+% section building_and_executing_absol (end)
 
 % chapter software_readme (end)
