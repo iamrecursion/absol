@@ -665,6 +665,9 @@ Using the design documentation specified in \autoref{sec:special_language_featur
     \item \textbf{Metaspec Deficiencies:} It was an oversight to not allow for the definition of constants as arguments to the special-syntax forms. 
     This would allow the creation of more elegant interfaces to some of these forms, and hence a better experience for the language designer.
     An example of this is illustrated in \autoref{lst:an_alternative_definition_for_reduce_sheet}, which would allow a more fluent interface for users by using better domain terminology, rather than syntax enforced by the special syntax form. 
+    \item \textbf{Metacompiler Support:} Much like the edit-compile-test interactive development cycle when writing programs, the \gls{absol} metacompiler enables a similar kind of feedback for the people defining the \gls{dsl}.
+    During the course of developing `spreadsheet' it was quickly made apparent that this support, and the notion that the user would immediately be alerted to errors with their language definition, allowed the \gls{dsl} designer a greater ability to experiment with both syntax and semantics.
+    This liberty to experiment led to the creation of more intuitive syntax for the \gls{dsl}, but also allowed the language to remain correct.
 \end{itemize}
 
 \begin{listing}[!htb]

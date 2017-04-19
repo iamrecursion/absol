@@ -110,7 +110,7 @@
 
 \newcommand{\requirement}[3]{
     \StrSubstitute[0]{#1}{ }{}[\labelname]
-    \hspace{-1.5em}\textbf{Requirement \reqlabel{req:\labelname}}
+    \textbf{Requirement \reqlabel{req:\labelname}}
     \begin{addmargin}[1em]{0em}
         \textbf{Name:} #1\\ 
         \textbf{Type:} #2\\
@@ -277,7 +277,6 @@
 
 % Declaration
 \declaration{\titletext}{Ara Adkins}
-\newpage
 
 % Abtract Text
 \input{resources/abstract.tex}
@@ -287,10 +286,8 @@
 
 \listoffigures
 
-\listoftables
-
 \listofalgorithms
-\addcontentsline{toc}{chapter}{List of algorithms}
+\addcontentsline{toc}{chapter}{List of Algorithms}
 
 \lstlistoflistings
 \addcontentsline{toc}{chapter}{Listings}
