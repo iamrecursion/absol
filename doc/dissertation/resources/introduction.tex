@@ -7,7 +7,7 @@ With it, such a high level of coupling brings an increased risk that changes to 
 In a world where domain-logic is crucial to many large software systems, there has been a ``significant uptick in interest'' in the use of \glspl{dsl} \citep{fowler2010domain}.
 A \gls{dsl} is a limited, application-specific language that is integrated with another software system.
 The intent is thus to encode the domain rules and logic in a fashion extending beyond the syntactic constraints of the host language, represented using domain constructs and terminology \citep{Mernik:2005:DDL:1118890.1118892}.
-Through the use of a \gls{dsl}, a software system is able to avoid the aforementioned dispersion, centralising this domain logic using a common syntax, and making them easier to both change and verify.\\
+Through the use of a \gls{dsl}, a software system is able to avoid the aforementioned dispersion, centralising this domain logic using a common syntax, and making this domain logic easier to both change and verify.\\
 
 However, with this increasing centralisation of such core logic comes a risk: if that logic is wrong, then the entire system is going to act incorrectly.
 So what if it were possible to ensure that the \gls{dsl} was correct?
@@ -16,19 +16,18 @@ What if it were possible to guarantee that it would always terminate, and always
 
 \section{A Problem Worth Studying} % (fold)
 \label{sec:a_problem_worth_studying}
-\glspl{dsl} are used throughout many industries, and arguably they bring major benefits in industries where safety is most critical.
+\glspl{dsl} are used throughout many industries, and they can bring major benefits in industries where safety is most critical.
 However, it is in these very industries that they cause major problems should they go wrong.\\
 
-Consider the inspiration for this project.
 During time spent at a financial technology company one team was observed to be using the \gls{gpl} OCaml for the specification of logic at runtime. 
 With the vastly greater than necessary expressive power offered by this language, the potential for bugs was significantly increased \citep{subramanyam2003empirical}.
 What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml.
 It would both be a \textit{much} better fit to the domain \textit{and} reduce the potential for bugs.\\
 
-It is this kind of safety-critical system with which this project is concerned with.
-The ability to provide a method for designing and verifying \glspl{dsl} in these domains would do wonders for the safety of such systems and their runtime configuration behaviour.
-While, in general, language verification is undecideable, it is the focus of the project that is its salvation.
-Through limiting the kinds of programs that these languages can represent (an onerous restriction for \gls{gpl}, but one that is acceptable for a \gls{dsl}) it becomes possible to ensure that a given language is correct.\\
+It is this kind of safety-critical system with which this project is concerned.
+The ability to provide a method for designing and verifying \glspl{dsl} in these domains would be a boon for the safety of such systems and their runtime configuration behaviour.
+While, in general, language verification is undecideable, this project establishes it as a manageable task through limiting the kinds of programs that these language scan represent.
+While this is an onerous restriction for \gls{gpl}, but one that is acceptable for a \gls{dsl}, its imposition makes it possible to ensure that a given \gls{dsl} is correct.\\
 
 As a result, the project aimed to produce two main novel contributions to the state of the art of language verification:
 \begin{itemize}
@@ -73,6 +72,7 @@ This document aims to provide a comprehensive overview of the design and develop
     \item Finally, the document concludes with an \nameref{cha:evaluation} of the project as a whole, highlighting the contributions to the state of the art as well as discussing the major successes and deficiencies of the project.
 \end{itemize}
 
+% TBC on formality here
 This provides but a brief overview of what the reader has in store over the course of this document, so the best thing is to dive right in.
 Please, don't forget to enjoy yourself!
 

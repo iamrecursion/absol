@@ -3,7 +3,7 @@
 As the project has proposed the investigation and development of a toolchain for the creation of provably-correct \glspl{dsl}.
 Even with the scope constrained to the creation of \glspl{dsl} alone, such a project draws on a significant breadth of disciplines within Computer Science, necessitating a broad knowledge-base. \\
 
-This project exists at the intersection of the study of \glspl{dsl}, programming language development and formalisations of program semantics. 
+This project exists at the intersection of the study of \glspl{dsl}, the development of programming languages, and formalisations of program semantics. 
 As such, it is important to understand the relevant work in these domains. 
 While each of these fields is large in its own right, this review aims to distil the relevant bodies of knowledge. \\
 
@@ -17,12 +17,12 @@ Finally, it provides an examination of techniques for automated compiler generat
 \label{sec:domain_specific_languages}
 \defblock{12cm}{DSL}{``A Domain-Specific Language (DSL) is a programming language or executable specification language that offers, through appropriate notations and abstractions, expressive power focused on ... a particular problem domain'' \citep{van2000domain}}
 
-While a Turing-Complete General-Purpose Programming Language (GPL) is capable of expressing any computation that can be imagined, \citet{fowler2010domain} finds that it is often the case that the use of a GPL provides the wrong level of abstraction in a problem domain.
+While a Turing-Complete General-Purpose Programming Language (GPL) is capable of expressing any algorithm that can be executed on a standard computer, \citet{fowler2010domain} finds that it is often the case that the use of a GPL provides the wrong level of abstraction in a problem domain.
 When attempting to express domain knowledge and domain rules using a GPL, there is often a mismatch between the GPL and the knowledge to be expressed. 
 DSLs allow expression of solutions ``at the level of abstraction of the problem domain'' \citep{van2000domain}.\\
 
 Use of a DSL allows an encoding of ``bits of important logic that [don't] fit well within [GPLs]'', allowing an expression of domain-expert knowledge at a higher level of abstraction \citep{fowler2010domain,van2000domain}. 
-This embodiment of domain knowledge, was found by \citet{fowler2010domain} to ``enable a much richer communication channel'' between programmers and domain experts, allowing domain-experts to interact with the configuration and behaviour of complex software systems. \\
+This embodiment of domain knowledge was found by \citet{fowler2010domain} to ``enable a much richer communication channel'' between programmers and domain experts, allowing domain-experts to interact with the configuration and behaviour of complex software systems. \\
 
 The term `DSL' encompasses a family of languages, as discussed in Section~\ref{sub:types_of_dsls}, so the definition provided by \citet{van2000domain} at the start of this section is perhaps too restrictive. 
 DSLs encompass a wide range of programming styles, from declarative to functional, and a similarly varied set of execution models. 
@@ -111,7 +111,7 @@ exponent      ::=  ("e" | "E") ["+" | "-"] digit+
     (coverage sat) (location gs)]
         \end{lstlisting}
     \end{itemize}
-    Some of these classifications are somewhat imprecise, however, and could benefit from further clarification.
+    Some of these classifications are imprecise, however, and could benefit from further clarification.
     Nevertheless, the most important observation made on this classification axis is that not all DSLs must be executable.
     Domain-specific rules can be encoded as static configuration as well as executable specification, a facet that was left un-addressed by the taxonomy proposed by \citet{van2000domain}.
     \item \textbf{Resuability:} The nature of a DSL is to encapsulate domain-specific logic, configuration and behaviour. 
@@ -143,7 +143,7 @@ If a DSL is going to persist for some time, it is all the more important that th
 \citet{Mernik:2005:DDL:1118890.1118892} claims that the application generator or compiled DSL approach and the embedded approach are the two most common DSL implementation strategies. 
 As a result, the paper provides a detailed analysis of these strategies. \\
 
-Compiled DSLs, in a general sense, is a category that encompasses any DSL that is translated directly to executable code, whether that be by an interpreter or compiler \citep{Mernik:2005:DDL:1118890.1118892}. 
+Compiled DSLs, in a general sense, is a category that encompasses any DSL that is translated directly to executable code, whether by an interpreter or compiler \citep{Mernik:2005:DDL:1118890.1118892}. 
 Building such tools from scratch allows these DSLs to match the notation of domain experts as closely as possible, significantly reducing the cognitive load required to translate domain rules into program code \citep{fowler2010domain}.
 The compiled approach allows opportunities for domain-semantics-related error reporting, rather than reporting based on the semantics of a host language.
 Furthermore, it provides opportunities for domain-specific Analysis, Verification, Optimisation, Parallelisation and Transformation (AVOPT) that are unparalleled by other approaches \citep{Mernik:2005:DDL:1118890.1118892}.\\
@@ -166,7 +166,7 @@ While these categories were established by \citet{van2000domain}, \citet{Mernik:
 These two approaches are again corroborated by \citet{fowler2010domain}, who proposes the concepts of Internal DSLs (written in the host language and exposed via an API) and External DSLs (languages with their own semantics parsed independently of the host language). \\
 
 It seems possible to utilise a hybrid approach that combines the syntactic and semantic freedom of compilation with the language power of embedding. 
-Such an approach is discussed in Section~\ref{ssub:transpilation} below. 
+Such an approach is discussed in \nameref{ssub:transpilation} below. 
 
 % subsubsection detailed_implementation_strategies (end)
 
@@ -263,6 +263,7 @@ The choice of implementation strategy and design for a DSL should hence be made 
 
 \section{Metalanguages} % (fold)
 \label{sec:metalanguages}
+% TODO Can revisions to this section and the next make things more engaging? Or does that risk clarity?
 \defblock{10.5cm}{\Glsname{metalanguage}}{\glsdesc*{metalanguage}}
 
 As implementing verifiable DSLs requires formal descriptions of both the syntax and semantics of a DSL, it necessarily involves the use of one or more metalanguages. \\
@@ -273,6 +274,7 @@ These metalanguages are concerned with the specification of a property or some s
 Metalanguages are used to make user-defined abstractions into first-class citizens through accurate description of the abstraction \citep{Siek:2010:GPL:1706356.1706358}.
 To this end, the project needs to create a combined notation, in itself a DSL, for the specification of both syntax and semantics of a DSL. \\
 
+% TODO is a wide / are a wide ?
 With the field having been in development for ``more than 40 years'', there is a wide variety of metalanguages in use today for the specification of language syntax and semantics \citep{Zhang:2004:SSD:981009.981013}. 
 This section aims to explore and evaluate these techniques. 
 
@@ -364,7 +366,7 @@ This simplification enables the abstract syntax to communicate the structure of 
 However, the AST rules factor out any extraneous detail to help define the language semantics. \\
 
 Nodes in an AST denote constructs in the source code of the program, and it is abstract in the sense that the tree will not explicitly represent all elements of the original source (e.g. grouping by parentheses may be implicit). 
-This relationship between concrete and abstract syntax is defined by a relation $\text{unparse} : \text{AST} \mathgoesto \text{concrete syntax}$.
+This relationship between concrete and abstract syntax is defined by a relation $\textit{unparse} : \textit{AST} \mathgoesto \textit{concrete syntax}$.
 This relation is, ideally, a function, and so restrictions are usually placed on the canonical representations for concrete phrases to disambiguate the reversal process. 
 Correct application of unparse to the AST is able to demonstrate the correctness of the parsing algorithm \citep[pg. 29]{slonneger1995formal}.
 
@@ -375,13 +377,14 @@ Correct application of unparse to the AST is able to demonstrate the correctness
 \subsection{Specifying Language Semantics} % (fold)
 \label{sub:specifying_language_semantics}
 \defblock{11cm}{Semantics}{
+    % TODO should this be defines or define ? 
     The semantics of a language defines the meaning of syntactically valid strings in the language.
     This can be viewed as either the \textit{behaviour} followed when executing a program in this language \citep{slonneger1995formal}.
     Alternatively, it is the \textit{effect} of executing these syntactically valid strings \citep{hennessy1990semantics}.
     These definitions differ due to the multitude of semantic options available. 
 }
 
-Much of the literature agrees that formal semantic description is key to the design of and reasoning about programming languages \citep{Zhang:2004:SSD:981009.981013,mosses1986use,Binsbergen:2016:TSC:2892664.2893464}.
+Much of the literature agrees that formal semantic description is key to the design of, and reasoning about, programming languages \citep{Zhang:2004:SSD:981009.981013,mosses1986use,Binsbergen:2016:TSC:2892664.2893464}.
 However, most common semantic description methods are inadequate for describing the complex semantics of real-world GPLs, meaning that most language standards use natural-language descriptions of semantics, leaving much scope for ambiguity \citep{mosses1986use}.
 This inadequacy is compounded by an almost complete lack of tooling to support the formal semantic definition of programming languages \citep{Binsbergen:2016:TSC:2892664.2893464}.\\
 
@@ -604,7 +607,7 @@ Coinduction allows reasoning about the termination properties of codata, but is 
 Through a separation of data and codata, it is possible to define a language whose semantics can be reasoned about purely by well-founded induction, as defined by \citet{nordstrom1988terminating}. 
 This encompasses proofs on arbitrary length, finite data structures (those that are, hence, well-formed); inductive reasoning applied to such structures is guaranteed to reach a base-case, as examined in Godel's System-T and System-F \citep{alves2010godel,girard1989proofs}.\\
 
-This would, hopefully, allow it to be shown that all well-formed programs in the language terminate and behave according to their specification (i.e. that they are \textit{correct}.\\
+This would, hopefully, allow it to be shown that all well-formed programs in the language terminate and behave according to their specification (i.e. that they are \textit{correct}).\\
 
 Such a proof requires the definition of the following relation for a program $M$ with unique configurations $s$:
 \begin{equation}
@@ -635,7 +638,8 @@ In order to better illustrate this, \citet{turner2004total} proposes an augmenta
 Languages such as Haskell already incorporate an expression for this idea via the notion of Monads and Monad Transformers.
 Turner aims to omit any incidence of $\bot$ in a total functional program, hence restricting the program to the use of total functions, and omitting the use of partial functions. \\
 
-While this is not feasible in practice for a general purpose programming language, it is interesting for a DSL, as all functions could be constrained to being total:
+While this is not feasible in practice for a general purpose programming language, it is interesting for a DSL, as all functions could be constrained to being total.
+This can be done through imposition of the following restrictions:
 \begin{itemize}
     \item Recursion is used to traverse data.
     \item Corecursion is used to traverse codata, where all the infinite structures (and corecursive functions) are total. 
