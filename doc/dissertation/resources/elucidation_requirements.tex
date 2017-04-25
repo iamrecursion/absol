@@ -1,13 +1,6 @@
-% Identification of the requirements capture process
-% Explanation of why the chosen technique was utilised over other potential competitors.
-% Identify and discuss key requirements, with a focus on areas of challenge, difficulty or conflict.
-% Be sure to show appropriate scoping. 
-% Identify the areas of requirements analysis and specification that were particularly successful
-% Be critical of areas where compromises were required. 
-
 \chapter{Elucidation} % (fold)
 \label{cha:elucidation}
-With a necessarily broad body of work examined in the literature and technology survey (see Chapter~\ref{cha:literature_and_technology_survey}), it is necessary to consolidate this information as it applies to the project. 
+With a broad body of work examined in the literature and technology survey (see Chapter~\ref{cha:literature_and_technology_survey}), it is necessary to consolidate this information as it applies to the project. 
 This section aims to provide a concrete understanding of which portions of the research will apply directly to the project, fill in any gaps in the research and provide a high-level specification for the project as a whole.
 
 \section{A Kind of Domain-Specific Language} % (fold)
@@ -40,7 +33,7 @@ The restriction does, however, mean that the kinds of programs that the language
 \subsection{DSL Implementation Strategy} % (fold)
 \label{sub:dsl_implementation_strategy}
 As examined by both \citet{Mernik:2005:DDL:1118890.1118892} and \citet{van2000domain}, one of the key merits of a \gls{dsl} is the ability to enable re-use of program specification. 
-As a result, \gls{absol} focuses on providing languages that can be interfaced with from multiple host languages. \\
+As a result, \gls{absol} focuses on providing languages that multiple host languages are able to interface with. \\
 
 While it seems that the embedded approach is common due to its ease of implementation, this comes with restrictions around error reporting, and the form of the syntax. 
 \gls{absol} will instead provide a fusion of the compiled and embedded approaches:
@@ -49,7 +42,7 @@ While it seems that the embedded approach is common due to its ease of implement
     This allows opportunities for language-level analysis that would be otherwise impossible if the \gls{dsl} was expressed directly in a host language.
     \item DSL programs themselves will be compiled into a target language, with the compilation process allowing for a domain-specific approach to \gls{avopt}.
     \item The target language will need to provide some flexible mechanism for interfacing with other languages, most likely via the C \gls{ffi}, as this is somewhat of a lowest-common-denominator for cross-language interfaces \citep{van2001asf+}.
-    \item While such an approach requires conventionally requires significant development effort, the two-stage, metacompiler-based approach taken by \gls{absol} will reduce that burden significantly.
+    \item While such an approach conventionally requires significant development effort, the two-stage, metacompiler-based approach taken by \gls{absol} will reduce that burden significantly.
 \end{itemize}
 
 Such an approach neatly sidesteps the issues encountered by many embedded DSLs as the user-specified syntax and semantics are not restricted by any host language, thereby avoiding suboptimal syntax or non-domain-oriented semantics, and poor error reporting.
@@ -69,7 +62,7 @@ This semantic mismatch can be handled via \glspl{source_map}, but this requires 
 \label{sec:languages_and_programs}
 As a project, \gls{absol} deals with the specification of \glspl{dsl}. 
 This means that, in addition to dealing with \gls{dsl} \textit{programs}, it first has to deal with \textit{languages}. 
-In order to both constrain the things these languages can represent, and have a standard for for interacting with them, \gls{absol} must define a metalanguage. \\
+In order to both constrain the things these languages can represent, and have a standard for interacting with them, \gls{absol} must define a metalanguage. \\
 
 Designing a metalanguage requires methods for specifying both the syntax and semantics of the defined language.
 Research showed that there had been little work on metalanguages to perform both tasks at once, and so the onus fell on the project to create one. 
@@ -77,9 +70,11 @@ Research showed that there had been little work on metalanguages to perform both
 \subsection{Choosing a Syntactic Form} % (fold)
 \label{sub:choosing_a_syntactic_form}
 Determining the basic syntactic metalanguage --- the form of the syntax rules for the defined language --- proved to be a mostly simple endeavour. 
-While both research and industry have used multiple syntactic metalanguages in the past, research found that most modern syntactic specifications use some variant of \gls{bnf}. \\
+While both researchers and industry have used multiple syntactic metalanguages in the past, research found that most modern syntactic specifications use some variant of \gls{bnf}. 
+The original \gls{bnf} was designed for use in the Algol-60 report, and was accompanied by a semantic specification in English. 
+With this project aiming to combine these language elements in one metalanguage, \gls{bnf} seems a fitting starting point. \\
 
-The standardised variant of \gls{bnf}, known as \gls{ebnf} and defined by \citet{standard1996ebnf}, it provides a flexible syntax for defining context-free language syntax. 
+The standardised variant of \gls{bnf}, known as \gls{ebnf} and defined by ISO 14977 \citep{standard1996ebnf}, it provides a flexible syntax for defining context-free language syntax. 
 While it also supports the definition of context-sensitive syntax via extension rules, most simple programming languages can be defined using context-free productions. \\
 
 One of the main issues with the standard \gls{ebnf} syntax, however, is the use of the concatenation operator (\lstinline{,}) which results in all productions appearing as lists of terminals and non-terminals.
@@ -149,87 +144,9 @@ It is this idea that the project has pursued in light of providing a language-le
 
 % section languages_and_programs (end)
 
-\section{Filling in the Gaps} % (fold)
-\label{sec:filling_in_the_gaps}
-While the Literature and Technology Survey provided a comprehensive overview of much of the material, there were still some areas that were either not examined in sufficient detail, or ignored entirely. 
-This section provides brief explorations of these.
-
-\subsection{Guard Completeness Checking} % (fold)
-\label{sub:guard_completeness_checking}
-As, at the time of performing the literature survey, no decisions had been made as to the semantic representation, it was not apparent that it would be required to verify guards in the language.
-However, since the selection of operational semantics as the basic form of semantic representation, it is clear that some `guard'-style functionality is needed. \\
-
-Guards, in this sense, refer to restrictions on the values of the sub-evaluations of a rule, as can be seen in the following pair of operational semantic rules for a basic \texttt{if-then-else} expression:
-\begin{align}
-    [\text{if}] &: \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true} \\
-    [\text{if}] &: \frac{\langle S_2, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}
-\end{align}
-
-In this case the, `$\text{if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}$' and `$\text{if }\mathbb{B}\llbracket b \rrbracket s = \textit{ true}$' are what the project terms the \textit{semantic restrictions}.\\
-
-In order to guarantee that a language where semantics can contain these guards is complete, the verification process must be able to guarantee that there is a semantic rule for all possible values of the guarded variables.
-In the case above, where the value is binary, this is trivial, but over more complex domains (e.g. $n \in \mathbb{Z}$, for some variable $n$), it becomes significantly more complex.\\
-
-A set of guards for a given piece of program semantics are a set of constraints.
-There is a well-known method for solving equations with sets of constraints: linear programming.
-
-\subsubsection{Linear Programming} % (fold)
-\label{ssub:linear_programming}
-\defblock{10cm}{Linear Program}{
-    A Linear Program is an optimisation problem in which the objective function is linear in the unknowns and the constraints consist of linear equalities and linear inequalities \citep{luenberger2016simplex}.
-}
-
-The set of constraints in the guard completeness problem can be viewed as constraints on the optimisation.
-Hence, the question of ``do these guards cover all possibilities' can be transformed to ``do the negations of these guards have a solution''. 
-The hope, is that the negated system does not have a solution.\\
-
-Solving this is known as the \textit{Feasibility Problem}, the aim of which is to determine if the region defined by the set of constraints is a bounded search space \citep{luenberger2016simplex}. 
-If the negations of the guards form a system of constraints that are not feasible, then the guards are complete over the domain. \\
-
-The problem, however, is slightly more complex than directly checking for feasibility, as guard conditions may be of the form $X \land Y$, which when negated is of the form $\lnot X \lor \lnot Y$ (by De-Morgan's Laws).
-This disjunction means that the problem is slightly more difficult, involving checking sets of guard conditions for being \textit{infeasible}.
-
-% subsubsection linear_programming (end)
-
-\subsubsection{Guard Completeness and Project Scope} % (fold)
-\label{ssub:guard_completeness_and_project_scope}
-Unfortunately the implementation of such a completeness checker would add significant complexity to an already complex project, and as such is considered as out of scope.
-This complexity was not appreciated initially due to insufficient research having been performed into the problem, and so it remained within the project scope for a significant amount of time. 
-Nevertheless, it is an important and interesting problem to be solved as part of the future work.\\
-
-This is not to imply that the guards will remain unchecked in the language, as that would admit possible non-termination due to no semantics existing for some evaluations.
-To this end, a simpler method of ensuring guard completeness must be included, even if it is one that is inelegant. 
-
-% subsubsection guard_completeness_and_project_scope (end)
-
-% subsection guard_completeness_checking (end)
-
-\subsection{Megaparsec --- Improved Parsing} % (fold)
-\label{sub:megaparsec_improved_parsing}
-As part of the technology survey, the availability of parsing libraries in Haskell was examined, finding that both Parsec and Happy were available (see Section~\ref{sub:language_parsing}). 
-However, research failed to identify Megaparsec, a fork of the Parsec library that retains all of its strengths while fixing a multitude of issues with the long extant library \citep{megaparsec}.\\
-
-The fixes that Megaparsec applied on top of the Parsec codebase included significant refactoring efforts, but most importantly for the project:
-\begin{itemize}
-    \item A greatly simplified Lexer interface, allowing for the creation of simple lexing code with ease.
-    This removes the need for an external lexer such as Alex, and means that the parser code can be greatly simplified.
-    \item Refactoring to the parsing of left-recursive expressions such as arithmetic and other binary operators. 
-    Megaparsec provides an expression parser that handles all of the lookahead requirements automatically, providing the potential for further simplification to the parser code. 
-    \item Significantly improved error messages, especially in the case of backtracking parsers. 
-    \item General improvements to the interface provided by the libraries, including more intuitive naming for certain oft-used functions.
-\end{itemize}
-
-In light of these benefits over the standard Parsec library and the fact that it retains the other benefits of parsec, Megaparsec was chosen instead. 
-Allowing simpler parser code and integrated lexing means that the parser portion of the project can be greatly simplified. 
-
-% subsection megaparsec_improved_parsing (end)
-
-% section filling_in_the_gaps (end) 
-
 \section{High-Level Requirements Specification} % (fold)
 \label{sec:high_level_requirements_specification}
-This section provides a high-level outline of the requirements for the system as a whole. \\
-
+This section provides a high-level outline of the requirements for the system as a whole.
 The project consists of two main components:
 \begin{itemize}
     \item The Metalanguage: Metaspec
@@ -314,9 +231,9 @@ It has the following requirements imposed upon it.\\
 }
 
 \requirement{Intuitive File Structure}{Non-Functional}{
-    The structure of a file in the metalanguage should have an intuitive structure.
+    The structure of a file in the metalanguage should be intuitive.
     This means that the file should establish all prerequisites to the definition of the language before the language itself is defined. 
-    This means that all the necessary context to understand the language definition is provided.
+    In doing so, it provides all necessary context to understand the language definition it contains. 
 }
 
 \requirement{Comments}{Functional}{
@@ -352,8 +269,8 @@ It must conform with the following set of requirements.\\
 }
 
 \requirement{Verify Semantic Guards}{Functional}{
-    The metacompiler must be capable of verifying that all semantic rules match their appropriate forms.
-    This includes all types of special semantic rules, as well as the user-defined operational-style semantics.
+    The metacompiler must be capable of verifying that the guards for each semantic rule are complete.
+    This means that there will always be \textit{some} semantic rule to be executed, regardless of the values of the guard variables.
 }
 
 \requirement{Generation of Verification Reports}{Functional}{
@@ -419,5 +336,85 @@ Due to the research-based focus of the project, more specific requirements would
 % subsubsection evaluating_the_requirements_specification (end)
 
 % section high_level_requirements_specification (end)
+
+\section{Filling in the Gaps} % (fold)
+\label{sec:filling_in_the_gaps}
+% TODO Reference requirements in here.
+While the Literature and Technology Survey provided a comprehensive overview of much of the material, there were still some areas that were either not examined in sufficient detail, or ignored entirely. 
+This section provides brief explorations of these.
+
+\subsection{Guard Completeness Checking} % (fold)
+\label{sub:guard_completeness_checking}
+As, at the time of performing the literature survey, no decisions had been made as to the semantic representation, it was not apparent that it would be required to verify guards in the language.
+However, since the selection of operational semantics as the basic form of semantic representation, it is clear that some `guard'-style functionality is needed.
+As stated by Requirement~\reqref{req:VerifySemanticGuards}, it is crucial to ensure that a guard exists for every possible value of the guard variables: this is known as the guards being \textit{complete}. 
+If this were not the case, then it would be possible for the language to have undefined semantics in some situations.\\
+
+Guards, in this sense, refer to restrictions on the values of the sub-evaluations of a rule, as can be seen in the following pair of operational semantic rules for a basic \texttt{if-then-else} expression:
+\begin{align}
+    [\text{if}] &: \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true} \\
+    [\text{if}] &: \frac{\langle S_2, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}
+\end{align}
+
+In this case the, `$\text{if } \mathbb{B}\llbracket b \rrbracket s = \textit{ false}$' and `$\text{if }\mathbb{B}\llbracket b \rrbracket s = \textit{ true}$' are what the project terms the \textit{semantic restrictions}.\\
+
+In order to guarantee that a language where semantics can contain these guards is complete, the verification process must be able to guarantee that there is a semantic rule for all possible values of the guarded variables.
+In the case above, where the value is binary, this is trivial, but over more complex domains (e.g. $n \in \mathbb{Z}$, for some variable $n$), it becomes significantly more complex.\\
+
+A set of guards for a given piece of program semantics are a set of constraints.
+There is a well-known method for solving equations with sets of constraints: linear programming.
+
+\subsubsection{Linear Programming} % (fold)
+\label{ssub:linear_programming}
+\defblock{10cm}{Linear Program}{
+    A Linear Program is an optimisation problem in which the objective function is linear in the unknowns and the constraints consist of linear equalities and linear inequalities \citep{luenberger2016simplex}.
+}
+
+The set of constraints in the guard completeness problem can be viewed as constraints on the optimisation.
+Hence, the question of ``do these guards cover all possibilities' can be transformed to ``do the negations of these guards have a solution''. 
+The hope, is that the negated system does not have a solution.\\
+
+Solving this is known as the \textit{Feasibility Problem}, the aim of which is to determine if the region defined by the set of constraints is a bounded search space \citep{luenberger2016simplex}. 
+If the negations of the guards form a system of constraints that are not feasible, then the guards are complete over the domain. \\
+
+The problem, however, is slightly more complex than directly checking for feasibility, as guard conditions may be of the form $X \land Y$, which when negated is of the form $\lnot X \lor \lnot Y$ (by De-Morgan's Laws).
+This disjunction means that the problem is slightly more difficult, involving checking sets of guard conditions for being \textit{infeasible}.
+
+% subsubsection linear_programming (end)
+
+\subsubsection{Guard Completeness and Project Scope} % (fold)
+\label{ssub:guard_completeness_and_project_scope}
+Unfortunately the implementation of such a completeness checker would add significant complexity to an already complex project, and as such is considered as out of scope.
+This complexity was not appreciated initially due to insufficient research having been performed into the problem, and so it remained within the project scope for a significant amount of time. 
+Nevertheless, it is an important and interesting problem to be solved as part of the future work.\\
+
+This is not to imply that the guards will remain unchecked in the language, as that would admit possible non-termination due to no semantics existing for some evaluations.
+To this end, a simpler method of ensuring guard completeness must be included, even if it is one that is inelegant. 
+
+% subsubsection guard_completeness_and_project_scope (end)
+
+% subsection guard_completeness_checking (end)
+
+\subsection{Megaparsec --- Improved Parsing} % (fold)
+\label{sub:megaparsec_improved_parsing}
+As part of the technology survey, the availability of parsing libraries in Haskell was examined, finding that both Parsec and Happy were available (see Section~\ref{sub:language_parsing}). 
+However, research failed to identify Megaparsec, a fork of the Parsec library that retains all of its strengths while fixing a multitude of issues with the long extant library \citep{megaparsec}.\\
+
+The fixes that Megaparsec applied on top of the Parsec codebase included significant refactoring efforts, but most importantly for the project:
+\begin{itemize}
+    \item A greatly simplified Lexer interface, allowing for the creation of simple lexing code with ease.
+    This removes the need for an external lexer such as Alex, and means that the parser code can be greatly simplified.
+    \item Refactoring to the parsing of left-recursive expressions such as arithmetic and other binary operators. 
+    Megaparsec provides an expression parser that handles all of the lookahead requirements automatically, providing the potential for further simplification to the parser code. 
+    \item Significantly improved error messages, especially in the case of backtracking parsers. 
+    \item General improvements to the interface provided by the libraries, including more intuitive naming for certain oft-used functions.
+\end{itemize}
+
+In light of these benefits over the standard Parsec library and the fact that it retains the other benefits of parsec, Megaparsec was chosen instead. 
+Allowing simpler parser code and integrated lexing means that the parser portion of the project can be greatly simplified. 
+
+% subsection megaparsec_improved_parsing (end)
+
+% section filling_in_the_gaps (end) 
 
 % chapter elucidation (end)

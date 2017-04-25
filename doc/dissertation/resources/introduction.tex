@@ -21,30 +21,32 @@ However, it is in these very industries that they cause major problems should th
 
 During time spent at a financial technology company one team was observed to be using the \gls{gpl} OCaml for the specification of logic at runtime. 
 With the vastly greater than necessary expressive power offered by this language, the potential for bugs was significantly increased \citep{subramanyam2003empirical}.
-What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml.
+What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml?
 It would both be a \textit{much} better fit to the domain \textit{and} reduce the potential for bugs.\\
 
 It is this kind of safety-critical system with which this project is concerned.
 The ability to provide a method for designing and verifying \glspl{dsl} in these domains would be a boon for the safety of such systems and their runtime configuration behaviour.
-While, in general, language verification is undecideable, this project establishes it as a manageable task through limiting the kinds of programs that these language scan represent.
+While, in general, language verification is undecideable, this project establishes it as a manageable task through limiting the kinds of programs that these languages can represent.
 While this is an onerous restriction for \gls{gpl}, but one that is acceptable for a \gls{dsl}, its imposition makes it possible to ensure that a given \gls{dsl} is correct.\\
 
 As a result, the project aimed to produce two main novel contributions to the state of the art of language verification:
 \begin{itemize}
-    \item \textbf{A Metalanguage:} An language for the specification of both the \gls{syntax} and \gls{semantics} of the \gls{dsl}. 
+    \item \textbf{A Metalanguage:} A language for the specification of both the \gls{syntax} and \gls{semantics} of the \gls{dsl}. 
     It would allow the representation of restricted forms of semantics to ensure that it is possible to prove the language correct.
     As a result, the language specification could then be verified before being used to generate a \gls{dsl} compiler. 
     \item \textbf{A Metacompiler:} A Haskell-based program that aims to generate a compiler, analysing the input language specification for correctness along the way.
     This would ensure that no bugs can be introduced in the \gls{dsl} compiler implementation as it is generated directly from specification.
 \end{itemize}
 
-While \gls{absol} never quite achieved the code-generation for the \gls{dsl} compiler, having ruled that feature as out of the project scope, it provides both the metalanguage and verification engine as robust contributions to the state of the art. 
+Later during the project it became apparent that, while useful, the code-generation step was not novel.
+As it consisted of a large amount of work, the feature was ruled out of scope.
+Nevertheless, the final metacompiler system provides both the metalanguage and verification engine as robust contributions to the state of the art. 
 
 % section a_problem_worth_studying (end)
 
 \section{Conceptualising ABSOL} % (fold)
 \label{sec:conceptualising_absol}
-The entire toolchain developed by this project is known as \acrshort{absol}, the \acrlong{absol}. 
+The entire toolchain developed by this project is known as \acrshort{absol}, the Automatic Builder for Semantically Oriented Languages. 
 This term encompasses both the metalanguage and the metacompiler, though is often used to refer to the metacompiler directly.\\
 
 The initial concept for the system was to have a metalanguage for the specification of these \glspl{dsl}, and then have a software program (the metacompiler) that would be capable of processing this specification.

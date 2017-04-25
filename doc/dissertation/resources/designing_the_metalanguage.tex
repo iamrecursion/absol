@@ -424,10 +424,6 @@ For information on the checking of types in the language specification, please s
 
 \subsection{User-Defined Semantics} % (fold)
 \label{sub:user_defined_semantics}
-% Have subsubs in here to break it up, there's a lot to talk about
-% Analysing the form of the semantics, have examples of non-representable rules? Or is that better suited for the verification step?
-% Talk about the omission of the 'bottom' row of the rule as it is effecitvely the syntax production itself. 
-
 While \textit{all} semantics for a language designed in \gls{metaspec} are technically user-defined, this section focuses on the examination of the main form of the semantics --- those based upon big-step operational semantics. 
 These semantic rules form core of languages written in \gls{metaspec}, as they provide a flexible way to specify the behaviour of the language. 
 
@@ -441,7 +437,7 @@ These semantic rules form core of languages written in \gls{metaspec}, as they p
 A big-step operational rule such as the one seen in \autoref{eq:a_basic_big_step_operational_semantics_rule} can be broken down into a number of components:
 \begin{itemize}
     \item \textbf{The Primary Expression:} This is the portion of the syntax to be evaluated below the line, to the left of the evaluation arrow.
-    Here, this is $\langle \text{if } b \text{ then } S_1 \text{ else } S_2$.
+    Here, this is $\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s \rangle$.
     \item \textbf{The Evaluation Result:} The result of evaluating the primary expression, this is found to the right of the evaluation arrow below the line.
     Here it is $s'$. 
     \item \textbf{The Restriction:} A restriction placed on the evaluation of this rule, such that the rule is only evaluated if the restriction holds. 
