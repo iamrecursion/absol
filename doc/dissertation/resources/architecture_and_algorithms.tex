@@ -1,11 +1,6 @@
-% How the problem is analysed to create the solution.
-% Examine the design approaches taken.
 % Identification of areas of the design that account for the requirements and resolve potential conflicts. 
 % Fix algorithm placement
 % Unify formatting around algorithms and functions.
-% Preconditions and postconditions on algorithms where relevant
-% https://tex.stackexchange.com/questions/33866/algorithm-tag-and-page-break
-% Clarify language around semantic evaluations and sub-evaluations somewhere here
 
 \chapter{Architecture and Algorithms} % (fold)
 \label{cha:architecture_and_algorithms}
@@ -15,7 +10,13 @@ It also provides a firm background to the design and development of the algorith
 
 It should be noted that unlike \gls{metaspec}, which was designed over one consistent period, the design and implementation periods for the \gls{absol} toolchain were interleaved heavily.
 This provided the opportunity to iterate on the designs where necessary.
-Instances of this occurring will be noted throughout this chapter, but the designs presented below will be the final ones. 
+Instances of this occurring will be noted throughout this chapter, but the designs presented below will be the final ones. \\
+
+This section explores three main components of the design work that has gone into \gls{absol}.
+The first is the design of the software itself, including the architectural details and high-level functionality.
+This is followed by a detailed exploration of the core algorithmic work that underpins the entire project.
+These algorithms took some significant insight and development to ensure that they guaranteed the correctness of the language upon which they operate.
+Finally, this section examines the designs for the special language features, from which the toolchain derives so much of its flexibility.
 
 \section{Designing the Metacompiler --- ABSOL} % (fold)
 \label{sec:designing_the_metacompiler_absol}
@@ -81,7 +82,7 @@ The following list of options resulted:
     This configuration parameter was intended to do exactly that, allowing the user to easily store the results of analysis of their language.
     \item \textbf{Output Directory:} Provided to serve both the log file output and any eventual build artefacts, many build tools provide the ability to specify the target directory for any output files.
     This seemed important enough for the option to be included in this list. 
-    \item \textbf{Language Name / Version:} As discussed in \autoref{sub:the_metadata_blocks}, \gls{metaspec} specifications contain language metadata. 
+    \item \textbf{Language Name / Version:} As discussed in \autoref{sec:the_top_level_definitions}, \gls{metaspec} specifications contain language metadata. 
     It is conceivable, however, that \gls{dsl} authors may want to temporarily override these settings at build time.
     To this end, flags for providing alternative language names and language versions should be provided. 
     \item \textbf{Reporting:} As the metacompiler was originally intended to perform code-generation, it was conceivable that the users of the tool might want to verify the language they are developing without generating code from the specification. 
@@ -118,7 +119,6 @@ This meant, from a design standpoint, that merging the lexing and parsing steps 
 \begin{itemize}
     \item \textbf{Efficiency:} As the \gls{ast}-generation process would now only have to make one pass over the character stream, performing one process of characters $\to$ tokens (contrasted with the dual passes for characters $\to$ tokens and then tokens $\to$ \gls{ast}), this means that the process as a whole is more efficient.
     \item \textbf{Simplicity:} Merging the two processes serves to simplify the design due to the removal of a (mostly unnecessary) boundary between lexing and parsing.
-    This is 
     \item \textbf{Ease of Implementation:} This aforementioned simplicity will likely mean that the implementation of Metaparse is simplified.
     On a time-constrained project this is a big boon, and a big benefit of the integrated design.
 \end{itemize}
@@ -259,7 +259,7 @@ At a high level this means it is an algorithm (with no dependence on state) with
 \end{itemize}
 
 Due to the fact that the methods for traversing an \gls{ast} data-structure are inherently tied to the representation of the structure, it is somewhat difficult to represent this algorithm in a general format.
-The algorithm is also responsible for collating these outputs in such a fashion that they are associated with the required tracking data for their termination state (for the contents of this data see \nameref{ssub:reporting_structures}).
+The algorithm is also responsible for collating these outputs in such a fashion that they are associated with the required tracking data for their termination state (for the contents of this data see \nameref{ssub:reporting_structures} on \autopageref{ssub:reporting_structures}).
 This tracking data is known to the project as a \textit{tag}, and these are described in more detail later. 
 The best algorithmic representation can thus be seen in \autoref{alg:the_verification_preprocessor_algorithm}, which assumes the existence of a number of functions as follows:
 \begin{itemize}
@@ -442,10 +442,11 @@ These preconditions are assumed to hold by the algorithms used for verification,
 These preconditions are as follows, where scope is defined in all cases as in the first precondition:
 \begin{itemize}
     \item \label{item:non_terminal_usage} \textbf{Non-Terminal Usage:} Any non-terminal \textit{used} on the right-hand-side of a rule definition must be \textit{defined} in the current scope. 
-    The non-terminals in the current scope are those defined by the \gls{dsl} language specification, and those imported by the language features specified in the \mintinline{text}{using} definition block (\autoref{sub:the_imports_definition_block}).
+    The non-terminals in the current scope are those defined by the \gls{dsl} language specification, and those imported by the language features specified in the \mintinline{text}{using} definition block (see \autoref{sec:the_top_level_definitions}).
     If this precondition was not satisfied, it would be possible to have productions whose sub-terms do not have defined semantics and thus that the language would not be total. 
     \item \textbf{Single Definition:} Any non-terminal of a given name must be \textit{defined only once} in the language scope.
     Were this precondition not satisfied, it would be possible to have indeterminate semantics for a given program as the choice of production is undefined.
+    This means that \glspl{dsl} cannot have non-deterministic semantics (unless explicitly specified via randomness). 
     \item \textbf{Types in Scope:} All types used by the language definition must be \textit{in scope}.
     As types have associated semantics at \gls{dsl} compile-time, having types not in scope could lead to the generation of incorrect programs. 
     This condition, however, does not lead to incorrectness at the language level, as all types have defined semantics.
@@ -627,9 +628,9 @@ It is stored as part of the state available to the verification algorithm and ha
     \If{\Call{elem}{nonTerminal, truths}}
         \State \Return{Terminates}
     \Else
-        \If{\Call{find}(productions, nonTerminal)}
+        \If{\Call{find}{productions, nonTerminal}}
             \Comment Non-Terminal exists
-            \State (tag, ruleBody) $\gets$ \Call{get}(productions, nonTerminal)
+            \State (tag, ruleBody) $\gets$ \Call{get}{productions, nonTerminal}
             \If{tag == Terminates $\lor$ tag == DoesNotTerminate}
                 \State \Return{tag}
             \Else
@@ -699,6 +700,8 @@ The monoid has set $G = \{\text{touched, untouched, does not terminate, terminat
     \item Furthermore, it can be seen that the value of `touched' acts as the \textit{identity} element of the monoid: \mintinline{haskell}{Touched `tagPlus` x} = \mintinline{haskell}{x `tagPlus` Touched} = \mintinline{haskell}{x}.
     \item Finally, through observation, it is clear that this operation is also \textit{associative}.
 \end{itemize}
+
+This is useful at the implementation stage, as it can be used to simplify the code using common Haskell axioms (later discussed in \autoref{sub:tracking_error_information}). 
 
 % subsubsection termination_states (end)
 
@@ -877,7 +880,7 @@ However, it is not sufficient for the convergence relation to be inductively def
 In order to show totality, it has to be possible to show, by induction on the structure of $M$, that the rules by which $\to$ is defined are defined in such a way that the \textit{convergence hypothesis} for $M$ is given in terms of sub-programs of $M$.
 If this is the case, then $M$ terminates as long as each sub-program terminates.
 By induction, $M$ then terminates as long as the base-case semantics terminate.
-This is formalised in \nameref{ssub:an_inductive_proof_of_the_theory} below.\\
+This is formalised in \nameref{ssub:an_inductive_proof_of_the_theory} on page \autopageref{ssub:an_inductive_proof_of_the_theory}.\\
 
 In the case of \gls{metaspec}, the program $M$ is a given instance of the language semantics, which provides the initial impetus for the proof mechanism. 
 The proof mechanism for these semantics thus has to be capable of ensuring that the convergence hypothesis for a semantics $M$ is given purely in terms of sub-terms of $M$. 
@@ -885,7 +888,7 @@ It hence has to be capable of showing three things.
 \begin{itemize}
     \item \textbf{The Sub-Program Criterion:} Each sub-semantics must be a strict sub-term of the semantic rule itself. 
     In the context of \gls{metaspec} this means ensuring both that the non-terminal in question exists in the syntax of the production, and that the syntax access address is not out of bounds. 
-    \item \textbf{The Evaluation Criterion:} This emerges naturally from the sub-program criterion, and ensures that the evaluation portion of the semantics depends only on the results of evaluating the sub-terms, constants and their intermediaries. 
+    \item \textbf{The Evaluation Criterion:} This emerges naturally from the sub-program criterion, and ensures that the evaluation portion of the semantics (the list of semantic operations) depends only on the results of evaluating the sub-terms, constants and their intermediaries. 
     If this did not hold, then it would be possible to define a non-terminating rule by including the output variable as part of the evaluation rules. 
     \item \textbf{The Inductive Criterion:} Each of the sub-program evaluations for a given semantic rule must also be shown to terminate by recursive verification.
 \end{itemize}
@@ -975,9 +978,10 @@ This two-stage process is illustrated in \autoref{alg:verification_of_the_semant
 \label{alg:verification_of_the_semantic_sub_term_criterion}
 \end{algorithm}
 
-This algorithm, however, is slightly unsatisfactory due to the time constraints placed on the project. 
+This algorithm, however, is somewhat unsatisfactory due to the time constraints placed on the project. 
 As it is, it has not been designed to cope with recursive productions that can never be parsed. 
-While this technically allows it to admit a language with such productions (whose semantics are effectively undefined), such productions will never be parsed in an actual program (as they are infinite), and hence the semantics of any extant \gls{dsl} program are guaranteed.\\
+While this technically allows it to admit a language with such productions (whose semantics are effectively undefined), such productions will never be parsed in an actual program (as they are infinite).
+As the correctness of the termination proof depends on the finite nature of the syntax, the semantics of any possibly extant \gls{dsl} program are guaranteed to terminate.\\
 
 For an illustration of such a circumstance assume the existence of two productions \mintinline{text}{<a> ::= <b>} and \mintinline{text}{<b> ::= "+" <a>}. 
 The only expression that such a set of productions would be able to parse is an infinite string of \mintinline{text}{+} characters, and will hence never be utilised in a real program.
@@ -988,7 +992,7 @@ In such a case, whether the \gls{dsl} designer defines (technically terminating)
 \subsubsection{Verifying the Evaluation Criterion} % (fold)
 \label{ssub:verifying_the_evaluation_criterion}
 Verification of the evaluation criterion ensures that the \gls{dsl} designer is unable to create semantics that are self-recursive. 
-Evaluations take the form (broadly) of a list of expressions of the kind \mintinline{text}{n = n1 <op> n2}, where \mintinline{text}{<op>} is some operator.
+Evaluations, otherwise known as the semantic operations, take the form (broadly) of a list of expressions of the kind \mintinline{text}{n = n1 <op> n2}, where \mintinline{text}{<op>} is some operator.
 As part of the semantic rule, the output variable is defined as well. 
 The output variable is assigned to by one rule, and any other target variables (temporaries), can be used freely.
 The algorithm for ensuring this is required to check, for each rule, that the evaluations obey the following criteria:

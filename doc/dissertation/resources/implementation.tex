@@ -325,7 +325,7 @@ spaceConsumer = L.space (void spaceChar) lineComment blockComment
 
 The process of developing the parser (in reality, the integrated lexer and parser) took place in two parts: development of the lexer functions, and development of the parser itself. 
 Due to the lexer functionality integrated into Megaparsec, it was trivial to create the basic set of lexer functions for parsing \gls{metaspec}. 
-These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- \autoref{sub:comments_in_metaspec}), and the basic parsers for lexemes and terminals of the language.
+These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- see \autoref{sec:the_top_level_definitions}), and the basic parsers for lexemes and terminals of the language.
 Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.
 
 \begin{figure}[!htb]
