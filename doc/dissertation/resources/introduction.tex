@@ -1,5 +1,7 @@
 \chapter{Introduction} % (fold)
 \label{cha:introduction}
+\epigraph{When asked for a formal semantics of the formal semantics Milner's head explodes.}{James Iry \citep{incomplete_iry}}
+
 Modern software systems are seeing significant increases in complexity, with everything from flight computers to business software becoming harder to develop and reason about \citep{dvorak2009nasa}.
 As these systems grow, domain-specific logic becomes integrated throughout their code, leading to increased levels of coupling and more potential for bugs.
 With it, such a high level of coupling brings an increased risk that changes to the software cause modes of incorrect operation \citep{khawar2001developing}.\\
@@ -17,9 +19,9 @@ What if it were possible to guarantee that it would always terminate, and always
 \section{A Problem Worth Studying} % (fold)
 \label{sec:a_problem_worth_studying}
 \glspl{dsl} are used throughout many industries, and they can bring major benefits in industries where safety is most critical.
-However, it is in these very industries that they cause major problems should they go wrong.\\
+However, it is in these very industries that they cause significant problems should they go wrong.\\
 
-During time spent at a financial technology company one team was observed to be using the \gls{gpl} OCaml for the specification of logic at runtime. 
+During time spent at a financial technology company, one team was observed to be using the \gls{gpl} OCaml for the specification of application logic at runtime. 
 With the vastly greater than necessary expressive power offered by this language, the potential for bugs was significantly increased \citep{subramanyam2003empirical}.
 What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml?
 It would both be a \textit{much} better fit to the domain \textit{and} reduce the potential for bugs.\\
@@ -29,7 +31,11 @@ The ability to provide a method for designing and verifying \glspl{dsl} in these
 While, in general, language verification is undecideable, this project establishes it as a manageable task through limiting the kinds of programs that these languages can represent.
 While this is an onerous restriction for \gls{gpl}, but one that is acceptable for a \gls{dsl}, its imposition makes it possible to ensure that a given \gls{dsl} is correct.\\
 
-As a result, the project aimed to produce two main novel contributions to the state of the art of language verification:
+Correctness, however, is a slightly nebulous term. 
+In some areas it is used to mean compliance with the program's specification, while in others it means the production of the correct result.
+For the purposes of this project, a language being \textit{correct} means that its semantics are \textit{always} defined, and that all programs in the language are \textit{guaranteed to terminate}. \\
+
+The project hence aimed to produce two main novel contributions to the state of the art of language verification:
 \begin{itemize}
     \item \textbf{A Metalanguage:} A language for the specification of both the \gls{syntax} and \gls{semantics} of the \gls{dsl}. 
     It would allow the representation of restricted forms of semantics to ensure that it is possible to prove the language correct.
