@@ -1,16 +1,16 @@
 \chapter{Evaluation} % (fold)
 \label{cha:evaluation}
 The design and development of both \gls{metaspec} and the \gls{absol} metacompiler toolchain has involved an immense amount of careful thought, time and effort.
-The final results of the project are impressive, but flawed.
-This section aims to examine and discuss both the major successes of the \gls{absol} project, including how it succeeded at its high-level goals and advanced the state of the art in language verification.
-It will also provide a discussion of the major failings of the project, particularly around scoping, design and the development process itself.
+The final results of the project are novel, but not without their flaws.
+This section aims to examine and discuss both the successes of the \gls{absol} project, including how it succeeded at its high-level goals and advanced the state of the art in language verification.
+It will also provide a discussion of the failings of the project, particularly around scoping, design and the development process itself.
 Finally, it will suggest future work in the area of \gls{dsl} verification, and improvements that could be made to the \gls{absol} toolchain.
 
 \section{Successes of the Project} % (fold)
 \label{sec:successes_of_the_project}
 The key successes of the \gls{absol} project are twofold. 
-The first major success is how well both \gls{metaspec} and the metacompiler toolchain itself were able to meet its high-level requirements: it has been able to achieve all of the requirements detailed for it.
-The second major success is the contribution that this project has been able to make to the state of the art in language verification: through its constrained form of language semantics it has been able to provide a flexible and useful toolchain for the creation of provably correct languages. 
+The first success is how well both \gls{metaspec} and the metacompiler toolchain itself were able to meet its high-level requirements: it has been able to achieve all of the requirements detailed for it.
+The second success is the contribution that this project has been able to make to the state of the art in language verification: through its constrained form of language semantics it has been able to provide a flexible and useful toolchain for the creation of provably correct languages. 
 
 \subsection{Meeting the High-Level Goals} % (fold)
 \label{sub:meeting_the_high_level_goals}
@@ -23,25 +23,25 @@ While the syntax definition format required little adaptation from the \gls{ebnf
 The success of the combined specification is complemented by the amount of design work that went into defining the syntax (and hence features) of the user-defined semantics (\autoref{sub:user_defined_semantics}).
 The comprehensive nature of the translation from big-step operational semantics to this language has retained the full set of semantic features, and is a big boon in the expression of \gls{dsl} semantics.\\
 
-The second major success of the metalanguage arises from the ease with which it allows users to define languages. 
+The second success of the metalanguage arises from the ease with which it allows users to define languages. 
 While part of this ease comes from the support of the metacompiler tools, the language itself provides obvious ways to accomplish the goals of the \gls{dsl} designer. 
 While in part this comes from the neat integration of syntactic and semantic definitions, the designer also benefits significantly from the approach it takes to defining languages. 
 Through the provision of the \mintinline{text}{truths} defblock, it becomes simple for language designers to declare when they know things terminate (such as the literals shown in \autoref{sec:an_example_language}).
 Beyond this, the provision of semantic special-forms, especially the special-syntax rules, means that language designers are \textit{not} overly constrained when it comes to defining the capabilities of their language.\\
 
-As much as the metalanguage has been one of the largest successes of the project, the \gls{absol} toolchain itself has also been a major success. 
+As much as the metalanguage has been one of the largest successes of the project, the \gls{absol} toolchain itself has also been a success. 
 Much like \gls{metaspec}, the metacompiler has also been able to meet all of its high-level goals placed upon it.
 Within these goals, however, it has achieved two highly-significant successes.\\
 
 The first of these successes comes through the verification capabilities of the metacompiler. 
 Though the design process for the verification algorithms (\autoref{sec:the_core_algorithms}) was complex and involved, the final implementation of the verification theory has turned out to be elegant and fairly simple.
-This means that the success is twofold: the verification portion of the metacompiler remains extensible, but also in the capabilities it affords the user.
+This means that the success is twofold: the verification portion of the metacompiler remains extensible, but it is still able to provide the user with sophisticated functionality.
 In being able to verify the language as it is being developed, it provides the user with significant assurance through this development process.
 Through the practice of developing example languages, such as `spreadsheet', discussed in \autoref{sec:an_example_language}, it became apparent that the support from the metacompiler allowed for more experimentation and less mental load.
 As the verification of the language was offloaded to \gls{absol}, the language designer could better concern themselves with the \textit{form} of the language and the \textit{local} semantics, rather than constantly ensuring global semantic correctness.
 While this success comes from a very limited sample-size, the benefits felt to a highly-experienced user could imply that the metacompiler would be an even more significant boon to the less-experienced user. \\
 
-The other major success of the metacompiler itself is the language diagnostic facility that it provides.
+The other success of the metacompiler itself is the language diagnostic facility that it provides.
 Though derived from a difficult design task, the use of the \mintinline{haskell}{RuleTag} type and associated monoidal properties for tracking error information have allowed the metacompiler to provide the user with comprehensive diagnostics.
 The resultant diagnostics are very obvious, providing both a message describing the problem and a diagnostic trace of where the problem arises from.
 Hence, they allow the users of the metacompiler to quickly identify and fix errors in their language definition, enhancing the utility of the metacompiler.
@@ -50,13 +50,9 @@ Hence, they allow the users of the metacompiler to quickly identify and fix erro
 
 \subsection{Contributions to the State of the Art} % (fold)
 \label{sub:contributions_to_the_state_of_the_art}
-% - Funcall and the other special forms are important for the quality of the project.
-% - The ability to verify at the language level while still retaining useful functionality for the creation of capable languages. 
-% - Integrated syntax and semantic specifications that operate together intuitively. 
-
 As discussed above, the project has seen success in terms of meeting its high-level goals.
 However, alone that does not make the project worthy of note.
-Much of the major success of this project arises from the way in which it contributes to the state-of-the-art in the area of formal language verification.\\
+Much of the success of this project arises from the way in which it contributes to the state-of-the-art in the area of formal language verification.\\
 
 While it would be possible to define a language purely based on big-step operational semantics, the restrictions required to prove termination about this language would make it \textit{useless}.
 The main contribution of \gls{absol} to the state of the art is, resultantly, the ability to define useful (though still limited) languages while retaining the ability to prove them correct.
@@ -70,7 +66,7 @@ This contribution to the state of the art arises from two main factors:
 It is the \textit{combination} of both of these features in a context where the termination properties can be proved that is the real contribution of the project.
 Previous frameworks have existed for specifying complex language semantics, such as Mosses' Action Semantics \citep{mosses1992action}. 
 However, such semantic frameworks become too complex to automatically verify languages based upon them.
-As a counterpoint simpler semantic frameworks exist, such as restricted forms of operational semantics, that \textit{can} be automatically proven to terminate (under certain restrictions) \citep{Zhang:2004:SSD:981009.981013}.
+As a counterpoint, simpler semantic frameworks exist, such as restricted forms of operational semantics, that \textit{can} be automatically proven to terminate (under certain restrictions) \citep{Zhang:2004:SSD:981009.981013}.
 Much like the more complex frameworks these also have an issue, except here it is that they are incapable of representing more complex (and hence useful) language semantics while still being provable.\\
 
 To this end, the combination of \gls{metaspec} and \gls{absol} lies in the middle of these two roads.
@@ -95,21 +91,20 @@ As a result, it is clear that this integrated approach brings significant benefi
 
 \section{Failings of the Project} % (fold)
 \label{sec:failings_of_the_project}
-
 As much as the design and development of the project has been able to meet its high-level goals, this does not mean to imply that it has been without its problems. 
 During the course of the project there have been multiple instances where portions of the project could have been better-designed, or processes being used could have been refined. 
 This section aims to examine these major project failings and discuss how they could have been mitigated. 
 
 \subsection{Scoping the Project} % (fold)
 \label{sub:scoping_the_project}
-One of the major failings of the project was an initial inability to define the scope of the system appropriately.
+One of the failings of the project was an initial inability to define the scope of the system appropriately.
 Initial requirements and the corresponding system designs intended to incorporate both the full semantic guard verification algorithm and to perform full code-generation for the \gls{dsl} compiler, as discussed in \autoref{sub:out_of_scope_requirements}. \\
 
 While this would not have been a major issue had the project scope been decreased quickly, the project progressed under the impression that both of these features would be feasible to develop within the provided time frame.
 This meant that some not insignificant effort was wasted performing design work for them. 
 In particular, significant time was spent attempting to define an algorithm for the checking of guard completeness before this was determined as difficult enough to rule out of scope (see \nameref{ssub:checking_guard_completeness} on \autopageref{ssub:checking_guard_completeness}).
-While this could have been ruled out of scope sooner through more targeted research (see \nameref{ssub:guard_completeness_and_project_scope} on \autopageref{ssub:guard_completeness_and_project_scope}), it was thought of as an easy problem and not worthy of detailed research. 
-This was very much incorrect.\\
+It was initially thought of as an easy problem and hence not worthy of detailed research, but this was very much incorrect. 
+Had more research been conducted into the issue its difficulty would have likely become obvious through an examination of the available methods (see \nameref{ssub:guard_completeness_and_project_scope} on \autopageref{ssub:guard_completeness_and_project_scope}).\\
 
 The other major scoping issue on the project was the insistence on the creation of a full `product' pipeline for \gls{absol}.
 This meant that the generation of code for the \gls{dsl} compiler was considered as in scope for a significant portion of the project.
@@ -118,7 +113,7 @@ Nevertheless, the project under-appreciated how much work would be contained wit
 When this work became apparent, the code-generation module was swiftly ruled out of scope. \\
 
 While the now useless design and development work dedicated to these portions of the project has not impacted on the project's completion in any undue fashion, it is clear that having this time available for other tasks would have achieved a much more efficient time utilisation.
-As a result, the failure to scope the project appropriately is one of the major failings of the project.
+As a result, the failure to scope the project appropriately is one of the failings of the project.
 
 % subsection scoping_the_project (end)
 
@@ -135,11 +130,30 @@ There are a few main examples of this:
 \begin{itemize}
     \item \textbf{Special-Syntax Arguments:} The grammar in its current form admits any number of arguments to each special syntax form. 
     This means that the verification of these arguments is not part of parsing, but later at the level of \gls{dsl} compilation time (when the types of the arguments are also checked).
-    While this does not impinge on the correctness of the verification result, it would be a significant improvement to enforce the correct number of arguments for each piece of special syntax at the level of the language grammar. 
+    While this does not impinge on the correctness of the verification result, it would be a significant improvement to enforce the correct number of arguments for each piece of special syntax at the level of the language grammar, much like the example in \autoref{lst:enforcing_special_syntax_arguments_at_the_grammar_level}, which shows that funcall should take exactly two arguments. 
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, xleftmargin=1cm]{text}
+funcall-syntax = "funcall", "(", argument, argument, ")" ;
+\end{minted}
+\caption{Enforcing Special Syntax Arguments at the Grammar Level}
+\label{lst:enforcing_special_syntax_arguments_at_the_grammar_level}
+\end{listing}
+
     \item \textbf{Semantic Associations:} The semantic association was joined to the existing syntactic grammar at the level of the alternation: each term in \mintinline{text}{<a> | <b> | ...} could each provide its own semantics.
     However, this addition did not recognise the fact that alternations can contain sub-alternations (e.g. \mintinline{text}{(<a> | <b>) | <c>}).
     At the level of the grammar, it is possible to write \gls{metaspec} statements which assign semantics to both \mintinline{text}{<a>} and \mintinline{text}{<b>}.
+    An example of this is seen in \autoref{lst:ignored_semantic_definitions}, where \mintinline{text}{<?sem?>} is used to stand in for some semantic definition.
+    In such a case, only the last two semantic definitions are considered valid. 
     While these don't have any semantic meaning and are ignored by all stages of the metacompiler pipeline, it would ideally not be possible to write such expressions in the grammar. 
+\begin{listing}[!htb]
+\begin{minted}[numbers=none, xleftmargin=1cm]{text}
+<foo> ::=   
+    (<a> --> {<?sem?>} | <b> --> {<?sem?>}) --> {<?sem?>} | 
+    <c> --> {<?sem?>};
+\end{minted}
+\caption{Ignored Semantic Definitions}
+\label{lst:ignored_semantic_definitions}
+\end{listing}
 \end{itemize}
 
 Fixing both of these flaws in the current metalanguage design would result in minor, but still useful improvements to the metalanguage as a whole. 
@@ -148,10 +162,6 @@ Fixing both of these flaws in the current metalanguage design would result in mi
 
 \subsubsection{The Design of the Environment} % (fold)
 \label{ssub:the_design_of_the_environment}
-%   - No direct use of environment accesses in basic semantics, requiring indirection.
-%   - Fairly awkward use of the environment (no ability to delete properties, for example). 
-% Environment not particularly well thought-out.
-
 The notion behind the semantic environment was that it would be able to act as a global key-value store. 
 However, this idea was not thought through to its full extent, leaving the current version of the environment with the following issues:
 \begin{itemize}
@@ -183,7 +193,7 @@ While able to be rectified at the grammar level, this is a more in-depth issue t
 In their current form, arguments to a special-syntax rule can only take the form of two things: environment accesses, and syntax access blocks. 
 However, as discussed in \autoref{sub:reflecting_on_the_language_design_process}, it could be quite useful to be able to pass semantic constants as arguments to the special-syntax rules as well.\\
 
-The main reason for this is that the current inability to use constants breaks one of the core tenets of a dsl (see \autoref{sec:domain_specific_languages}) --- they should match the notation of their domain as closely as possible.
+The main reason for this is that the current inability to use constants breaks one of the core tenets of a \gls{dsl} (see \autoref{sec:domain_specific_languages}) --- they should match the notation of their domain as closely as possible.
 Much like the example in \autoref{sub:reflecting_on_the_language_design_process}, the ability to use values of the domain-syntax and translate these into the syntax of the underlying semantic functions provides a much more succinct interface at the level of the \gls{dsl}.
 As key as the domain-notation-based nature of \glspl{dsl} is to their usage and utility, this is a \textit{major} oversight in the design of the metalanguage.\\
 
@@ -222,6 +232,7 @@ However, from a user-utility perspective, the method by which this is performed 
 
 As the algorithm in use performs many of its checks \textit{during} the parse of the input file, any error encountered and output will stop the parse entirely.
 This means that even if there are other issues present in the file, the user has to go through this iterative cycle of `check' / `fix'.
+Even though the performance of the metacompiler is fast enough that it is not particularly intrusive, it is still an unnecessary process. 
 It would be much more user-friendly to collate all of these errors during the parsing process and output them in a comprehensive fashion at the end.
 This would provide a better experience for the user, and hence should be improved in future work on the metacompiler. 
 
@@ -239,6 +250,7 @@ While it \textit{has been} highly theoretical, in hindsight the application of m
 The lack of formalisation of the design process, in particular, is what has led to many of the issues identified in \autoref{sub:metalanguage_design_issues} above.
 Ideally, a more formal design process would have been employed by the project, bringing the benefits of additional design rigour.
 Doing this would have likely improved the software architecture, algorithmic design and better identified the features required for the metalanguage. 
+Through a more rigorous definition of what each feature was required to achieve, it would hopefully have avoided some of these design mistakes. 
 Applying such a process would likely have led to the environment being removed entirely as a feature until it could have been better developed, and given the list of issues with illustrated in \nameref{ssub:the_design_of_the_environment} above, this would not have been entirely negative. \\
 
 Similarly, \autoref{sub:examining_the_testing_approach_in_hindsight} identifies some major problems with the lack of a rigorous (and automated) testing approach.

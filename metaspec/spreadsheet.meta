@@ -43,7 +43,7 @@ language : {
 };
 
 // Argument non-terminals can either be literals or variables
-<arg-nt> ::= <literal> | <variable-name> ;
+<arg-nt> ::= <literal> | <variable-name> | <statement> ;
 
 // These have default terminating semantics by the truths
 <literal> ::= <matrix> | <number> ;

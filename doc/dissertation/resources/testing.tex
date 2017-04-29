@@ -469,7 +469,7 @@ This means that it needs to be able to:
 \end{itemize}
 
 Considering all of these language design goals, another import required will be \mintinline{text}{matrix}, providing a table-like container for homogeneous data. 
-Finally, \mintinline{text}{base} should be 
+Finally, \mintinline{text}{base} should be included as it provides useful special features for the implementation of any language. 
 
 % subsection the_idea_for_the_language (end)
 
@@ -570,7 +570,7 @@ language : {
 };
 
 // Argument non-terminals can either be literals or variables
-<arg-nt> ::= <literal> | <variable-name> ;
+<arg-nt> ::= <literal> | <variable-name> | <statement> ;
 
 // These have default terminating semantics by the truths
 <literal> ::= <matrix> | <number> ;
@@ -638,6 +638,31 @@ language : {
 
 % subsection designing_the_example_language (end)
 
+\subsection{An Example Program} % (fold)
+\label{sub:an_example_program}
+Having  defined the language `spreadsheet', it remains to define an example program in this \gls{dsl} to exemplify what it is capable of.
+For the purpose of this demonst.ration, this program will sum all the columns in an input matrix, and then get the sum of those results. 
+It is defined in \autoref{lst:an_example_spreadsheet_program}.
+
+\begin{listing}[!htb]
+\begin{minted}[]{text}
+proc sum_matrix (matrix) {
+    // Sum down columns then across the results (rows)
+    reduce(sum, 0, reduce(sum, matrix, 1), 0)
+};
+
+fun sum (val1, val2) { val1 + val2 };
+\end{minted}
+\caption{An Example Spreadsheet Program}
+\label{lst:an_example_spreadsheet_program}
+\end{listing}
+
+This program defines a top-level procedure, with the return value being the value of the last statement. 
+It computes the sum of each column, which results in a row vector (a $1 \times n$ matrix), which is then reduced over the row dimension to compute the overall sum.
+This procedure relies on the function \mintinline{text}{sum}, which computes the sum of its two arguments. 
+
+% subsection an_example_program (end)
+
 \subsection{Reflecting on the Language Design Process} % (fold)
 \label{sub:reflecting_on_the_language_design_process}
 Overall, the process of designing this language was fairly simple.
@@ -653,6 +678,7 @@ Using the design documentation specified in \autoref{sec:special_language_featur
     \item \textbf{Metacompiler Support:} Much like the edit-compile-test interactive development cycle when writing programs, the \gls{absol} metacompiler enables a similar kind of feedback for the people defining the \gls{dsl}.
     During the course of developing `spreadsheet' it was quickly made apparent that this support, and the notion that the user would immediately be alerted to errors with their language definition, allowed the \gls{dsl} designer a greater ability to experiment with both syntax and semantics.
     This liberty to experiment led to the creation of more intuitive syntax for the \gls{dsl}, but also allowed the language to remain correct.
+    It should be noted that, in part, this interactivity is enabled by the performance of \gls{absol}, which requires no noticeable wait on the behalf of the language designer. 
 \end{itemize}
 
 \begin{listing}[!htb]
