@@ -658,7 +658,7 @@ fun sum (val1, val2) { val1 + val2 };
 \end{listing}
 
 This program defines a top-level procedure, with the return value being the value of the last statement. 
-It computes the sum of each column, which results in a row vector (a $1 \times n$ matrix), which is then reduced over the row dimension to compute the overall sum.
+It computes the sum of each column of an $m \times n$, which results in a row vector (a $1 \times n$ matrix), which is then reduced over the row dimension to compute the overall sum.
 This procedure relies on the function \mintinline{text}{sum}, which computes the sum of its two arguments. 
 
 % subsection an_example_program (end)

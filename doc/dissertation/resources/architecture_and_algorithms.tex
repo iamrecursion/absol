@@ -913,7 +913,9 @@ From the theory established in \autoref{sub:user_defined_semantic_form_verificat
 In addition to verification of the convergence hypothesis, which proves the semantics always terminate, it is also important to check that the guards are complete and hence ensure that the semantics are always defined (see \autoref{sub:guard_checking}).
 This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
 
-\begin{algorithm}[!htb]
+\begin{breakablealgorithm}
+\caption{User-Defined Semantic Form Verification}
+\label{alg:user_defined_semantic_form_verification}
 \begin{algorithmic}
 \Function{verifySemanticRuleList}{semantics, ntCounts}
     \Comment `semantics' is a list of rules
@@ -928,13 +930,11 @@ This is illustrated in \autoref{alg:user_defined_semantic_form_verification}.
     \State evalCheck $\gets$ \Call{satisfiesEval}{semantics}
     \Comment see \autoref{alg:verification_of_the_semantic_evaluation_criterion}
     \State subtermCheck $\gets$ \Call{satisfiesSemanticForm}{semantics, ntCounts}
-    \Comment see \autoref{alg:verification_of_the_semantic_sub_term_criterion}
+    \LineComment see \autoref{alg:verification_of_the_semantic_sub_term_criterion}
     \State \Return{\Call{tagPlus}{evalCheck, subtermCheck}}
 \EndFunction
 \end{algorithmic}
-\caption{User-Defined Semantic Form Verification}
-\label{alg:user_defined_semantic_form_verification}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection verifying_the_user_defined_semantic_form (end)
 
@@ -958,7 +958,6 @@ This two-stage process is illustrated in \autoref{alg:verification_of_the_semant
 \Function{satisfiesSemanticForm}{semantics, ntCounts}
     \State ntIndexPairs $\gets$ \Map{\Call{getNTIndexPairs}{}}{semantics}
     \State subTermsExist $\gets$ \Map{\Call{isValid}{ntCounts}}{ntIndexPairs}
-    % TODO fix partial application above (wrong arg location)
     \State subTermsTerminate $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntIndexPairs}
     \LineComment see \autoref{alg:the_non_terminal_verification_algorithm}
     \State allSubTermsExist $\gets$ \Reduce{($\land$)}{True}{subTermsExist}
