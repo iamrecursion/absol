@@ -1,13 +1,3 @@
-
-
-% This section will:
-% \begin{itemize}
-%     \item Provide examples of use of the language
-%     \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
-% \end{itemize}
-
-% Testing both interleaved and not
-
 \chapter{Testing} % (fold)
 \label{cha:testing}
 Like any well-designed piece of software, \gls{absol} underwent a significant amount of testing during its development.
@@ -19,12 +9,6 @@ Finally, it provides an example of a language developed in \gls{metaspec} and ve
 
 \section{The General Testing Approach} % (fold)
 \label{sec:the_general_testing_approach}
-% Discuss the brief consideration of user testing and examine why it was dismissed (due to the project state and requirement for significant expertise to utilise the system). 
-% Integrated throughout development
-% The process of testing, with an examination of the testing strategy. 
-% Why was this strategy chosen over other possible strategies.
-% Haskell's strong type safety acting as some kind of test suite, though not on parity with a dependently-typed approach. 
-
 \gls{absol} is a large software system, and like any large software system it is likely to have bugs.
 This meant that having some testing approach was paramount in order to ensure that the software operated correctly.
 With the clear need for testing, the choice to be made was as to what kind of testing.\\
@@ -180,7 +164,7 @@ Consider the introduction of the syntax error in \autoref{lst:introducing_a_synt
 The resultant error, shown in \autoref{lst:the_syntax_error_diagnostic}, correctly diagnoses what's wrong as part of the built in functionality of Megaparsec. 
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=26]{text}
+\begin{minted}[numbers=none]{text}
 <my-number> ::= <integer> | <floating ;
 \end{minted}
 \caption{Introducing a Syntax Error}
@@ -296,7 +280,7 @@ When executing the metacompiler on this file, the semantics of the language are 
 This implies that the semantic inference is working in this case. 
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=29]{text}
+\begin{minted}[numbers=none]{text}
 <arith-expr> ::= <my-number> | <arith-op> ;
 \end{minted}
 \caption{A Production with Inferred Semantics}
@@ -332,10 +316,11 @@ As shown in \autoref{lst:a_failing_special_syntax_rule}, this produces the appro
 
 \subsubsection{Testing Special-Syntax Rules} % (fold)
 \label{ssub:testing_special_syntax_rules}
-The termination of special syntax rules 
+The termination of special syntax rules depends both on the external termination proof (as seen in \autoref{sec:special_language_features}), and the termination of all the non-terminals used in the semantic rule. 
+Testing this is hence simple, introducing an error into one of the non-terminals used in the rule.
 
 \begin{listing}[!htb]
-\begin{minted}[numbers=none]{text}
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
 PRODUCTION: <ssr-fail>
 STATUS: Does not terminate.
 
@@ -374,7 +359,7 @@ Introducing a sub-term that does not exist in the syntax should result in an err
 Introducing a bad index into the \mintinline{text}{<arith-op> production} does indeed result in an appropriate error, as seen in \autoref{lst:failing_due_to_a_non_existent_sub_term}.
 
 \begin{listing}[!htb]
-\begin{minted}[numbers=none]{text}
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
 PRODUCTION: <arith-op>
 STATUS: Does not terminate.
 
@@ -399,7 +384,7 @@ Instead, this demonstration will focus on a case where the conditions are broken
 Working from the basic, valid, test file, the evaluation on line 42 can be transformed to read as in \autoref{lst:testing_the_evaluation_criterion} to introduce a dependency on a non-existent variable \mintinline{text}{n3}.
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=42]{text}
+\begin{minted}[numbers=none]{text}
 <arith-expr> "+" <arith-expr> --> {
     number n : {n = n1 + n3}() :
         {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
@@ -430,7 +415,7 @@ Incorrect Semantic Form.
 \subsubsection{Testing the Guard Checking} % (fold)
 \label{ssub:testing_the_guard_checking}
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=58]{text}
+\begin{minted}[numbers=none]{text}
  <arith-expr> "^" <arith-expr> --> {
     number n : {n = 1}(n1 == 1) :
         {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |

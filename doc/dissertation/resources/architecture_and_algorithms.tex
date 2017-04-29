@@ -1,7 +1,3 @@
-% Identification of areas of the design that account for the requirements and resolve potential conflicts. 
-% Fix algorithm placement
-% Unify formatting around algorithms and functions.
-
 \chapter{Architecture and Algorithms} % (fold)
 \label{cha:architecture_and_algorithms}
 Following on from the design work put into the \gls{metaspec} (see \autoref{cha:designing_the_metalanguage}), significant time and effort was then invested into the design of the metacompiler toolchain itself, as well as the core algorithms and theory that it uses. 
@@ -25,7 +21,7 @@ As for any large system, it is important to be able to visualise the way in whic
 These modules form a natural segmentation of the work that the compiler has to do, and is are naturally subdivided internally.
 \gls{absol} is best visualised as a pipeline, and the arrows illustrate the flow of data through the metacompiler.
 The pipeline-style architecture is very suitable for \gls{absol}, as each stage of the toolchain depends only on the output of the previous stage.
-The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.
+The high-level architecture of the metacompiler is illustrated in \autoref{fig:absol_high_level_architectural_diagram} below.\\
 
 \begin{figure}[!htb]
     \centering
@@ -51,11 +47,11 @@ Also below is an exploration of how the eventual intention for \gls{dsl} executi
 \subsection{The Metacompiler Front-End} % (fold)
 \label{sub:the_metacompiler_front_end}
 The metacompiler front-end is the harness that wraps around both Metaparse and Metaverify to allow them to interact with the world. 
-It is not truly part of the requirements for the toolchain, but would always be necessary to enable the core features to have real-world applicability. 
+It is not truly part of the requirements for the toolchain, but its existence is necessary to enable the real-world applicability of the core features.
 The front-end needed to handle the following features:
 \begin{itemize}
     \item \textbf{Command-Line Option Parsing:} The metacompiler front-end needed to be capable of parsing options given to the tool on the command line.
-    These options would be used to provide inputs to the metacompiler (such as the file to run on) and configure its behaviour. 
+    These options are used to provide inputs to the metacompiler (such as the file to run on) and configure its behaviour. 
     \item \textbf{File Loading:} The front-end also needed to be capable of loading the input language specification.
     \item \textbf{Pipeline Coordination:} The final task for the front-end was to pass data between the pipeline stages.
 \end{itemize}
@@ -78,7 +74,7 @@ The following list of options resulted:
     \item \textbf{Input Filename:} The metacompiler operates on a language specification, and so needs to be provided with the input file.
     \item \textbf{Analysis Verbosity:} An oft-encountered configuration parameter for processes with output to the command-line, being able to control the verbosity of the language analysis and error reporting process seemed useful.
     As a result, the options design included a flag to enable full reporting.
-    \item \textbf{Log File:} It seemed reasonable for users to want to output the analysis results to a log-file rather than do \mintinline{text}{stdout}.
+    \item \textbf{Log File:} It seemed reasonable for users to want to output the analysis results to a log-file rather than to \mintinline{text}{stdout}.
     This configuration parameter was intended to do exactly that, allowing the user to easily store the results of analysis of their language.
     \item \textbf{Output Directory:} Provided to serve both the log file output and any eventual build artefacts, many build tools provide the ability to specify the target directory for any output files.
     This seemed important enough for the option to be included in this list. 
@@ -189,7 +185,7 @@ For more details on why these are required for verification correctness, please 
 These preconditions can briefly be described as follows:
 \begin{itemize}
     \item All non-terminals that are \textit{used} must be \textit{defined} in scope (this may include non-terminals provided by language features).
-    \item All non-terminals must be \textit{defined only once}.
+    \item All non-terminals must be \textit{defined exactly once}.
     \item All used types must be \textit{in scope}.
     \item All used special-syntax must be \textit{in scope}. 
 \end{itemize}
@@ -207,7 +203,6 @@ It needs to record data as follows:
     \item The non-terminals \textit{used} by the language specification. 
 \end{itemize}
 
-With the parser capable of tracking this data, the verification algorithm is able to operate.
 For details of the precondition verification algorithm itself, see \autoref{ssub:the_precondition_checking_algorithm} on \autopageref{ssub:the_precondition_checking_algorithm}.
 
 % subsubsection precondition_verification_in_the_parser (end)
@@ -252,7 +247,7 @@ Simply put, this is because the verification algorithm requires some summary dat
 To rectify this, the need for a \textit{preprocessing step} was identified at the design stage. \\
 
 The role of the preprocessor is to take the full \gls{ast} that is output by Metaparse and extract the relevant data from it. 
-At a high level this means it is an algorithm (with no dependence on state) with inputs and outputs as follows:
+At a high level this means it is an algorithm with inputs and outputs as follows, and no dependence on external state:
 \begin{itemize}
     \item \textbf{Input(s):} The \gls{ast} for the input language $L$.
     \item \textbf{Output(s):} The truths defined for $L$, the start rule for $L$ and the additional language productions (non-terminals) defined for $L$. 
@@ -263,11 +258,11 @@ The algorithm is also responsible for collating these outputs in such a fashion 
 This tracking data is known to the project as a \textit{tag}, and these are described in more detail later. 
 The best algorithmic representation can thus be seen in \autoref{alg:the_verification_preprocessor_algorithm}, which assumes the existence of a number of functions as follows:
 \begin{itemize}
-    \item \textbf{findStartRule} --- This function finds the start rule in the AST and extracts it, before associating it with a tag.
-    \item \textbf{defaultTag} --- generates a default tag for the rule (see \autoref{ssub:reporting_structures} for more information).
-    \item \textbf{extractTruths} --- Finds the defined truths for the languages, and extracts a list of the associated non-terminal symbols.
+    \item \textsc{findStartRule}() --- Finds the start rule in the AST and extracts it, before associating it with a tag.
+    \item \textsc{defaultTag}() --- Generates a default tag for the rule (see \autoref{ssub:reporting_structures} for more information).
+    \item \textsc{extractTruths}() --- Finds the defined truths for the languages, and extracts a list of the associated non-terminal symbols.
     These symbols are those known to terminate.
-    \item \textbf{extractProductions} --- This function finds all productions (non-terminals) defined by the language and extracts them as pairs (Non-Terminal, Production Body). 
+    \item \textsc{extractProductions}() --- Finds all productions (non-terminals) defined by the language and extracts them as pairs (Non-Terminal, Production Body). 
 \end{itemize}
 
 \begin{algorithm}[!htb]
@@ -277,15 +272,15 @@ The best algorithmic representation can thus be seen in \autoref{alg:the_verific
 \State
 \State ast $\gets$ input
 \State
-\State $P_s \gets$ \textbf{findStartRule} 
-\State startRule $\gets$ (\textbf{defaultTag}, $P_s$)
-\State $T \gets$ \textbf{extractTruths}
-\State $P_n \gets$ \textbf{extractProductions}
+\State $P_s \gets$ \textsc{findStartRule}() 
+\State startRule $\gets$ (\textsc{defaultTag}(), $P_s$)
+\State $T \gets$ \textsc{extractTruths}()
+\State $P_n \gets$ \textsc{extractProductions}()
 \State $P \gets []$
 \Comment The empty list
 \ForAll{$(N, P_i) \in P_n$}
 \Comment Transform productions into searchable form
-    \State $P \gets (N, (\textbf{defaultTag}, P_i)) : P$
+    \State $P \gets (N, (\textsc{defaultTag}(), P_i)) : P$
     \Comment where $:$ is the list cons operator
 \EndFor
 \State
@@ -740,7 +735,7 @@ This algorithm ensures that semantics are inferred in all cases where it is \tex
 It would potentially be possible to define a set of `defaulting' rules to infer semantics in other situations.
 However, the complexity of the syntactic grammar means that in many circumstances these additional rules would infer different semantics than intended by the \gls{dsl} designer, forcing them to manually define the semantics anyway. 
 
-\begin{breakablealgorithm}
+\begin{algorithm}[!htb]
 \caption{The Semantic Inference Algorithm}
 \label{alg:the_semantic_inference_algorithm}
 \begin{algorithmic}
@@ -779,7 +774,7 @@ However, the complexity of the syntactic grammar means that in many circumstance
     \EndIf
 \EndFunction
 \end{algorithmic}
-\end{breakablealgorithm}
+\end{algorithm}
 
 % subsection semantic_inference (end)
 
@@ -811,16 +806,16 @@ This algorithm assumes the existence of the following utility functions:
     \State
     \If{\Call{isEnvironmentInputRule}{semantics}}
         \State \Return{\Call{verifyEnvironmentInputRule}{semantics, ntCounts}}
-        \Comment see \autoref{alg:environment_access_rule_verification}
+        \LineComment see \autoref{alg:environment_access_rule_verification}
     \ElsIf{\Call{isEnvironmentAccessRule}{semantics}}
         \State \Return{\Call{verifyEnvironmentAccessRule}{semantics}}
-        \Comment see \autoref{alg:environment_input_rule_verification}
+        \LineComment see \autoref{alg:environment_input_rule_verification}
     \ElsIf{\Call{isSpecialSyntaxRule}{semantics}}
         \State \Return{\Call{verifySpecialSyntaxRule}{semantics, ntCounts}}
-        \Comment see \autoref{alg:special_syntax_rule_verification}
+        \LineComment see \autoref{alg:special_syntax_rule_verification}
     \ElsIf{\Call{isSemanticEvaluationRuleList}{semantics}}
         \State \Return{\Call{verifySemanticRuleList}{semantics, ntCounts}}
-        \Comment see \autoref{alg:user_defined_semantic_form_verification}
+        \LineComment see \autoref{alg:user_defined_semantic_form_verification}
     \EndIf
 \EndFunction
 \State
@@ -965,6 +960,7 @@ This two-stage process is illustrated in \autoref{alg:verification_of_the_semant
     \State subTermsExist $\gets$ \Map{\Call{isValid}{ntCounts}}{ntIndexPairs}
     % TODO fix partial application above (wrong arg location)
     \State subTermsTerminate $\gets$ \Map{\Call{verifyNonTerminal}{}}{ntIndexPairs}
+    \LineComment see \autoref{alg:the_non_terminal_verification_algorithm}
     \State allSubTermsExist $\gets$ \Reduce{($\land$)}{True}{subTermsExist}
     \State allSubTermsTerminate $\gets$ \Reduce{\Call{tagPlus}{}}{Terminates}{subTermsTerminate}
     \If{allSubTermsExist}
