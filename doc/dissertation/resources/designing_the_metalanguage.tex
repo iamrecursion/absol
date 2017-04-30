@@ -2,14 +2,14 @@
 \label{cha:designing_the_metalanguage}
 As a project, \gls{absol} has had a very heavy research bent. 
 The experimental nature of the toolchain resulted in significant up-front design work and, combined with the highly theoretical nature of the language verification algorithms, this meant that language design and algorithmic development dominated the time spent on the project.
-This section aims to illustrate the significant design work that was put into the first of the two main project components: the metalanguage --- \gls{metaspec}. \\
+This section aims to illustrate the comprehensive design work that was put into the first of the two main project components: the metalanguage --- \gls{metaspec}. \\
 
 \gls{metaspec} is the metalanguage for the \gls{absol} project, allowing the language designers to specify both the syntax and semantics of their DSL, as well as associated metadata, in a unified form. 
 The final syntax for Metaspec is the result of significant design work, and consequentially the syntax discussed below has been through some evolution. \\
 
 Metaspec is, in itself, a \gls{dsl}, and hence its design process was an interesting insight into how people might use the language to design their own \glspl{dsl}. 
 The complete grammar for Metaspec can be found in Appendix~\ref{cha:the_metaspec_grammar}, and is written in standard \gls{ebnf} notation. 
-The same notation will be used throughout this section of the document. 
+The same notation will be used throughout this section of the document when referring to the metaspec grammar itself.
 
 \section{The Top-Level Definitions} % (fold)
 \label{sec:the_top_level_definitions}
@@ -42,8 +42,8 @@ metaspec-defblock =
 \label{lst:top_level_metaspec_definition_blocks}
 \end{listing}
 
-Placing the metadata fields first was a natural way to provide some initial context as to the language and version, and also assists with at-a-glance determining the language version in a \gls{vcs}.
-As the extensions import list, the \mintinline{text}{using-defblock}, can contain dependencies of the other two blocks, it made a significant amount of sense to put this next, as it aids in establishing context for the next two blocks.\\
+Placing the metadata fields first was a natural way to provide some initial context as to the language and version, and also assists with at-a-glance checking the language version in a \gls{vcs}.
+As the extensions import list, the \mintinline{text}{using-defblock}, can contain dependencies of the final two blocks, it made a significant amount of sense to put this next, as it aids in establishing context for the following blocks.\\
 
 The ordering of the termination truths (\mintinline{text}{truths-defblock}) and the language definition itself (\mintinline{text}{language-defblock}) was similarly natural. 
 While the truths are mainly depended upon by the termination proof mechanism (see \autoref{sub:metaverify_the_verification_engine}), they can also act as a guide to the language designer to indicate where they will be required to provide semantics for a language production. 
@@ -51,7 +51,7 @@ This quite clearly indicates that the termination truths should come before the 
 
 While one might argue for the separation of these top-level elements, particularly the metadata, into multiple files, it seems far more natural to combine them all under one umbrella.
 This means that each language definition is a self-contained unit with all the context required to understand it. 
-While this single-file requirement does mean that definitions for large DSL could become unwieldy, taking a single-file approach significantly simplifies implementation.\\
+While this single-file requirement does mean that definitions for large DSL could become unwieldy, taking a single-file approach significantly simplifies the metacompiler implementation.\\
 
 Each of these top-level blocks have fairly distinct forms, and each was designed very carefully to aid the language designer's understanding of the file.
 While it is not worth dwelling on their design, the most important design decisions should be noted.
@@ -88,7 +88,7 @@ using-defblock =
     The semantics of each truth can be understood as meaning ``this evaluation always terminates''.
     While it was initially thought that these could be generated automatically, doing so would have removed significant language flexibility, as much of said flexibility comes from the users specifying semantics exactly as they require. 
     To this end, users specify the termination cases for all symbols, even those they did not define.
-    The format for doing so is taken almost directly from the language semantics (see \autoref{sec:specifying_the_language_semantics}) to allow for easy visual matching during language design, as can be seen in \autoref{lst:the_truths_definition_block}.
+    The format for doing so is taken almost directly from the language semantics (see \autoref{sec:specifying_the_language_semantics}) to allow for easy visual identification during language design, as can be seen in \autoref{lst:the_truths_definition_block}.
 \begin{listing}[!htb]
 \begin{minted}[xleftmargin=1cm, firstnumber=182]{text}
 truths-defblock =
@@ -272,7 +272,7 @@ The following sections aim to explain the design process that the syntax for the
 \subsection{Accessing Syntax from the Semantics} % (fold)
 \label{sub:accessing_syntax_from_the_semantics}
 One of the first things to notice about the form of a big-step operational semantics rule (see \autoref{eq:example_of_big_step_operational_semantics_if} for an example) is that the sub-evaluations (those above the evaluation line) usually contain sub-terms of the main expression (below the line).
-It should be noted that, in general, these sub-evaluations do not \textit{have} to be purely sub-terms of the main expression. 
+It should be noted that, in the general, non-metaspec case, these sub-evaluations do not \textit{have} to be purely sub-terms of the main expression. 
 
 \begin{equation}
     [\text{if}] : \frac{\langle S_1, s \rangle \to s'}{\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s\rangle \to s'} \text{ if } \mathbb{B}\llbracket b \rrbracket s = \text{true}
@@ -343,13 +343,13 @@ These semantic rules form core of languages written in \gls{metaspec}, as they p
 A big-step operational rule such as the one seen in \autoref{eq:a_basic_big_step_operational_semantics_rule} can be broken down into a number of components:
 \begin{itemize}
     \item \textbf{The Primary Expression:} \label{item:the_primary_expression} This is the portion of the syntax to be evaluated below the line, to the left of the evaluation arrow.
-    Here, this is $\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s \rangle$.
+    Here, this is: $\langle \text{if } b \text{ then } S_1 \text{ else } S_2, s \rangle$.
     \item \textbf{The Evaluation Result:} The result of evaluating the primary expression, this is found to the right of the evaluation arrow below the line.
-    Here it is $s'$. 
+    Here it is: $s'$. 
     \item \textbf{The Restriction:} A restriction placed on the evaluation of this rule, such that the rule is only evaluated if the restriction holds. 
-    Here, this is $\text{ if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true}$.
+    Here, this is: $\text{if } \mathbb{B}\llbracket b \rrbracket s = \textit{ true}$.
     \item \textbf{The Sub-Evaluation:} A specification of how each component of the primary expression is evaluated, located above the line.
-    Here, this is $\langle S_1, s \rangle \to s'$. 
+    Here, this is: $\langle S_1, s \rangle \to s'$. 
 \end{itemize}
 
 There are further components that are not indicated in such a rule. 
@@ -363,7 +363,7 @@ Consider the rule shown in \autoref{eq:an_alternate_big_step_operational_semanti
 This exhibits an additional set of components as follows:
 \begin{itemize}
     \item \textbf{The Semantic Evaluation:} This is a portion of the rule that specifies how the result of the semantics is calculated, located to the right of the evaluation rule. 
-    Here, it is $n = n_1 + n_2$.
+    Here, it is: $n = n_1 + n_2$.
     \item \textbf{Multiple Sub-Evaluations:} This rule also illustrates that it is possible to have multiple sub-evaluations taking place as part of a given semantic rule. 
     The importance of this is the \textit{order} in which they are executed, as this may impact the results of computations.
     While this importance is not necessarily apparent at the level of a semantic specification, it becomes important when generating execution semantics from the definition. 
@@ -397,11 +397,6 @@ To this end, the portions of the semantic rules discussed in \autoref{ssub:exami
     As there can be multiple of these, they are given as a list.
 \end{enumerate}
 
-It is apparent at this point that the \textit{primary expression} identified on \autopageref{item:the_primary_expression} appears to have been ignored.
-While it was initially included as a component in the semantic rule it was quickly noticed that the syntax of the language production itself suffices as the primary expression.
-It was hence omitted from the semantics directly, with the syntax accesses (see \autoref{sub:accessing_syntax_from_the_semantics}) sufficing to combine the two. 
-The final basic form of the syntax for these semantic rules can be seen in \autoref{lst:the_semantic_evaluation_rule_grammar}.
-
 \begin{listing}[!htb]
 \begin{minted}[firstnumber=314]{text}
 semantic-evaluation-rule = 
@@ -416,6 +411,11 @@ semantic-evaluation-rule =
 \caption{The Semantic Evaluation Rule Grammar}
 \label{lst:the_semantic_evaluation_rule_grammar}
 \end{listing}
+
+It is apparent at this point that the \textit{primary expression} identified on \autopageref{item:the_primary_expression} appears to have been ignored.
+While it was initially included as a component in the semantic rule it was quickly noticed that the syntax of the language production itself suffices as the primary expression.
+It was hence omitted from the semantics directly, with the syntax accesses (see \autoref{sub:accessing_syntax_from_the_semantics}) sufficing to combine the two. 
+The final basic form of the syntax for these semantic rules can be seen in \autoref{lst:the_semantic_evaluation_rule_grammar}.\\
 
 Combining these elements provides the form for a single evaluation rule.
 A single rule is, however, not sufficient to represent a defined set of semantics for a given production. 
@@ -447,7 +447,7 @@ These rules have a special case for illustrative purposes.
 \begin{align}
     [\string^] &: \frac{\la A_2, s_0 \ra \to \la n_2, s_1 \ra}
     {\la A_1 \string^ A_2, s_0 \ra \to \la n, s_1 \ra} n = 1 \text{ where } n_2 == 0 \label{eq:big_step_exponentiation_special_case} \\
-    [\string^] &: \frac{\la A_2, s_0 \ra \to \la n_2, s_1 \ra \la A_1, s_1 \ra \to \la n_1, s_2 \ra}{\la A_1 \string^ A_2, s_0 \ra \to \la n, s_2 \ra} n = n_1^{n_2} \label{eq:big_step_exponentiation_base_case}
+    [\string^] &: \frac{\la A_2, s_0 \ra \to \la n_2, s_1 \ra \;\;\; \la A_1, s_1 \ra \to \la n_1, s_2 \ra}{\la A_1 \string^ A_2, s_0 \ra \to \la n, s_2 \ra} n = n_1^{n_2} \label{eq:big_step_exponentiation_base_case}
 \end{align}
 
 Working through the special-case rule in \autoref{eq:big_step_exponentiation_special_case} it is possible to compose the equivalent \gls{metaspec} expression as follows (assuming types and that $A_1, A_2$ are the same non-terminal): 
@@ -499,10 +499,12 @@ Much like the big-step operational semantics from which they are derived, the ev
 
 As a result, it is important to formalise the evaluation semantics of the metaspec expressions. 
 A metaspec semantic rule is evaluated according to the algorithm given in \autoref{alg:metaspec_semantic_evaluation_algorithm}, taking an alternation of metaspec semantic rules as input.
-Assume that \textbf{evaluate} is a function that evaluates the provided evaluation or computation, and that \textbf{checkRestriction} is a function that returns true if the restrictions are all true.
+Assume that \textsc{evaluate} is a function that evaluates the provided evaluation or computation, and that \textsc{checkRestriction} is a function that returns true if the restrictions are all true.
 With formalised execution order, this ensures that the \gls{dsl} creators are provided with full control over the execution semantics of their language.
 
-\begin{algorithm}
+\begin{breakablealgorithm}
+\caption{Metaspec Semantic Evaluation Algorithm}
+\label{alg:metaspec_semantic_evaluation_algorithm}
 \begin{algorithmic}
 \State rules $\gets$ the alternation of semantic rules
 \State
@@ -515,9 +517,9 @@ With formalised execution order, this ensures that the \gls{dsl} creators are pr
         \State \textbf{evaluate}(eval)
     \EndFor
     \State
-    \If{\textbf{checkRestrictions}(restrictions)}
+    \If{\Call{checkRestrictions}{restrictions}}
         \ForAll {computation $\in$ computations}
-            \State \textbf{evaluate}(computation)
+            \State \Call{evaluate}{computation}
             \Comment Order of evaluation enforced (see \autopageref{ssub:verifying_the_evaluation_criterion})
         \EndFor
         \State
@@ -528,9 +530,7 @@ With formalised execution order, this ensures that the \gls{dsl} creators are pr
     \EndIf
 \EndFor
 \end{algorithmic}
-\caption{Metaspec Semantic Evaluation Algorithm}
-\label{alg:metaspec_semantic_evaluation_algorithm}
-\end{algorithm}
+\end{breakablealgorithm}
 
 % subsubsection the_final_form_of_the_user_defined_semantics (end)
 
@@ -571,8 +571,8 @@ They are described by the \gls{ebnf} expression in \autoref{lst:semantic_special
 
 These \glspl{ssr} can occur inside the user-defined semantics (\autoref{sub:user_defined_semantics}) as they can provide useful functionality for defining the semantics of more complex expressions.
 In allowing them to be nested in such expressions, it removes the need to indirect through another non-terminal where these might occur. 
-This brings no additional complexity to the proof mechanism, but makes removes the potential for complexity in the language specification.
-This is likely to reduce the potential for bugs somewhat. 
+This brings no additional complexity to the proof mechanism and brings the potential for additional simplicity to the language specification.
+This is likely to somewhat reduce the potential for bugs. 
 
 % subsubsection semantic_special_syntax (end)
 
@@ -637,7 +637,7 @@ environment-access-rule =
 
 \section{Combining Syntax and Semantics} % (fold)
 \label{sec:combining_syntax_and_semantics}
-With a robust metasyntactic format for both syntax and semantics in \gls{metaspec}, the remaining design challenge of the metalanguage was to combine the two. 
+With a robust metasyntactic format for both syntax and semantics in \gls{metaspec}, the remaining challenge of the metalanguage was to combine the two. 
 This combination is crucial to the design of the language, as stated in Requirement~\reqref{req:IntegratedSyntaxandSemanticSpecification}.
 The combination of the two had to admit all of the four categories of semantic rule (see \autoref{sec:specifying_the_language_semantics}), and associate them with a syntactic production, and hence the choice of both \textit{syntax} and the \textit{combination point} was important. 
 

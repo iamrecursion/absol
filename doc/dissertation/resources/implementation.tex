@@ -1,11 +1,6 @@
-% Present an overview of the software system, and a high-level discussion of the implementation proces.
-% Reflection on the choice of languages, tooling and techniques (project management).
-% Make sure to focus on the MAIN issues with implementation.
-% Follow the same architectural ordering as the design section.
-
 \chapter{Implementation} % (fold)
 \label{cha:implementation}
-Despite its highly theoretical nature, the project also involved a significant implementation in order to provide a proof-of-concept for the theory and algorithms behind the language proof mechanism. 
+Despite its highly theoretical nature, the project also involved significant implementation work in order to provide a proof-of-concept for the theory and algorithms behind the language proof mechanism. 
 The implementation was based directly on the design work and, as mentioned at the start of \autoref{cha:architecture_and_algorithms}, it was often interleaved with the design work in an iterative process that incorporated feedback. 
 This section aims to illustrate the implementation process, methodologies and tools, as well as highlight interesting solutions to the most significant challenges faced. 
 
@@ -16,7 +11,7 @@ While the core focus of the project was assuredly on the underlying algorithms a
 In order to best support the development of a system so closely tied to its theoretical work, the recognition of the inherent interplay between the design and implementation was key. \\
 
 Implementation of \gls{absol} proceeded according to the process explored in \autoref{sub:the_development_process}, and hence the metacompiler was built in an iterative fashion.
-Much like the components outlined in the final system architecture, this resulted in well-defined phases of implementation, with each portion of the metacompiler being developed over time. 
+Much like the components outlined in the final system architecture, this resulted in well-defined phases of implementation, with each portion of the metacompiler being developed in turn over time. 
 While this methodology worked in a fairly effective fashion for producing the proof of concept, the corresponding lack of true issue tracking and other formal development methodologies led to some situations that may otherwise have been mitigated or avoided entirely.
 
 \subsection{The Development Process} % (fold)
@@ -39,7 +34,7 @@ It is best described as follows:
     \item \textbf{Design the Component:} Create a design for that system component (as illustrated in \autoref{cha:architecture_and_algorithms}), or refine the existing component design.
     \item \textbf{Develop the Component:} Provide a concrete implementation for the system component.
     During the process of this implementation it was expected that additional improvements would be made to the design as the implementation could also act as a discovery and idea generation process.
-    These design improvements interacted iteratively with 
+    These design improvements were interleaved with the development process. 
     \item \textbf{Refine the Component:} Once the component is in a reasonable state, perform iteration on the component without altering its design.
     This process involved editing code for clarity, refining API boundaries and other general refactoring tasks such as the addition or clarification of comments. 
     It aimed to improve the code product without altering its functionality.
@@ -82,8 +77,8 @@ The development of \gls{absol} did not make use of such software as it was initi
 \subsubsection{Reflecting on the Choice of Haskell} % (fold)
 \label{ssub:reflecting_on_the_choice_of_haskell}
 As the entire project was implemented in Haskell there has been significant time to reflect on this choice of language for the development of \gls{absol}.
-Broadly, the choice of Haskell has been an immensely positive one for the project as a whole, and it is unlikely that any other language would have provided the same combination of features that made this implementation so smooth.
-This can be attributed to the following reasons:
+The choice of Haskell has been an immensely positive one for the project as a whole, and it is unlikely that any other language would have provided the same combination of features that made this implementation process so smooth.
+This can be attributed to the following language capabilities:
 \begin{itemize}
     \item \textbf{Robust Parsing Support:} Haskell's Monadic effects system provides a robust framework for the building of parsers and parsing libraries. 
     This meant that building the parser for \gls{metaspec} was a greatly simplified task than it would have been in another language, further improved by the existence of Megaparsec (see \autoref{sub:megaparsec_improved_parsing}). 
@@ -94,7 +89,7 @@ This can be attributed to the following reasons:
     \item \textbf{Language Familiarity:} The benefits of being familiar with the implementation language cannot be overstated. 
     Having a high-degree of experience with the language, combined with the suitability of the language for the problem, ensured that development was a mostly smooth experience. 
     \item \textbf{Laziness:} Haskell is, by default, a lazy language.
-    This means that the creation of computations builds a series of `thunks' that are only evaluated when they are actually required.
+    This means that the creation of computations builds a series of `thunks' (also known as `promises') that are only evaluated when they are actually required.
     This enabled a very expressive style of programming without concerns for performance as long pipelines of data transformations could be built up but later collapsed via lazy optimisation for evaluation.
     This meant that code could be written in the clearest fashion without concern for incurring significant performance penalties, particularly beneficial given that this project did not focus on metacompiler performance at all.
 \end{itemize}
@@ -116,7 +111,7 @@ It is, nevertheless, certain that Haskell was the best choice for the developmen
 
 \subsection{Benefits of the Implementation Process} % (fold)
 \label{sub:benefits_of_the_implementation_process}
-Overall, the implementation process chosen for the development of \gls{absol} turned out to be more helpful than a hindrance. 
+Overall, the implementation process chosen for the development of \gls{absol} turned out to be more a help than a hindrance. 
 The flexibility of the development process ensured that it was able to work within the project's often random time constraints, rather than trying to force development effort into a predefined schedule.
 Additionally, the close interplay between design and implementation ensured that improvements that derived from the development process and concrete implementation were incorporated back into the system and algorithmic design. \\
 
@@ -127,10 +122,10 @@ The development in Haskell ensured that the resultant code was clear, and was we
 
 \subsection{Downsides of the Implementation Process} % (fold)
 \label{sub:downsides_of_the_implementation_process}
-However, in hindsight, there are some elements of the implementation process that could have seen significant improvement with more forethought. 
+In hindsight, however, there are some elements of the implementation process that could have seen improvement with more forethought. 
 One of the most pressing issues that occurred during development was the methodology for tracking bugs and missing features. \\
 
-Due to the lack of a formal process, this also meant that the project did not employ any formalised project planning and management tools such as JIRA or Pivotal Tracker (both issue trackers).
+The lack of a formal process meant that the project did not employ any formalised project planning and management tools such as JIRA or Pivotal Tracker (both issue trackers).
 While these would not have been used for planning work allotments, they would have been invaluable for maintaining a list of issues with the project, and things yet to be implemented, even as the project evolved.
 Instead, the project made use of the designs as lists of features, which led to features being forgotten about on multiple occasions.
 This was augmented through the use of \mintinline{text}{-- TODO} comments throughout the project codebase.
@@ -147,7 +142,7 @@ These issues also illustrated the downside of not scheduling work, as doing so w
 \section{Building the Metacompiler Front-End} % (fold)
 \label{sec:building_the_metacompiler_front_end}
 The metacompiler front-end was the first component that saw any implementation work as part of the project. 
-The front end, as per the design is responsible for parsing the command-line options, loading the metaspec file and coordinating the metacompiler pipeline.
+As per its design, it is responsible for parsing the command-line options, loading the metaspec file and coordinating the metacompiler pipeline.
 There were few challenges during the implementation of this stage, and it proceeded smoothly.
 The metacompiler front end is contained within the files listed in the appropriate portion of Appendix~\ref{cha:software_readme}.\\
 
@@ -201,7 +196,7 @@ case P.parseMetaspecFile filename contents of
 \subsection{Parsing the Command-Line Options} % (fold)
 \label{sub:parsing_the_command_line_options}
 The major implementation challenge of the metacompiler front-end was to determine the most appropriate method to parse the command-line options.
-Haskell provides some native facilities for doing so, but these are clunky, requiring the developer to manually specify help text and other facilities expected of a \gls{cli} program.
+Haskell provides some native facilities for doing so, but these are inelegant, requiring the developer to manually specify help text and other facilities expected of a \gls{cli} program.
 Instead the choice was made to employ \mintinline{text}{optparse-applicative}, a library that provides an declarative interface to the building of command-line options \citep{optparse_applicative}.\\
 
 Building the command-line options in this fashion is an intuitive process, removing much of the challenge from their implementation. 
@@ -230,7 +225,7 @@ The list of implemented options was taken directly from the design, and hence ma
 These functions are then combined through sequential application (\mintinline{haskell}{<*>}) to form a parser for the command-line options.
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=103]{haskell}
+\begin{minted}[firstnumber=103, fontsize=\blockfont]{haskell}
 parseLangName :: Parser CmdString
 parseLangName = optional $ option str (
         short 'n' <>
@@ -252,9 +247,9 @@ parseLangName = optional $ option str (
 \label{sec:building_the_lexer_and_parser}
 Without the language \gls{ast} it would be impossible to reliably develop the verification algorithm so, mostly out of necessity, Metaparse itself was the next system component to be implemented. 
 The implementation of Metaparse involved multiple phases of implementation, each of which posed its own unique challenge
-The first was the creation of the AST data-types, which proved to be an exercise in definition rules for Haskell types.
+The first was the creation of the AST data-types, which proved to be an exercise in negotiating the definition rules for Haskell types.
 This was promptly followed by the development of the parser and its rapid evolution to support precondition verification.
-The files referenced 
+The files referenced can be located as described in \autoref{sec:the_project_structure}.
 
 \subsection{Creating the AST Types} % (fold)
 \label{sub:creating_the_ast_types}
@@ -326,7 +321,12 @@ spaceConsumer = L.space (void spaceChar) lineComment blockComment
 The process of developing the parser (in reality, the integrated lexer and parser) took place in two parts: development of the lexer functions, and development of the parser itself. 
 Due to the lexer functionality integrated into Megaparsec, it was trivial to create the basic set of lexer functions for parsing \gls{metaspec}. 
 These functions perform the basic job of a lexer, including the consumption of whitespace and comments (which have no semantic meaning --- see \autoref{sec:the_top_level_definitions}), and the basic parsers for lexemes and terminals of the language.
-Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.
+Some of this functionality can be seen in \autoref{lst:basic_lexer_functionality}, and is all partitioned into its own file in \mintinline{text}{Metalex.hs}.\\
+
+With the basic lexing functionality complete, and armed with the data declarations for the \gls{ast}, it was possible to start building the actual language parser. 
+This process was made much more simple than there was any reason to expect through the usage of Megaparsec, with each parsing function almost looking like a description of the corresponding portion of the grammar (in part due to the fact that \mintinline{haskell}{Parser} is an instance of \mintinline{haskell}{Alternative}. 
+The monadic nature of the parser meant that \mintinline{haskell}{do} notation could be used, allowing the sequencing of parsing operations appropriately. 
+This extreme similarity between the grammar and the parser can be quite clearly illustrated through observation of the parser code in \mintinline{text}{Metaparse.hs}, with an example given in \autoref{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}.
 
 \begin{figure}[!htb]
 \centering
@@ -357,11 +357,6 @@ syntax-primary =
 \caption{Comparing the Parser and the Grammar for Syntax Primaries}
 \label{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}
 \end{figure}
-
-With the basic lexing functionality complete, and armed with the data declarations for the \gls{ast}, it was possible to start building the actual language parser. 
-This process was made much more simple than there was any reason to expect through the usage of Megaparsec, with each parsing function almost looking like a description of the corresponding portion of the grammar (in part due to the fact that \mintinline{haskell}{Parser} is an instance of \mintinline{haskell}{Alternative}. 
-The monadic nature of the parser meant that \mintinline{haskell}{do} notation could be used, allowing the sequencing of parsing operations appropriately. 
-This extreme similarity between the grammar and the parser can be quite clearly illustrated through observation of the parser code in \mintinline{text}{Metaparse.hs}, with an example given in \autoref{lst:comparing_the_parser_and_the_grammar_for_syntax_primaries}.\\
 
 The obviously readable nature of the parsers for each of the portions of the language led to an appropriate strategy for building Metaparse.
 Starting at the language start symbol, it was possible to build the parser for each production one-by-one, stubbing out the sub-parsers as \mintinline{haskell}{undefined} and relying on the type-system to ensure correctness.
@@ -496,7 +491,11 @@ languageRule = do
 \label{ssub:keeping_the_clutter_out_of_the_parser}
 A direct transformation of the precondition checker algorithm from the pseudocode to code would have added far too much clutter to the parser, whose readability owes much to the aesthetic qualities of combinator parsing. 
 To this end, the implementation challenge emerged from the necessity to implement the precondition checks in such a way that it does not add unnecessary clutter to the parser.
-This meant removing as much of the checking functionality as possible from the parser. 
+This meant removing as much of the checking functionality as possible from the parser. \\
+
+In the final result, the intrusion is small, with much of the work factored out into functions. 
+This holds especially true for the checks that can be implemented during the parse (multiple definitions, type and special-syntax availability), which are single functions that do not interfere with the appearance of the parser.
+An example of this can be seen in \autoref{lst:precondition_verification_in_the_parser}, and it is clear that it adds very little visual clutter and hence maintains parser readability.
 
 \begin{listing}[!htb]
 \begin{minted}[firstnumber=646]{haskell}
@@ -510,10 +509,6 @@ semanticType = checkTypeDefined parser
 \label{lst:precondition_verification_in_the_parser}
 \end{listing}
 
-In the final result, the intrusion is small, with much of the work factored out into functions. 
-This holds especially true for the checks that can be implemented during the parse (multiple definitions, type and special-syntax availability), which are single functions that do not interfere with the appearance of the parser.
-An example of this can be seen in \autoref{lst:precondition_verification_in_the_parser}, and it is clear that it adds very little visual clutter and hence maintains parser readability.
-
 % subsubsection keeping_the_clutter_out_of_the_parser (end)
 
 % subsection precondition_verification (end)
@@ -524,7 +519,8 @@ An example of this can be seen in \autoref{lst:precondition_verification_in_the_
 \label{sec:building_the_verification_framework}
 Unlike the development of the parser, developing the verification framework proved to be a much more involved task. 
 Nevertheless, the availability of comprehensive algorithmic documentation (see \autoref{sec:the_core_algorithms}) ensured that it was less of a problem than would otherwise have been expected.
-This is not to say that it was without challenge, however, as providing clear implementations of these verification components, and the requirement to develop a concise method for error reporting proved most interesting.\\
+This is not to say that it was without challenge, however.
+Providing clear implementations of these verification components and the requirement to develop a concise method for error reporting proved most interesting.\\
 
 Much like Metaparse, the verification components were developed in a natural order.
 The preprocessor (\autoref{ssub:the_verification_preprocessor}) had to come first, as it provided the data upon which Metaverify itself would operate. 
@@ -731,7 +727,7 @@ modify popProductionFrame
 As part of the diagnostic information associated with the tracking of termination failures (see \autoref{sub:tracking_error_information}), the algorithm was required to provide a `trace'.
 In this context, the trace is a list of non-terminals that shows exactly where the non-termination occurs.
 If production \mintinline{text}{<a>} does not terminate due to \mintinline{text}{<b>} which itself does not terminate due to some failure on production \mintinline{text}{<c>}, the trace would show \mintinline{text}{<b> -> <c>}.
-The intent behind this is to help the \gls{dsl} designer better diagnose the issues with their language.
+The intent behind this is to help the \gls{dsl} designer better diagnose the issues with their language.\\
 
 \begin{listing}[!htb]
 \begin{minted}[firstnumber=557]{haskell}

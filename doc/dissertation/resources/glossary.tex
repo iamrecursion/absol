@@ -35,7 +35,7 @@
 \newglossaryentry{halting_problem}{
     name=Halting Problem,
     description={
-        The Halting Problem describes the problem of determining, from a description of an arbitrary computer program ($\delta$), for a Turing-Machine or equivalent, and an arbitrary input $x$ whether $\delta$ will complete execution or continue to run forever (diverge) \citep{boyer1984mechanical}. 
+        The Halting Problem describes the problem of determining, from a description of an arbitrary computer program ($\delta$), for a Turing-Machine or equivalent, and an arbitrary input $x$ whether $\delta$ will complete execution or continue to run forever (\gls{diverge}) \citep{boyer1984mechanical}. 
     }
 }
 
@@ -129,7 +129,6 @@
     text=diverge,
     description={
         A computer program is said to \textit{diverge} if it never terminates or terminates in some unintended or exceptional state.
-        (CITE)? 
     }
 }
 
@@ -204,3 +203,28 @@
 }
 
 \newacronym{gpl}{GPL}{General-Purpose Programming Language}
+
+\newglossaryentry{domain_specific_logic}{
+    name=Domain-Specific Logic,
+    text=domain-specific logic,
+    description={
+        Logic pertaining to how a system operates within its environment. 
+    }
+}
+
+\newglossaryentry{coupling}{
+    name=Coupling,
+    text=coupling,
+    description={
+        The degree of interdependence between components of a software system. 
+        High coupling is undesirable as it increases the difficulty of making changes to the system. 
+    }
+}
+
+\newglossaryentry{undecidable}{
+    name=Undecidable,
+    text=undecidable,
+    description={
+        An undecidable computer problem is one for which a yes/no answer is required, but for which there is no possible program that will always compute the correct answer. 
+    }
+}

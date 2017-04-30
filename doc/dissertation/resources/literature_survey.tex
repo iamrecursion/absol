@@ -1,15 +1,14 @@
 \chapter{Literature and Technology Survey} % (fold)
 \label{cha:literature_and_technology_survey}
-As the project has proposed the investigation and development of a toolchain for the creation of provably-correct \glspl{dsl}.
+The project has proposed the investigation and development of a toolchain for the creation of provably-correct \glspl{dsl}.
 Even with the scope constrained to the creation of \glspl{dsl} alone, such a project draws on a significant breadth of disciplines within Computer Science, necessitating a broad knowledge-base. \\
 
-This project exists at the intersection of the study of \glspl{dsl}, the development of programming languages, and formalisations of program semantics. 
+\gls{absol} exists at the intersection of the study of \glspl{dsl}, the development of programming languages, and formalisations of program semantics. 
 As such, it is important to understand the relevant work in these domains. 
 While each of these fields is large in its own right, this review aims to distil the relevant bodies of knowledge. \\
 
 This document provides a broad understanding of domain-specific languages, including their types, uses and limitations.
-Additionally, it explores the state-of-the-art methods for specifying language syntax and semantics, with an accompanying critical evaluation of these techniques.\\
-
+Additionally, it explores the state-of-the-art methods for specifying language syntax and semantics, with an accompanying critical evaluation of these techniques.
 The second portion of this review examines methods for formal program verification while identifying the limitations of these techniques as they exist today. 
 Finally, it provides an examination of techniques for automated compiler generation, and a discussion of relevant technologies to support such tasks. 
 
@@ -17,26 +16,24 @@ Finally, it provides an examination of techniques for automated compiler generat
 \label{sec:domain_specific_languages}
 \defblock{12cm}{DSL}{``A Domain-Specific Language (DSL) is a programming language or executable specification language that offers, through appropriate notations and abstractions, expressive power focused on ... a particular problem domain'' \citep{van2000domain}}
 
-While a Turing-Complete General-Purpose Programming Language (GPL) is capable of expressing any algorithm that can be executed on a standard computer, \citet{fowler2010domain} finds that it is often the case that the use of a GPL provides the wrong level of abstraction in a problem domain.
-When attempting to express domain knowledge and domain rules using a GPL, there is often a mismatch between the GPL and the knowledge to be expressed. 
-DSLs allow expression of solutions ``at the level of abstraction of the problem domain'' \citep{van2000domain}.\\
+While a Turing-Complete, General-Purpose Programming Language (GPL) is capable of expressing any algorithm that can be executed on a standard computer, \citet{fowler2010domain} finds that it is often the case that the use of a \gls{gpl} provides the wrong level of abstraction in a problem domain.
+When attempting to express domain knowledge and domain rules using a \gls{gpl}, there is often a mismatch between the \gls{gpl} and the knowledge to be expressed. 
+\glspl{dsl}, instead, allow for the expression of solutions ``at the level of abstraction of the problem domain'' \citep{van2000domain}.\\
 
-Use of a DSL allows an encoding of ``bits of important logic that [don't] fit well within [GPLs]'', allowing an expression of domain-expert knowledge at a higher level of abstraction \citep{fowler2010domain,van2000domain}. 
+Use of a \gls{dsl} allows an encoding of ``bits of important logic that [don't] fit well within [GPLs]'', allowing an expression of domain-expert knowledge at a higher level of abstraction \citep{fowler2010domain,van2000domain}. 
 This embodiment of domain knowledge was found by \citet{fowler2010domain} to ``enable a much richer communication channel'' between programmers and domain experts, allowing domain-experts to interact with the configuration and behaviour of complex software systems. \\
 
-The term `DSL' encompasses a family of languages, as discussed in Section~\ref{sub:types_of_dsls}, so the definition provided by \citet{van2000domain} at the start of this section is perhaps too restrictive. 
-DSLs encompass a wide range of programming styles, from declarative to functional, and a similarly varied set of execution models. 
-However, in all cases the ``DSLs trade generality for expressiveness in a given domain'', and so the DSL approach should be chosen to maximise that expressiveness \citep{Mernik:2005:DDL:1118890.1118892}. \\
+The term `\gls{dsl}' encompasses a family of languages, as discussed in Section~\ref{sub:types_of_dsls}, so the definition provided by \citet{van2000domain} at the start of this section is perhaps too restrictive. 
+\glspl{dsl} encompass a wide range of programming styles, from declarative to functional, and a similarly varied set of execution models. 
+However, in all cases the ``DSLs trade generality for expressiveness in a given domain'', and so the \gls{dsl} approach should be chosen to maximise that expressiveness \citep{Mernik:2005:DDL:1118890.1118892}. \\
 
 While DSLs offer significant benefits in their encapsulation of domain knowledge, there is significant challenge in creating a DSL to accurately reflect the domain. 
 \citet{fowler2010domain} states that DSLs take ``narrow parts of programming'' and make them ``easier to understand and therefore quicker to write, quicker to modify and less likely to breed bugs''. 
 Such a statement, however, is only true if the DSL has been implemented correctly, with ``a solid understanding of the domain'' \citep[pg. 1]{bosch1997domain}.\\
 
 Even with such an understanding of the domain, it is possible to make mistakes in the DSL compiler, known as an \textit{application generator}.
-Through automatic generation of such tools, this project aims to support the correct implementation of formally correct DSLs, hence avoiding the potential for mistakes in tooling. 
+Through automatic generation of such tools, this project aims to support the correct implementation of formally correct DSLs through avoiding the potential for mistakes in tooling. 
 Such constraints on the DSL make it much more difficult to make damaging mistakes in systems where the DSL is in use. 
-
-% While DSLs have multiple disadvantages (including the cost, limited availability, scoping and balance with the host language), this project deals with the support of correct use of DSLs, and through the generation of embeddable DSLs will help to constrain DSL scope. 
 
 \subsection{Types of DSLs} % (fold)
 \label{sub:types_of_dsls}
@@ -74,7 +71,7 @@ The taxonomy of \citet{Mernik:2005:DDL:1118890.1118892} conflates the execution 
     \item \textbf{Embedding:} The creation of constructs (new abstract data-types and operators) in a GPL to model a given domain.
     This is most commonly found in the form of an application library. 
     \item \textbf{Compiler Extension:} Extension of an existing compiler or interpreter with domain-specific optimisation rules (e.g. Template Haskell Optimisation Rules, as discussed in Section~\ref{sec:technological_support}).
-    \item \textbf{COTS:} Application of existing tools and notations to a new problem domain. 
+    \item \textbf{Commercial Off-The-Shelf (COTS):} Application of existing tools and notations to a new problem domain. 
     \item \textbf{Hybrid:} Any combination of the above approaches. 
 \end{itemize}
 
@@ -132,9 +129,8 @@ This is very important to the progress of this project, as it proposes to produc
 With many DSLs acting as portable stores of domain-specific logic and configuration, the impact of errors in DSL implementations is potentially exacerbated.\\
 
 In situations of reuse, an incorrectly implemented DSL will carry the same implementation flaws to everywhere that it is used.
-Resultant from this, \citet{Mernik:2005:DDL:1118890.1118892} stresses the importance of performing the domain analysis phase correctly, as the results of such an analysis may persist for a long time. \\
-
-If a DSL is going to persist for some time, it is all the more important that the domain analysis be correctly translated into the DSL implementation. 
+Resultant from this, \citet{Mernik:2005:DDL:1118890.1118892} stresses the importance of performing the domain analysis phase correctly, as the results of such an analysis may persist for a long time. 
+If a DSL is going to persist for some time, it is all the more important that the domain analysis be correctly transformed into the DSL implementation. 
 
 % subsubsection implementation_errors_in_dsls (end)
 
@@ -146,7 +142,7 @@ As a result, the paper provides a detailed analysis of these strategies. \\
 Compiled DSLs, in a general sense, is a category that encompasses any DSL that is translated directly to executable code, whether by an interpreter or compiler \citep{Mernik:2005:DDL:1118890.1118892}. 
 Building such tools from scratch allows these DSLs to match the notation of domain experts as closely as possible, significantly reducing the cognitive load required to translate domain rules into program code \citep{fowler2010domain}.
 The compiled approach allows opportunities for domain-semantics-related error reporting, rather than reporting based on the semantics of a host language.
-Furthermore, it provides opportunities for domain-specific Analysis, Verification, Optimisation, Parallelisation and Transformation (AVOPT) that are unparalleled by other approaches \citep{Mernik:2005:DDL:1118890.1118892}.\\
+Furthermore, it provides opportunities for domain-specific \gls{avopt} that are unmatched by other approaches \citep{Mernik:2005:DDL:1118890.1118892}.\\
 
 Such DSLs are not without their downsides, however, as they require significant development effort due to the requirement for a complex language processor. 
 Such processors are rarely designed with extension in mind, resulting in alterations to the DSL being difficult to achieve. 
@@ -160,7 +156,7 @@ Embedded DSLs, however, suffer significantly from suboptimal syntax and semantic
 While some languages such as Lisp/Scheme allow arbitrary syntax extensions, in most cases this can produce a confusing mismatch between the domain knowledge and its representation \citep{jennings1999verischemelog}. 
 These host language restrictions also manifest in the form of error reporting. 
 This will take place in terms of the host language constructs, causing a conceptual mismatch between the domain and the language. 
-Furthermore, \citet{Mernik:2005:DDL:1118890.1118892} suggests that the embedded approach restricts AVOPT, though there are some languages that can assist with this \citep{seefried2004optimising}.\\
+Furthermore, \citet{Mernik:2005:DDL:1118890.1118892} suggests that the embedded approach restricts \gls{avopt}, though there are some languages that can assist with this \citep{seefried2004optimising}.\\
 
 While these categories were established by \citet{van2000domain}, \citet{Mernik:2005:DDL:1118890.1118892} recognises that these approaches are less restricted than they were initially credited as being. 
 These two approaches are again corroborated by \citet{fowler2010domain}, who proposes the concepts of Internal DSLs (written in the host language and exposed via an API) and External DSLs (languages with their own semantics parsed independently of the host language). \\
@@ -174,7 +170,7 @@ Such an approach is discussed in \nameref{ssub:transpilation} below.
 \label{ssub:transpilation}
 All of these classification systems, while useful, fail to explicitly recognise an additional implementation strategy: transpilation. \\
 
-While transpiling a language can technically be classified under `hybrid' the transpilation process, as defined by \citet{Mernik:2005:DDL:1118890.1118892}, parses the source language into its Abstract Syntax Tree (AST).
+While transpiling a language can technically be classified under `hybrid' approaches, the transpilation process, as defined by \citet{Mernik:2005:DDL:1118890.1118892}, parses the source language into its Abstract Syntax Tree (AST).
 The semantics associated with the nodes in the AST are then used to generate code in the target language \citep[pg. 4]{Bouraqadi:2016:MPT:2991041.2991051}.
 This aims to totally preserve the semantics of the source language, while encapsulated in the different target language. \\
 
@@ -272,8 +268,7 @@ Various aspects of DSLs are usually ``developed in terms of specialised metalang
 These metalanguages are concerned with the specification of a property or some set of properties of the DSL such as its syntax or semantics. \\
 
 Metalanguages are used to make user-defined abstractions into first-class citizens through accurate description of the abstraction \citep{Siek:2010:GPL:1706356.1706358}.
-To this end, the project needs to create a combined notation, in itself a DSL, for the specification of both syntax and semantics of a DSL. \\
-
+To this end, the project needs to create a combined notation, in itself a DSL, for the specification of both syntax and semantics of a DSL. 
 With the field having been in development for ``more than 40 years'', there are a wide variety of metalanguages in use today for the specification of language syntax and semantics \citep{Zhang:2004:SSD:981009.981013}. 
 This section aims to explore and evaluate these techniques. 
 
@@ -353,7 +348,7 @@ These extensions can be used to specify meta-rules about the productions of the 
 \end{itemize}
 
 % subsubsection extended_backus_naur_form (end)
-
+\newpage
 \subsubsection{Abstract Syntax} % (fold)
 \label{ssub:abstract_syntax}
 \defblock{12cm}{\acrshort{ast}}{\glsdesc*{gls-ast}}
@@ -391,7 +386,7 @@ As the parser is a program that maps syntactically valid strings to an AST, prog
     f_s(\text{abstract syntax}) \mathgoesto \text{semantics}
 \end{equation}
 
-\citet{mosses1992action} defines two semantic functions to be equivalent at a given level of decomposition if two phrases of program syntax are interchangeable without altering the meaning of the program. 
+\citet{mosses1992action} defines two semantic functions to be equivalent, at a given level of decomposition, if two phrases of program syntax are interchangeable without altering the meaning of the program. 
 Consider, for example, the following Haskell code:
 \begin{lstlisting}[language=haskell]
 let x = sort(xs)

@@ -2,10 +2,10 @@
 \begin{abstract}
     With modern software seeing significant increases in its complexity, domain-specific logic is becoming more and more integrated throughout these systems. 
     As a counterpoint to this integration is the re-emergence of Domain-Specific Languages (DSLs): application-specific languages representing domain logic using domain concepts and language.
-    The increasing prevalence of these languages creates a problem however --- what happens if they go wrong?
+    The increasing prevalence of these languages creates a problem, however --- what happens if they go wrong?
     This project documents the design and development of a toolchain for the creation of provably correct DSLs, with the hope that by proving the language correct the scope for bugs in these critical pieces of infrastructure can be reduced. \\
 
-    This document details a state-of-the-art system consisting of a metalanguage for the specification of the DSL, and a metacompiler toolchain capable of verifying that specification.
+    This project details a state-of-the-art system consisting of a metalanguage for the specification of the DSL, and a metacompiler toolchain capable of verifying that specification.
     By limiting the types of programs that it can represent, it can be shown that this system allows provable correctness --- here meaning that the language is always guaranteed to terminate --- and provides a novel approach to the development of provably correct languages.
 \end{abstract}
 \end{addmargin}

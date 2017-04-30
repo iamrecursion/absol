@@ -1,13 +1,12 @@
 \chapter{Elucidation} % (fold)
 \label{cha:elucidation}
-With a broad body of work examined in the literature and technology survey (see Chapter~\ref{cha:literature_and_technology_survey}), it is necessary to consolidate this information as it applies to the project. 
+With a broad body of work examined in the literature and technology survey (see \autoref{cha:literature_and_technology_survey}), it is necessary to consolidate this information as it applies to the project. 
 This section aims to provide a concrete understanding of which portions of the research will apply directly to the project, fill in any gaps in the research and provide a high-level specification for the project as a whole.
 
 \section{A Kind of Domain-Specific Language} % (fold)
 \label{sec:a_kind_of_domain_specific_language}
 As has been previously mentioned, it is computationally infeasible (in fact being an instance of the \gls{halting_problem}) to decide whether an arbitrary programming language will terminate in all cases. 
-In order to avoid this, \gls{absol} focuses on \glspl{dsl}, and beyond that a specific type of DSL. \\
-
+In order to avoid this, \gls{absol} focuses on \glspl{dsl}, and beyond that a specific type of DSL. 
 This section aims to consolidate the breadth of information presented in the literature review to provide a concrete requirement for the type of \glspl{dsl} with which the project will be dealing. 
 
 \subsection{DSL Execution Strategy} % (fold)
@@ -32,7 +31,7 @@ The restriction does, however, mean that the kinds of programs that the language
 
 \subsection{DSL Implementation Strategy} % (fold)
 \label{sub:dsl_implementation_strategy}
-As examined by both \citet{Mernik:2005:DDL:1118890.1118892} and \citet{van2000domain}, one of the key merits of a \gls{dsl} is the ability to enable re-use of program specification. 
+As examined by both \citet{Mernik:2005:DDL:1118890.1118892} and \citet{van2000domain}, one of the key merits of a \gls{dsl} is the ability to enable re-use of program specifications. 
 As a result, \gls{absol} focuses on providing languages that multiple host languages are able to interface with. \\
 
 While it seems that the embedded approach is common due to its ease of implementation, this comes with restrictions around error reporting, and the form of the syntax. 
@@ -45,13 +44,13 @@ While it seems that the embedded approach is common due to its ease of implement
     \item While such an approach conventionally requires significant development effort, the two-stage, metacompiler-based approach taken by \gls{absol} will reduce that burden significantly.
 \end{itemize}
 
-Such an approach neatly sidesteps the issues encountered by many embedded DSLs as the user-specified syntax and semantics are not restricted by any host language, thereby avoiding suboptimal syntax or non-domain-oriented semantics, and poor error reporting.
+This approach neatly sidesteps the issues encountered by many embedded DSLs as the user-specified syntax and semantics are not restricted by any host language, thereby avoiding suboptimal syntax or non-domain-oriented semantics, and poor error reporting.
 That is not, however, to imply that there are no restrictions on the form of the syntax and semantics here, but only that these restrictions are not resultant from the choice of target language. \\
 
 This approach involves a \gls{transpilation} step, which \citet{kulkarnitranspiler} finds to provide many of the benefits of both the embedded and compiled approaches. 
 One particular benefit of such an approach, that \gls{absol} aims to use, is the ability to provide detailed domain-specific diagnostics and error messages, while utilising the power of the target language as much as possible.\\
 
-The selection of a transpilation-based approach is not without its flaws, however as, while static errors can be expressed in terms of the source language semantics, any runtime errors will still be expressed in terms of the target language's semantics. 
+The selection of a transpilation-based approach is not without its flaws, however, as while static errors can be expressed in terms of the source language semantics, any runtime errors will still be expressed in terms of the target language's semantics. 
 This semantic mismatch can be handled via \glspl{source_map}, but this requires significant additional work, and is thus considered as out of scope for this project. 
 
 % subsection dsl_implementation_strategy (end)
@@ -65,7 +64,7 @@ This means that, in addition to dealing with \gls{dsl} \textit{programs}, it fir
 In order to both constrain the things these languages can represent, and have a standard for interacting with them, \gls{absol} must define a metalanguage. \\
 
 Designing a metalanguage requires methods for specifying both the syntax and semantics of the defined language.
-Research showed that there had been little work on metalanguages to perform both tasks at once, and so the onus fell on the project to create one. 
+Research showed that there had been little work on metalanguages to perform both tasks at once, and so this became one of the major tasks of the project. 
 
 \subsection{Choosing a Syntactic Form} % (fold)
 \label{sub:choosing_a_syntactic_form}
@@ -93,7 +92,7 @@ As the semantic metalanguage needed to be both easily understood and easily writ
 
 The final choice for the main form of semantics was the natural operational semantics (see Section~\ref{ssub:operational_semantics}), as they describe how the \textit{overall computed result} for the computation is obtained.
 This frees the language designer from dealing with intermediate states, but imposes limitations on the project: they are not suitable for detailing concurrent or interleaved execution.
-In the examination of \glspl{dsl}, however, this is unlikely to be any real issue.\\
+In the examination of \glspl{dsl}, however, this is unlikely to be the cause of any real issue, with parallel execution out of scope for this project.\\
 
 However, in choosing operational semantics, the project has to deal with two main issues:
 \begin{enumerate}
@@ -104,7 +103,7 @@ However, in choosing operational semantics, the project has to deal with two mai
     While this restriction is necessary for the verification engine to operate on the semantics, this prevents representation of many useful language features.
 \end{enumerate}
 
-To this end, the final semantic format for the metalanguage must support both generic semantic evaluations, and some method of providing more complex semantic features.
+To this end, the final semantic format for the metalanguage must support both generic semantic evaluations and some method of providing more complex semantic features.
 As these features cannot be directly proved from the form of the semantics, they must be subject to generic, external proof. 
 
 % subsection choosing_a_semantic_form (end)
@@ -121,18 +120,16 @@ While proving properties of \textit{languages} is more general than proving prop
 As part of the investigation of Data and its dual Codata in Section~\ref{sub:data_and_codata}, it was found that it is possible to prove termination for well-founded general recursion over data. 
 However, this proof can only be performed at the program level, as done by Idris \citep{idris_lang}. 
 This restriction is because types are predicated on values, where none of the
-values exist at a program level. \\
-
-This means that the proof mechanism used by \gls{absol} is less general, and unable to prove that recursion between arbitrary functions terminates.
-While this \textit{does} restrict the kinds of programs that metaspec languages can represent
+values exist at the language level. 
+As a result, the proof mechanism used by \gls{absol} is less general and hence unable to prove that recursion between arbitrary functions terminates.
+This \textit{does} restrict the kinds of programs that metaspec languages can represent.
 
 % subsubsection language_vs_program_verification (end)
 
 \subsubsection{Traversal of Data} % (fold)
 \label{ssub:traversal_of_data}
 That is not to say that the result is not usable.
-While at the program level it is not possible to allow recursive function calls, it is possible to provide special-case semantics that allow for the traversal of data. \\
-
+While at the program level it is not possible to allow recursive function calls, it is possible to provide special-case semantics that allow for the traversal of data. 
 To this end, the metalanguage should ensure that all structures that it can define can be reasoned about via well-founded induction, as discussed in Section~\ref{sub:proving_termination}. 
 As long as the language (and proof engine) enforce the rules given in the literature survey it is then possible to show that all possible programs that can be represented in the language terminate.\\
 
@@ -155,16 +152,15 @@ The project consists of two main components:
 
 \subsection{The Requirements Generation Process} % (fold)
 \label{sub:the_requirements_generation_process}
-As this is a research project with a heavy software component, the requirements elicitation process is far less formal than for a purely software project.\\
-
-As there are no stakeholders beyond those working on the project, the requirements in the following section were mostly generated from a vision of what an ideal DSL toolchain would look like. 
-The requirements engineering process can be summarised in brief as follows:
+As this is a research project with a heavy software component, the requirements elicitation process is far less formal than for a purely software project.
+With no stakeholders beyond those working on the project, the requirements in the following section were mostly generated from a vision of what an ideal DSL toolchain would look like. 
+The requirements engineering process can be summarised, in brief, as follows:
 \begin{enumerate}
     \item \textbf{Scenario Examination:} The informal but informed discussion of scenarios where such a toolchain might be used, inspired by the project's genesis at Bloomberg and in the wider industry.
     \item \textbf{Requirements Analysis:} Each scenario was, again informally, analysed to find what project requirements that it could generate.
 \end{enumerate}
 
-This method was selected due to the lack of any \textit{real} stakeholder, thus precluding more formal requirements analysis, and the research nature of the project, as it recognised the potentially in-flux nature as the research proceeded. 
+This method was selected due to the lack of any \textit{real} stakeholder, thus precluding more formal requirements analysis, and the research nature of the project, as it recognised the potentially in-flux nature of the project's requirements as the research proceeded. 
 
 % subsection the_requirements_generation_process (end)
 
@@ -178,14 +174,14 @@ It has the following requirements imposed upon it.\\
 }
 
 \requirement{Specify Language Semantics}{Functional}{
-    The metalanguage must provide an intuitive method for the user to specify thes language semantics in the general case, and also provide special-case semantics for things that cannot be proved by the proof mechanism.
+    The metalanguage must provide an intuitive method for the user to specify the language semantics in the general case, and also provide special-case semantics for things that cannot be shown to terminate by the proof mechanism.
 }
 
 \requirement{Semantic Typing}{Functional}{
     Language types should be enforced at the semantic level.
     The reasoning for this is twofold:
     \begin{enumerate}
-        \item DSLs often have concise and clear syntax, and cluttering this with syntax-level typing compromises this goal somewhat.
+        \item DSLs often have concise and clear syntax, and cluttering this with syntax-level typing compromises this goal.
         \item It is difficult to provide an extensible mechanism for language designers to add syntax-level typing.
     \end{enumerate}
 
@@ -217,7 +213,7 @@ It has the following requirements imposed upon it.\\
 
 \requirement{Extension Mechanisms}{Functional}{
     The metalanguage should provide a set of `language features' that can be imported into scope for use by the DSL designer. 
-    These should provide useful language constructs (e.g. non-terminals, special semantics) to aid in the construction of both syntax and semantics for the DSL.
+    These should provide useful language constructs (e.g. non-terminals, types and special semantics) to aid in the construction of both syntax and semantics for the DSL.
 }
 
 \requirement{Environment Accesses}{Functional}{
@@ -279,7 +275,7 @@ It must conform with the following set of requirements.\\
 }
 
 \requirement{Defer Typechecking}{Functional}{
-    The metacompiler does not deal with semantic type checking, as type holes cannot be inferred at the language level. 
+    The metacompiler does not deal with semantic type checking, as type inference cannot operate properly at the language level. 
 }
 
 \requirement{Prevention of Arbitrary Recursion}{Functional}{
@@ -329,8 +325,7 @@ As mentioned in Section~\ref{sub:requirements_for_the_metacompiler} this doesn't
 \subsubsection{Evaluating the Requirements Specification} % (fold)
 \label{ssub:evaluating_the_requirements_specification}
 The requirements contained in Sections~\ref{sub:requirements_for_the_metalanguage} and~\ref{sub:requirements_for_the_metacompiler} provide a high-level overview of the goals that the metacompiler toolchain is expected to meet. 
-While it does not provide a high-level of detail, this is appropriate for the nature of the project.\\
-
+While it does not provide a high-level of detail, this is appropriate for the nature of the project.
 Due to the research-based focus of the project, more specific requirements would be in a state of constant flux, while these higher-level specifications are broad enough that they can remain in place for the duration of the project.
 
 % subsubsection evaluating_the_requirements_specification (end)
@@ -347,7 +342,7 @@ This section provides brief explorations of these.
 As, at the time of performing the literature survey, no decisions had been made as to the semantic representation, it was not apparent that it would be required to verify guards in the language.
 However, since the selection of operational semantics as the basic form of semantic representation, it is clear that some `guard'-style functionality is needed.
 As stated by Requirement~\reqref{req:VerifySemanticGuards}, it is crucial to ensure that a guard exists for every possible value of the guard variables: this is known as the guards being \textit{complete}. 
-If this were not the case, then it would be possible for the language to have undefined semantics in some situations.\\
+If this were not the case, then it would be possible for the language to have undefined semantics for certain values of the guard variables.\\
 
 Guards, in this sense, refer to restrictions on the values of the sub-evaluations of a rule, as can be seen in the following pair of operational semantic rules for a basic \texttt{if-then-else} expression:
 \begin{align}
@@ -369,12 +364,12 @@ There is a well-known method for solving equations with sets of constraints: lin
     A Linear Program is an optimisation problem in which the objective function is linear in the unknowns and the constraints consist of linear equalities and linear inequalities \citep{luenberger2016simplex}.
 }
 
-The set of constraints in the guard completeness problem can be viewed as constraints on the optimisation.
+The set of constraints in the guard completeness problem can be viewed as constraints on the optimisation of some function.
 Hence, the question of ``do these guards cover all possibilities' can be transformed to ``do the negations of these guards have a solution''. 
-The hope, is that the negated system does not have a solution.\\
+The hope, is that the negated system does \textit{not} have a solution.\\
 
 Solving this is known as the \textit{Feasibility Problem}, the aim of which is to determine if the region defined by the set of constraints is a bounded search space \citep{luenberger2016simplex}. 
-If the negations of the guards form a system of constraints that are not feasible, then the guards are complete over the domain. \\
+If the negations of the guards form a system of constraints that is not feasible, then the guards are complete over the domain. \\
 
 The problem, however, is slightly more complex than directly checking for feasibility, as guard conditions may be of the form $X \land Y$, which when negated is of the form $\lnot X \lor \lnot Y$ (by De-Morgan's Laws).
 This disjunction means that the problem is slightly more difficult, involving checking sets of guard conditions for being \textit{infeasible}.
@@ -387,7 +382,7 @@ Unfortunately the implementation of such a completeness checker would add signif
 This complexity was not appreciated initially due to insufficient research having been performed into the problem, and so it remained within the project scope for a significant amount of time. 
 Nevertheless, it is an important and interesting problem to be solved as part of the future work.\\
 
-This is not to imply that the guards will remain unchecked in the language, as that would admit possible non-termination due to no semantics existing for some evaluations.
+This is not to imply, however, that the guards will remain unchecked in the language, as that would admit possible non-termination due to no semantics existing for some evaluations.
 To this end, a simpler method of ensuring guard completeness must be included, even if it is one that is inelegant. 
 
 % subsubsection guard_completeness_and_project_scope (end)
@@ -399,7 +394,7 @@ To this end, a simpler method of ensuring guard completeness must be included, e
 As part of the technology survey, the availability of parsing libraries in Haskell was examined, finding that both Parsec and Happy were available (see Section~\ref{sub:language_parsing}). 
 However, research failed to identify Megaparsec, a fork of the Parsec library that retains all of its strengths while fixing a multitude of issues with the long extant library \citep{megaparsec}.\\
 
-The fixes that Megaparsec applied on top of the Parsec codebase included significant refactoring efforts, but most importantly for the project:
+The fixes that Megaparsec applied on top of the Parsec codebase included significant refactoring efforts, but the following were most important for the project:
 \begin{itemize}
     \item A greatly simplified Lexer interface, allowing for the creation of simple lexing code with ease.
     This removes the need for an external lexer such as Alex, and means that the parser code can be greatly simplified.
