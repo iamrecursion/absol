@@ -1,17 +1,7 @@
-
-
-% This section will:
-% \begin{itemize}
-%     \item Provide examples of use of the language
-%     \item Demonstrate the kinds of errors that the system will discover in your language implementation, as well as the messages that occur. 
-% \end{itemize}
-
-% Testing both interleaved and not
-
 \chapter{Testing} % (fold)
 \label{cha:testing}
 Like any well-designed piece of software, \gls{absol} underwent a significant amount of testing during its development.
-As \gls{absol} was mainly developed as an embodiment of the theoretical algorithms developed as part of the project, rather than as a software product itself, the ad-hoc testing approach seemed to prove sufficient for the context of the project.\\
+As it was mainly developed as an embodiment of the theoretical algorithms developed as part of the project, rather than as a software product itself, the ad-hoc testing approach seemed to prove sufficient for the context of the project.\\
 
 This chapter of the document aims to both outline the testing approach taken, with an examination of how it integrated with the development process.
 It also provides examples of the tests carried out with an examination of their result. 
@@ -19,15 +9,9 @@ Finally, it provides an example of a language developed in \gls{metaspec} and ve
 
 \section{The General Testing Approach} % (fold)
 \label{sec:the_general_testing_approach}
-% Discuss the brief consideration of user testing and examine why it was dismissed (due to the project state and requirement for significant expertise to utilise the system). 
-% Integrated throughout development
-% The process of testing, with an examination of the testing strategy. 
-% Why was this strategy chosen over other possible strategies.
-% Haskell's strong type safety acting as some kind of test suite, though not on parity with a dependently-typed approach. 
-
 \gls{absol} is a large software system, and like any large software system it is likely to have bugs.
 This meant that having some testing approach was paramount in order to ensure that the software operated correctly.
-With the clear need for testing, the choice to be made was as to what kind of testing.\\
+With the need for testing clear, the choice to be made was as to what kind of testing approach should be employed.\\
 
 Initial examination of the testing ecosystem in Haskell highlighted two main complementary testing approaches that could be unified by tooling.
 Both of these testing approaches could be unified under a common testing toolchain integrated with Stack in the form of Tasty \citep{tasty_haskell}. 
@@ -80,7 +64,7 @@ This late discovery of bugs often made fixing them more difficult due to the men
 In hindsight, it would have been far better to have applied the extra work required to maintain both HUnit and QuickCheck tests for \gls{absol}.
 A fully automated test suite would have acted as an efficient regression testing mechanism, and also provided other testing guarantees that would potentially have allowed more rapid feature development. 
 The HUnit-based tests would have been able to check the behaviour of the support modules and Metaverify, while sets of QuickCheck properties could have helped automate the testing of both the parser and the verification engine.
-Overall, the chosen testing strategy turned out to be a large misstep during the development of \gls{absol}.
+Overall, the chosen testing strategy turned out to be a significant misstep during the development of \gls{absol}.
 
 % subsection examining_the_testing_approach_in_hindsight (end)
 
@@ -96,7 +80,7 @@ These usually occurred either with the \textit{algorithms} underlying the metaco
 \subsection{Infinite Recursion in Mutually Recursive Productions} % (fold)
 \label{sub:infinite_recursion_in_mutually_recursive_productions}
 As mentioned in \nameref{ssub:the_implementation_influencing_design} on \autopageref{ssub:the_implementation_influencing_design}, it was not uncommon for the development process to influence the design of the underlying algorithms.
-In the particular case highlighted in the above section, the verification engine was failing to terminate for a set of mutually recursive productions specifically designed to test behaviour in this case. 
+In the particular case highlighted here, the verification engine was failing to terminate for a set of mutually recursive productions specifically designed to test behaviour in this case. 
 They are as seen in \autoref{lst:the_test_case_for_mutually_recursive_semantic_verification}, and are still visible in the metaspec test file:
 \begin{listing}[!htb]
 \begin{minted}[numbers=none, fontsize=\blockfont]{text}
@@ -113,7 +97,7 @@ They are as seen in \autoref{lst:the_test_case_for_mutually_recursive_semantic_v
 \end{listing}
 
 In this case it is obvious that the verification for \mintinline{text}{<arith-expr>} depends on the verification for \mintinline{text}{<arith-op>}, and the converse is also true. 
-This test case, was initially written into the file at the time of testing the parser itself, but once the development of user-semantic verification occurred for Metaverify, it was able to expose the issue in verifying such productions.
+This test case was initially written into the file at the time of testing the parser, but once the development of the verification for the user-specified semantics occurred in Metaverify, it was able to expose the issue in verifying such productions.
 The metacompiler was observed to hang, and using the test case contained within the testing file it was possible to diagnose the issue and implement the solution as described in the final version of the non-terminal verification algorithm (see \autoref{sub:verifier_traversal}).
 
 % subsection infinite_recursion_in_mutually_recursive_productions (end)
@@ -161,12 +145,12 @@ Incorrect Semantic Form.
 \section{Testing Error States} % (fold)
 \label{sec:testing_error_states}
 In general, the testing approach focused on establishing that each feature of the metacompiler worked as expected as it was completed. 
-The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach. \\
+The following section aims to provide some evidence of the correct functionality of \gls{absol} through an application of the standard testing approach discussed in \autoref{sec:the_general_testing_approach}. \\
 
 As Metaparse was the first system component requiring testing to be developed, initial testing focused on the correct operation of the parser.
 As discussed in \autoref{sub:metaparse_ast_generation}, the parser in \gls{absol} has two main functions:
 \begin{itemize}
-    \item Parsing the \gls{metaspec}
+    \item Parsing the \gls{metaspec} language specification.
     \item Ensuring that the preconditions are met for the verifier.
 \end{itemize}
 
@@ -180,7 +164,7 @@ Consider the introduction of the syntax error in \autoref{lst:introducing_a_synt
 The resultant error, shown in \autoref{lst:the_syntax_error_diagnostic}, correctly diagnoses what's wrong as part of the built in functionality of Megaparsec. 
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=26]{text}
+\begin{minted}[numbers=none]{text}
 <my-number> ::= <integer> | <floating ;
 \end{minted}
 \caption{Introducing a Syntax Error}
@@ -296,7 +280,7 @@ When executing the metacompiler on this file, the semantics of the language are 
 This implies that the semantic inference is working in this case. 
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=29]{text}
+\begin{minted}[numbers=none]{text}
 <arith-expr> ::= <my-number> | <arith-op> ;
 \end{minted}
 \caption{A Production with Inferred Semantics}
@@ -332,10 +316,11 @@ As shown in \autoref{lst:a_failing_special_syntax_rule}, this produces the appro
 
 \subsubsection{Testing Special-Syntax Rules} % (fold)
 \label{ssub:testing_special_syntax_rules}
-The termination of special syntax rules 
+The termination of special syntax rules depends both on the external termination proof (as seen in \autoref{sec:special_language_features}), and the termination of all the non-terminals used in the semantic rule. 
+Testing this is hence simple, introducing an error into one of the non-terminals used in the rule.
 
 \begin{listing}[!htb]
-\begin{minted}[numbers=none]{text}
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
 PRODUCTION: <ssr-fail>
 STATUS: Does not terminate.
 
@@ -368,13 +353,10 @@ Each of these individual component tests was developed individually, and so was 
 \subsubsection{Testing Sub-Term Criterion Verification} % (fold)
 \label{ssub:testing_sub_term_criterion_verification}
 The sub-term criterion states that all sub-evaluations in a rule must be strict subterms of the main body, and that the semantics of these sub-terms also terminate. 
-The implementation is a direct adaptation of the algorithm in \nameref{ssub:verifying_the_sub_term_criterion} on \autopageref{ssub:verifying_the_sub_term_criterion}, and this provides the grounds to test the implementation.\\
-
-Introducing a sub-term that does not exist in the syntax should result in an error as it is not a sub-term of the evaluated semantics.
-Introducing a bad index into the \mintinline{text}{<arith-op> production} does indeed result in an appropriate error, as seen in \autoref{lst:failing_due_to_a_non_existent_sub_term}.
+The implementation is a direct adaptation of the algorithm in \nameref{ssub:verifying_the_sub_term_criterion} on \autopageref{ssub:verifying_the_sub_term_criterion}, and this provides the grounds to test the implementation.
 
 \begin{listing}[!htb]
-\begin{minted}[numbers=none]{text}
+\begin{minted}[numbers=none, fontsize=\blockfont]{text}
 PRODUCTION: <arith-op>
 STATUS: Does not terminate.
 
@@ -386,6 +368,8 @@ Refers to non-existent subterms.
 \label{lst:failing_due_to_a_non_existent_sub_term}
 \end{listing}
 
+Introducing a sub-term that does not exist in the syntax should result in an error as it is not a sub-term of the evaluated semantics.
+Introducing a bad index into the \mintinline{text}{<arith-op> production} does indeed result in an appropriate error, as seen in \autoref{lst:failing_due_to_a_non_existent_sub_term}.
 By the same token, adapting the semantic rule to contain non-terminating productions will also cause the verification to fail.
 
 % subsubsection testing_sub_term_criterion_verification (end)
@@ -399,7 +383,7 @@ Instead, this demonstration will focus on a case where the conditions are broken
 Working from the basic, valid, test file, the evaluation on line 42 can be transformed to read as in \autoref{lst:testing_the_evaluation_criterion} to introduce a dependency on a non-existent variable \mintinline{text}{n3}.
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=42]{text}
+\begin{minted}[numbers=none]{text}
 <arith-expr> "+" <arith-expr> --> {
     number n : {n = n1 + n3}() :
         {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]}
@@ -430,7 +414,7 @@ Incorrect Semantic Form.
 \subsubsection{Testing the Guard Checking} % (fold)
 \label{ssub:testing_the_guard_checking}
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=58]{text}
+\begin{minted}[numbers=none]{text}
  <arith-expr> "^" <arith-expr> --> {
     number n : {n = 1}(n1 == 1) :
         {number n1 <= <arith-expr>[0]}, {number n2 <= <arith-expr>[1]} |
@@ -484,7 +468,7 @@ This means that it needs to be able to:
 \end{itemize}
 
 Considering all of these language design goals, another import required will be \mintinline{text}{matrix}, providing a table-like container for homogeneous data. 
-Finally, \mintinline{text}{base} should be 
+Finally, \mintinline{text}{base} should be included as it provides useful special features for the implementation of any language. 
 
 % subsection the_idea_for_the_language (end)
 
@@ -585,7 +569,7 @@ language : {
 };
 
 // Argument non-terminals can either be literals or variables
-<arg-nt> ::= <literal> | <variable-name> ;
+<arg-nt> ::= <literal> | <variable-name> | <statement> ;
 
 // These have default terminating semantics by the truths
 <literal> ::= <matrix> | <number> ;
@@ -653,6 +637,31 @@ language : {
 
 % subsection designing_the_example_language (end)
 
+\subsection{An Example Program} % (fold)
+\label{sub:an_example_program}
+Having  defined the language `spreadsheet', it remains to define an example program in this \gls{dsl} to exemplify what it is capable of.
+For the purpose of this demonstration, this program will sum all the columns in an input matrix, and then get the sum of those results. 
+It is defined in \autoref{lst:an_example_spreadsheet_program}.
+
+\begin{listing}[!htb]
+\begin{minted}[]{text}
+proc sum_matrix (matrix) {
+    // Sum down columns then across the results (rows)
+    reduce(sum, 0, reduce(sum, matrix, 1), 0)
+};
+
+fun sum (val1, val2) { val1 + val2 };
+\end{minted}
+\caption{An Example Spreadsheet Program}
+\label{lst:an_example_spreadsheet_program}
+\end{listing}
+
+This program defines a top-level procedure, with the return value being the value of the last statement. 
+It computes the sum of each column of an $m \times n$ matrix, which results in a row vector (a $1 \times n$ matrix), which is then reduced over the row dimension to compute the overall sum.
+This procedure relies on the function \mintinline{text}{sum}, which computes the sum of its two arguments. 
+
+% subsection an_example_program (end)
+
 \subsection{Reflecting on the Language Design Process} % (fold)
 \label{sub:reflecting_on_the_language_design_process}
 Overall, the process of designing this language was fairly simple.
@@ -665,13 +674,8 @@ Using the design documentation specified in \autoref{sec:special_language_featur
     \item \textbf{Metaspec Deficiencies:} It was an oversight to not allow for the definition of constants as arguments to the special-syntax forms. 
     This would allow the creation of more elegant interfaces to some of these forms, and hence a better experience for the language designer.
     An example of this is illustrated in \autoref{lst:an_alternative_definition_for_reduce_sheet}, which would allow a more fluent interface for users by using better domain terminology, rather than syntax enforced by the special syntax form. 
-    \item \textbf{Metacompiler Support:} Much like the edit-compile-test interactive development cycle when writing programs, the \gls{absol} metacompiler enables a similar kind of feedback for the people defining the \gls{dsl}.
-    During the course of developing `spreadsheet' it was quickly made apparent that this support, and the notion that the user would immediately be alerted to errors with their language definition, allowed the \gls{dsl} designer a greater ability to experiment with both syntax and semantics.
-    This liberty to experiment led to the creation of more intuitive syntax for the \gls{dsl}, but also allowed the language to remain correct.
-\end{itemize}
-
 \begin{listing}[!htb]
-\begin{minted}[numbers=none, fontsize=\blockfont]{text}
+\begin{minted}[numbers=none, fontsize=\blockfont, xleftmargin=1cm]{text}
 <reduce-sheet> ::= 
     "reduce " "(" <function-name> "," <arg-nt> "," <arg-nt> "," <dim> ")" --> {
         any n : {n = n1}(n2 == "rows") : 
@@ -690,6 +694,12 @@ Using the design documentation specified in \autoref{sec:special_language_featur
 \caption{An Alternative Definition for \texttt{<reduce-sheet>}}
 \label{lst:an_alternative_definition_for_reduce_sheet}
 \end{listing}
+
+    \item \textbf{Metacompiler Support:} Much like the edit-compile-test interactive development cycle when writing programs, the \gls{absol} metacompiler enables a similar kind of feedback for the people defining the \gls{dsl}.
+    During the course of developing `spreadsheet' it was quickly made apparent that this support, and the notion that the user would immediately be alerted to errors with their language definition, allowed the \gls{dsl} designer a greater ability to experiment with both syntax and semantics.
+    This liberty to experiment led to the creation of more intuitive syntax for the \gls{dsl}, but also allowed the language to remain correct.
+    It should be noted that, in part, this interactivity is enabled by the performance of \gls{absol}, which requires no noticeable wait on the behalf of the language designer. 
+\end{itemize}
 
 % subsection reflecting_on_the_language_design_process (end)
 

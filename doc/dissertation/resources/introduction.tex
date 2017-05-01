@@ -1,51 +1,58 @@
 \chapter{Introduction} % (fold)
 \label{cha:introduction}
+\epigraph{When asked for a formal semantics of the formal semantics Milner's head explodes.}{James Iry \citep{incomplete_iry}}
+
 Modern software systems are seeing significant increases in complexity, with everything from flight computers to business software becoming harder to develop and reason about \citep{dvorak2009nasa}.
-As these systems grow, domain-specific logic becomes integrated throughout their code, leading to increased levels of coupling and more potential for bugs.
+As these systems grow, \gls{domain_specific_logic} becomes integrated throughout their codebases, leading to increased levels of \gls{coupling} and more potential for bugs.
 With it, such a high level of coupling brings an increased risk that changes to the software cause modes of incorrect operation \citep{khawar2001developing}.\\
 
 In a world where domain-logic is crucial to many large software systems, there has been a ``significant uptick in interest'' in the use of \glspl{dsl} \citep{fowler2010domain}.
-A \gls{dsl} is a limited, application-specific language that is integrated with another software system.
-The intent is thus to encode the domain rules and logic in a fashion extending beyond the syntactic constraints of the host language, represented using domain constructs and terminology \citep{Mernik:2005:DDL:1118890.1118892}.
-Through the use of a \gls{dsl}, a software system is able to avoid the aforementioned dispersion, centralising this domain logic using a common syntax, and making them easier to both change and verify.\\
+A Domain-Specific Language (DSL) is a limited, application-specific language that is integrated with another software system.
+The intent is to encode the domain rules and logic in a fashion extending \textit{beyond} the syntactic constraints of the host language, instead representing it using domain constructs and terminology \citep{Mernik:2005:DDL:1118890.1118892}.
+Through the use of a \gls{dsl}, a software system is able to avoid the aforementioned dispersion, centralising this domain logic using a common syntax, and making this domain logic easier to both change and verify.\\
 
 However, with this increasing centralisation of such core logic comes a risk: if that logic is wrong, then the entire system is going to act incorrectly.
 So what if it were possible to ensure that the \gls{dsl} was correct?
 What if it were possible to guarantee that it would always terminate, and always compute the right result?
-\textit{This} is the inspiration for this project, this is the reason behind \gls{absol}: providing a toolchain, including a \gls{metalanguage}, \gls{metacompiler} and verification framework for the creation and formal verification of embedded, executable Domain-Specific Languages.
+\textit{This} is the inspiration for this project, this is the reason behind \gls{absol} (ABSOL): providing a toolchain, including a \gls{metalanguage}, \gls{metacompiler} and verification framework for the creation and formal verification of embedded, executable Domain-Specific Languages.
 
 \section{A Problem Worth Studying} % (fold)
 \label{sec:a_problem_worth_studying}
-\glspl{dsl} are used throughout many industries, and arguably they bring major benefits in industries where safety is most critical.
-However, it is in these very industries that they cause major problems should they go wrong.\\
+\glspl{dsl} are used throughout many industries, and they can bring major benefits in those where safety is most critical.
+However, it is in these very industries that they cause significant problems should they go wrong.\\
 
-Consider the inspiration for this project.
-During time spent at a financial technology company one team was observed to be using the \gls{gpl} OCaml for the specification of logic at runtime. 
+During time spent at a financial technology company, one team was observed to be using OCaml, a \gls{gpl}, for the specification of application logic at runtime. 
 With the vastly greater than necessary expressive power offered by this language, the potential for bugs was significantly increased \citep{subramanyam2003empirical}.
-What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml.
+What if it were possible to design a capable \gls{dsl} that could be formally verified to replace the use of OCaml?
 It would both be a \textit{much} better fit to the domain \textit{and} reduce the potential for bugs.\\
 
-It is this kind of safety-critical system with which this project is concerned with.
-The ability to provide a method for designing and verifying \glspl{dsl} in these domains would do wonders for the safety of such systems and their runtime configuration behaviour.
-While, in general, language verification is undecideable, it is the focus of the project that is its salvation.
-Through limiting the kinds of programs that these languages can represent (an onerous restriction for \gls{gpl}, but one that is acceptable for a \gls{dsl}) it becomes possible to ensure that a given language is correct.\\
+It is this kind of safety-critical system with which this project is concerned.
+The ability to provide a method for designing and verifying \glspl{dsl} in these domains would be a boon for the safety of such systems and their runtime configuration behaviour.
+While, in general, language verification is \gls{undecidable}, this project establishes it as a manageable task through limiting the kinds of programs that these languages can represent.
+While this would be an onerous restriction for \gls{gpl} it is one that is acceptable for a \gls{dsl}, and its imposition makes it possible to ensure that a given \gls{dsl} is correct.\\
 
-As a result, the project aimed to produce two main novel contributions to the state of the art of language verification:
+Correctness, however, is a slightly nebulous term. 
+In some areas it is used to mean compliance with the program's specification, while in others it means the production of the correct result.
+For the purposes of this project, a language being \textit{correct} means that its semantics are \textit{always} defined, and that all programs in the language are \textit{guaranteed to terminate}. \\
+
+The project hence aimed to produce two main novel contributions to the state of the art of language verification:
 \begin{itemize}
-    \item \textbf{A Metalanguage:} An language for the specification of both the \gls{syntax} and \gls{semantics} of the \gls{dsl}. 
-    It would allow the representation of restricted forms of semantics to ensure that it is possible to prove the language correct.
+    \item \textbf{A Metalanguage:} A language for the specification of both the \gls{syntax} and \gls{semantics} of the \gls{dsl}. 
+    It would allow the representation of restricted forms of program semantics to ensure that it is possible to prove the language correct.
     As a result, the language specification could then be verified before being used to generate a \gls{dsl} compiler. 
     \item \textbf{A Metacompiler:} A Haskell-based program that aims to generate a compiler, analysing the input language specification for correctness along the way.
     This would ensure that no bugs can be introduced in the \gls{dsl} compiler implementation as it is generated directly from specification.
 \end{itemize}
 
-While \gls{absol} never quite achieved the code-generation for the \gls{dsl} compiler, having ruled that feature as out of the project scope, it provides both the metalanguage and verification engine as robust contributions to the state of the art. 
+Later during the project it became apparent that, while useful, the code-generation step was not novel.
+As it consisted of a large amount of work, the feature was ruled out of scope.
+Nevertheless, the final metacompiler system provides both the metalanguage and verification engine as robust contributions to the state of the art. 
 
 % section a_problem_worth_studying (end)
 
 \section{Conceptualising ABSOL} % (fold)
 \label{sec:conceptualising_absol}
-The entire toolchain developed by this project is known as \acrshort{absol}, the \acrlong{absol}. 
+The entire toolchain developed by this project is known as \acrshort{absol}, the Automatic Builder for Semantically Oriented Languages. 
 This term encompasses both the metalanguage and the metacompiler, though is often used to refer to the metacompiler directly.\\
 
 The initial concept for the system was to have a metalanguage for the specification of these \glspl{dsl}, and then have a software program (the metacompiler) that would be capable of processing this specification.
@@ -63,16 +70,19 @@ At the same time, however, this also led to the generation of the \gls{dsl} comp
 \label{sec:outlining_the_dissertation}
 This document aims to provide a comprehensive overview of the design and development of \gls{absol}. 
 \begin{itemize}
-    \item It will start by providing an in-depth examination of the required background material in the form of the \nameref{cha:literature_and_technology_survey}, giving the reader a firm grounding in the theory required to understand the project as a whole.
-    \item Following from the \nameref{cha:literature_and_technology_survey}, the document will examine the context in which the project exists, drawing conclusions and forming project requirements as part of the \nameref{cha:elucidation}.
-    \item With the requirements for \gls{absol} firmly established, the document will go on to explore the process by which \gls{metaspec}, the metalanguage, came to exist in \nameref{cha:designing_the_metalanguage}.
+    \item It will start by providing an in-depth examination of the required background material in the form of the \nameref{cha:literature_and_technology_survey} on \autopageref{cha:literature_and_technology_survey}, giving the reader a firm grounding in the theory required to understand the project as a whole.
+    \item Following from the \nameref{cha:literature_and_technology_survey}, the document will examine the context in which the project exists, drawing conclusions and forming project requirements as part of the \nameref{cha:elucidation} on \autopageref{cha:elucidation}.
+    \item With the requirements for \gls{absol} firmly established, the document will go on to explore the process by which \gls{metaspec}, the metalanguage, came to exist in \nameref{cha:designing_the_metalanguage} on \autopageref{cha:designing_the_metalanguage}.
     \item With the metalanguage, a precursor to designing the toolchain itself, now established, the following chapter will examine the design of the metacompiler and the algorithms underlying the verification in detail.
-    This is \nameref{cha:architecture_and_algorithms}.
-    \item Having provided the reader with a comprehensive overview of the design work of the project, the next chapter proceeds to detail the \nameref{cha:implementation} of the metacompiler toolchain.
+    This is \nameref{cha:architecture_and_algorithms} on \autopageref{cha:architecture_and_algorithms}.
+    \item Having provided the reader with a comprehensive overview of the design work of the project, the next chapter proceeds to detail the \nameref{cha:implementation} of the metacompiler toolchain, beginning on \autopageref{cha:implementation}.
     \item Implementation complete, the document discusses the \nameref{cha:testing} process applied to the software, highlighting key results and demonstrating an application of the toolchain via an example \gls{dsl}.
-    \item Finally, the document concludes with an \nameref{cha:evaluation} of the project as a whole, highlighting the contributions to the state of the art as well as discussing the major successes and deficiencies of the project.
+    This begins on \autopageref{cha:testing}.
+    \item Finally, the document concludes with an \nameref{cha:evaluation} of the project as a whole, highlighting the contributions to the state of the art as well as discussing the major successes and deficiencies of the project. 
+    This can be found on \autopageref{cha:evaluation}.
 \end{itemize}
 
+% TBC on formality here
 This provides but a brief overview of what the reader has in store over the course of this document, so the best thing is to dive right in.
 Please, don't forget to enjoy yourself!
 

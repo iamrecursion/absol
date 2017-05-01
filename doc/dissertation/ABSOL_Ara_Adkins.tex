@@ -50,6 +50,7 @@
 \usepackage{microtype}
 \usepackage{lmodern}
 \usepackage[chapter]{minted}
+\usepackage{epigraph}
 
 \usepackage{relsize}
 
@@ -80,6 +81,7 @@
 % Some algorithm shorthand
 \newcommand{\Map}[2]{\textbf{map} #1 #2}
 \newcommand{\Reduce}[3]{\textbf{reduce} #1 #2 #3}
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
 
 \makeatletter
 \newenvironment{breakablealgorithm}
@@ -176,9 +178,9 @@
 
 \hypersetup{
     colorlinks,
-    linkcolor={blue!30!black},
-    citecolor={blue!30!black},
-    urlcolor={blue!80!black}
+    linkcolor={black},
+    citecolor={black},
+    urlcolor={black}
 }
 
 \makeatletter
@@ -233,8 +235,28 @@
     tabsize=4,
     texcomments=true,
     resetmargins=true,
+    % escapeinside=\#\#,
     % xleftmargin=\parindent
 }
+
+% \let\origthelstnumber\thelstnumber
+% \makeatletter
+% \newcommand*\Suppressnumber{%
+%   \lst@AddToHook{OnNewLine}{%
+%     \let\thelstnumber\relax%
+%      \advance\c@lstnumber-\@ne\relax%
+%     }%
+% }
+
+% \newcommand*\Reactivatenumber[1]{%
+%   \lst@AddToHook{OnNewLine}{%
+%    \let\thelstnumber\origthelstnumber%
+%    \setcounter{lstnumber}{\numexpr#1-1\relax}%
+%    %\advance\c@lstnumber\@ne\relax%
+%   }%
+% }
+
+% \makeatother
 
 \newcommand{\blockfont}{\footnotesize}
 
@@ -257,7 +279,7 @@
 
 \title{\titletext}
 \author{Ara Adkins}
-\date{Bachelor of Science, Computer Science with Honours\\The University of Bath\\\today}
+\date{Bachelor of Science, Computer Science with Honours\\The University of Bath\\2017}
 
 % Glossaries
 \makeglossaries
@@ -293,12 +315,6 @@
 \addcontentsline{toc}{chapter}{Listings}
 
 \printglossaries
-
-% TODO Proof Read
-% TODO Formatting
-% TODO Glossaries and Acronyms
-% TODO Numbering for all listings from final code
-% TODO Appendices
 
 % Acknowledgements
 \include{resources/acknowledgements}
