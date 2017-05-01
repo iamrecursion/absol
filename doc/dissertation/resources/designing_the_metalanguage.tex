@@ -123,7 +123,7 @@ language-defblock =
     The choice of the comment symbols was informed by \gls{ebnf} for the block-comment style (using \mintinline{text}{"(*"} and \mintinline{text}{"*)"}), while the line-comment style was derived from the common C-style operator (\mintinline{text}{"//"}).
     Comments are thus defined as in \autoref{lst:comments_in_metaspec} below.
 \begin{listing}[!htb]
-\begin{minted}[xleftmargin=1cm, firstnumber=156]{text}
+\begin{minted}[xleftmargin=1cm, firstnumber=149]{text}
 metaspec-comment =
     line-comment-start-symbol, { utf-8-char }, eol-symbol |
     block-comment-start-symbol, { utf-8-char }, 
@@ -398,7 +398,7 @@ To this end, the portions of the semantic rules discussed in \autoref{ssub:exami
 \end{enumerate}
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=314]{text}
+\begin{minted}[firstnumber=315]{text}
 semantic-evaluation-rule = 
     semantic-type,
     semantic-identifier,
@@ -424,7 +424,7 @@ This notion perfectly represents the concept, as only one semantic rule will eva
 This is represented in the concept of the evaluation list, as defined in \autoref{lst:the_semantic_evaluation_rule_list}.
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=310]
+\begin{minted}[firstnumber=312]
 semantic-evaluation-rule-list = 
     semantic-evaluation-rule,
     { semantic-disjunction, semantic-evaluation-rule };
@@ -553,7 +553,7 @@ Much like Haskell has \mintinline{haskell}{fmap fn s}, these pieces of special s
 As a result, the syntax was designed to look like a function call: \mintinline{text}{<ssr> "("[<arg>] {"," <arg>} ")"}.\\
 
 \begin{listing}[!htb]
-\begin{minted}[firstnumber=303, fontsize=\blockfont]{text}
+\begin{minted}[firstnumber=304, fontsize=\blockfont]{text}
 special-syntax-rule = 
     semantic-special-syntax,
     special-syntax-start,

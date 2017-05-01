@@ -164,7 +164,7 @@ This function automatically closes the file handle when an exception is thrown, 
 It made sense to wrap this primitive in another function to provide some options, which can be seen in \autoref{lst:safe_file_io_in_haskell}.
 
 \begin{listing}[!htb]
-\begin{minted}[numbers=none]{haskell}
+\begin{minted}[firstnumber=45]{haskell}
 acquireMetaspecFile :: FilePath -> (Handle -> IO a) -> IO a
 acquireMetaspecFile file = withFile file ReadMode
 \end{minted}
@@ -275,7 +275,7 @@ While this process was initially assumed to be a mostly rote translation of the 
 \begin{enumerate}
     \item \textbf{Haskell Data-Type Restrictions:} The structure of Haskell's data-type declarations precludes some kinds of recursive definition.
     To avoid these problems it is necessary to introduce indirect declarations as seen below.
-\begin{minted}[xleftmargin=1.5cm, firstnumber=181, fontsize=\blockfont]{haskell}
+\begin{minted}[xleftmargin=1cm, firstnumber=181, fontsize=\blockfont]{haskell}
 data SemanticRule
     = EnvironmentInputRule SemanticType SyntaxAccessBlock SyntaxAccessList
     | EnvironmentAccessRuleProxy EnvironmentAccessRule
@@ -284,7 +284,7 @@ data SemanticRule
     deriving (Show, Eq)
 \end{minted}
     In such cases, the actual declaration of the \gls{ast} node type has to be moved out to a different data declaration in order to be properly available elsewhere and avoid recursive definitions.
-\begin{minted}[xleftmargin=1.5cm, firstnumber=198]{haskell}
+\begin{minted}[xleftmargin=1cm, firstnumber=198]{haskell}
 data SpecialSyntaxRule = SpecialSyntaxRule
     SemanticType
     SemanticSpecialSyntax
@@ -294,7 +294,7 @@ data SpecialSyntaxRule = SpecialSyntaxRule
     \item \textbf{Production Representation:} Certain portions of the language grammar do not correspond directly to constructs that can be created in Haskell data-types.
     There are multiple parts of the \gls{metaspec} grammar that have had to be extracted appropriately, usually two-element alternations.
     This is to allow these alternations to be appropriately expressed in lists, and usually involved the \mintinline{haskell}{Either} type to provide the appropriate alternation.
-\begin{minted}[xleftmargin=1.5cm, firstnumber=198]{haskell}
+\begin{minted}[xleftmargin=1cm, firstnumber=198]{haskell}
 type AccessBlockOr a = Either SyntaxAccessBlock a
 \end{minted}
 \end{enumerate}
@@ -550,7 +550,7 @@ getDefblock xs fn = head $ filter fn xs
 \end{listing}
 
 As part of the requirements for the inputs to the verifier, they needed to provide for efficient lookups of language productions by name. 
-To this end, the resultant implementation decided to make use of \mintinline{text}{Data.Map}, a Haskell package providing a key-value store based on size-balanced binary trees (hence providing $\mathcal{O}(n \log n)$ complexity lookups) \citep{data_map}.
+To this end, the resultant implementation decided to make use of \mintinline{text}{Data.Map}, a Haskell package providing a key-value store based on size-balanced binary trees (hence providing $\mathcal{O}(\log n)$ complexity lookups) \citep{data_map}.
 This usage ensured that lookups would be efficient, but also introduced an interesting transformation issue from the \gls{ast} nodes to the map itself.
 The resultant solution, seen in \autoref{lst:building_the_productions_map} uses the generalised monad comprehensions language extension to eliminate intermediary allocations when building the map. 
 This preserved efficiency in construction by avoiding intermediary allocations.

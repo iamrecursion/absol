@@ -1473,7 +1473,7 @@ It provides the following operations as special syntax, and requires \texttt{fun
     \item \mintinline{text}{map(fn, collection)} --- This operation traverses \mintinline{text}{structure}, applying the function \mintinline{text}{fn} to each element of the structure. 
     The termination property for this is not initially obvious, but by \citet{nordstrom1988terminating}, any recursion over a finite structure will terminate as long as the the size of the structure decreases with every recursive call. 
     As a result, the function uses an implementation under the hood akin to the following for some illusory typeclass \mintinline{haskell}{Traversible}:
-\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+\begin{minted}[xleftmargin=1cm, numbers=none]{haskell}
 map :: (Traversible t) => (n -> m) -> t n -> t m
 map fn [] = []
 map fn (x:xs) = (fn x) : map fn xs 
@@ -1483,7 +1483,7 @@ map fn (x:xs) = (fn x) : map fn xs
     The function \mintinline{text}{fn} must be a binary operation taking two arguments of the type contained in structure, and it uses \mintinline{text}val} as the initial value.
     Much like for the above, the termination proof for this relies on the fact that finite recursion terminates as long as the size of the structure being recursed over decreases with each recursive call. 
     It would use an implementation akin to the following Haskell, using the same typeclass:
-\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+\begin{minted}[xleftmargin=1cm, numbers=none]{haskell}
 fold :: (Traversible t) => (a -> a -> a) -> a -> t a -> a
 fold fn value [] = value
 fold fn value (x:xs) = fold fn (fn value x) xs
@@ -1491,7 +1491,7 @@ fold fn value (x:xs) = fold fn (fn value x) xs
     In the case of a matrix, the signature is slightly different as it results in a matrix (that may be a single value) to allow for reduction across rows. 
     \item \mintinline{text}{filter(fn, collection)} --- This operation traverses \mintinline{text}{structure}, only retaining the elements for which \mintinline{text}{fn}, a predicate, returns true.
     Much like for the above, the termination proof in this case comes from the fact that the size of the structure decreases with each recursive call, as in this example implementation:
-\begin{minted}[xleftmargin=1.5cm, numbers=none]{haskell}
+\begin{minted}[xleftmargin=1cm, numbers=none]{haskell}
 filter :: (Traversible t) => (a -> Bool) -> t a -> t a
 filter pred [] = []
 filter pred (x:xs) = if pred x 

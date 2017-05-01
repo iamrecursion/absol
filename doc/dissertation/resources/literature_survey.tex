@@ -14,18 +14,18 @@ Finally, it provides an examination of techniques for automated compiler generat
 
 \section{Domain Specific Languages} % (fold)
 \label{sec:domain_specific_languages}
-\defblock{12cm}{DSL}{``A Domain-Specific Language (DSL) is a programming language or executable specification language that offers, through appropriate notations and abstractions, expressive power focused on ... a particular problem domain'' \citep{van2000domain}}
+\defblock{12cm}{DSL}{``A Domain-Specific Language (DSL) is a programming language or executable specification language that offers, through appropriate notations and abstractions, expressive power focused on ... a particular problem domain'' \citep[pg. 26]{van2000domain}}
 
 While a Turing-Complete, General-Purpose Programming Language (GPL) is capable of expressing any algorithm that can be executed on a standard computer, \citet{fowler2010domain} finds that it is often the case that the use of a \gls{gpl} provides the wrong level of abstraction in a problem domain.
 When attempting to express domain knowledge and domain rules using a \gls{gpl}, there is often a mismatch between the \gls{gpl} and the knowledge to be expressed. 
-\glspl{dsl}, instead, allow for the expression of solutions ``at the level of abstraction of the problem domain'' \citep{van2000domain}.\\
+\glspl{dsl}, instead, allow for the expression of solutions ``at the level of abstraction of the problem domain'' \citep[pg. 27]{van2000domain}.\\
 
 Use of a \gls{dsl} allows an encoding of ``bits of important logic that [don't] fit well within [GPLs]'', allowing an expression of domain-expert knowledge at a higher level of abstraction \citep{fowler2010domain,van2000domain}. 
 This embodiment of domain knowledge was found by \citet{fowler2010domain} to ``enable a much richer communication channel'' between programmers and domain experts, allowing domain-experts to interact with the configuration and behaviour of complex software systems. \\
 
 The term `\gls{dsl}' encompasses a family of languages, as discussed in Section~\ref{sub:types_of_dsls}, so the definition provided by \citet{van2000domain} at the start of this section is perhaps too restrictive. 
 \glspl{dsl} encompass a wide range of programming styles, from declarative to functional, and a similarly varied set of execution models. 
-However, in all cases the ``DSLs trade generality for expressiveness in a given domain'', and so the \gls{dsl} approach should be chosen to maximise that expressiveness \citep{Mernik:2005:DDL:1118890.1118892}. \\
+However, in all cases the ``DSLs trade generality for expressiveness in a given domain'', and so the \gls{dsl} approach should be chosen to maximise that expressiveness \citep[pg. 317]{Mernik:2005:DDL:1118890.1118892}. \\
 
 While DSLs offer significant benefits in their encapsulation of domain knowledge, there is significant challenge in creating a DSL to accurately reflect the domain. 
 \citet{fowler2010domain} states that DSLs take ``narrow parts of programming'' and make them ``easier to understand and therefore quicker to write, quicker to modify and less likely to breed bugs''. 
@@ -171,7 +171,7 @@ Such an approach is discussed in \nameref{ssub:transpilation} below.
 All of these classification systems, while useful, fail to explicitly recognise an additional implementation strategy: transpilation. \\
 
 While transpiling a language can technically be classified under `hybrid' approaches, the transpilation process, as defined by \citet{Mernik:2005:DDL:1118890.1118892}, parses the source language into its Abstract Syntax Tree (AST).
-The semantics associated with the nodes in the AST are then used to generate code in the target language \citep[pg. 4]{Bouraqadi:2016:MPT:2991041.2991051}.
+The semantics associated with the nodes in the AST are then used to generate code in the target language \citep{Bouraqadi:2016:MPT:2991041.2991051}.
 This aims to totally preserve the semantics of the source language, while encapsulated in the different target language. \\
 
 The transpilation process combines some benefits of both the compiled and embedded DSL approaches \citep{kulkarnitranspiler}.
@@ -205,7 +205,7 @@ Some of the key uses are listed below:
 \begin{itemize}
     \item A ``common text that acts both as executable software and a description that domain experts can read to understand how their ideas are represented in a system'' \citep{fowler2010domain}.
     Much of the literature focuses on DSLs as enablers of communication through defining important program concepts in terms of the domain at hand.
-    \item A form of ``end-user programming'', where domain experts are able to use programming to perform tasks or otherwise configure their tools \citep{van2000domain}.
+    \item A form of `end-user programming', where domain experts are able to use programming to perform tasks or otherwise configure their tools \citep{van2000domain}.
     \item A portable form of domain-specific rules, configuration and behaviour. 
     Such ``executable specifications'', as they are termed in \citet{fabry2015taxonomy} provide a centralised repository of domain knowledge in a form that is easy to understand and reason about. 
     \item Improving testability and allowing validation of domain logic through expression of the logic in domain concepts \citep{van2000domain}.
@@ -227,7 +227,7 @@ To that end, it is important to ensure that the resultant DSL accurately capture
 
 \subsection{Designing Domain-Specific Languages} % (fold)
 \label{sub:designing_domain_specific_languages}
-The design of DSLs can be a task that is ``sometimes error-prone and usually time-consuming'' \citep{karsai2014design}. 
+The design of DSLs can be a task that is ``sometimes error-prone and usually time-consuming'' \citep[pg. 1]{karsai2014design}. 
 This is due to the complex domain-analysis process that has to take place, elucidating the relevant domain constructs and semantics into a form ready for implementation. \\
 
 Despite this difficulty, tool support for the design of DSLs usually encompasses the implementation phase, with little support for the analysis phase. 
@@ -264,7 +264,7 @@ The choice of implementation strategy and design for a DSL should hence be made 
 
 As implementing verifiable DSLs requires formal descriptions of both the syntax and semantics of a DSL, it necessarily involves the use of one or more metalanguages. \\
 
-Various aspects of DSLs are usually ``developed in terms of specialised metalanguages'', and it is often true that these languages are DSLs themselves \citep{Mernik:2005:DDL:1118890.1118892}.
+Various aspects of DSLs are usually ``developed in terms of specialised metalanguages'', and it is often true that these languages are DSLs themselves \citep[pg. 334]{Mernik:2005:DDL:1118890.1118892}.
 These metalanguages are concerned with the specification of a property or some set of properties of the DSL such as its syntax or semantics. \\
 
 Metalanguages are used to make user-defined abstractions into first-class citizens through accurate description of the abstraction \citep{Siek:2010:GPL:1706356.1706358}.
@@ -357,7 +357,7 @@ While the EBNF definition of a programming language is sometimes referred to as 
 This is produced from a derivation tree (a tree showing the parsed result of a program expression) by removing any information only required by the parser.\\
 
 This simplification enables the abstract syntax to communicate the structure of phrases in terms of their semantics in the programming language, and the rules for producing an AST are similar to the EBNF grammar for the language \citep{slonneger1995formal}.
-However, the AST rules factor out any extraneous detail to help define the language semantics. \\
+However, the AST rules factor out extraneous detail to define the language semantics. \\
 
 Nodes in an AST denote constructs in the source code of the program, and it is abstract in the sense that the tree will not explicitly represent all elements of the original source (e.g. grouping by parentheses may be implicit). 
 This relationship between concrete and abstract syntax is defined by a relation $\textit{unparse} : \textit{AST} \mathgoesto \textit{concrete syntax}$.
@@ -521,7 +521,7 @@ An example of action semantics can be seen below \citep{Zhang:2004:SSD:981009.98
     \textbf{execute} \llbracket x := a \rrbracket = (\text{evaluate } a \textbf{ then } \text{store the primitive value in the cell bound } x)
 \end{equation}
 
-Action Semantics, however, is limited in that ``not all programming language concepts can be directly represented within action semantics'' \citep{wansbrough1997modular}. 
+Action Semantics, however, is limited in that ``not all programming language concepts can be directly represented within action semantics'' \citep[pg. 3]{wansbrough1997modular}. 
 This restriction is imposed by the set of computational constructs originally envisioned by \citet{mosses1992action}, with the system proving hard to extend.\\
 
 In the search for a more modular system, \citet{wansbrough1997modular} proposed a system called Modular Monadic Action Semantics (MMAS) based upon both Action Semantics and the earlier Modular Monadic Semantics.
@@ -650,7 +650,7 @@ Nevertheless, the notion of Total Functional Programming has interesting implica
 \section{Automating the Generation of the Compiler} % (fold)
 \label{sec:automating_the_generation_of_the_compiler}
 \defblock{10cm}{Compiler Generator}{
-    A compiler generator, or metacompiler, is ``a tool that constructs a compiler automatically, given a syntactic and semantic description of the source language'' \citep{brown1992actress}.
+    A compiler generator, or metacompiler, is ``a tool that constructs a compiler automatically, given a syntactic and semantic description of the source language'' \citep[pg. 95]{brown1992actress}.
 }
 
 The literature having established that it is possible to specify a language such that it terminates (and behaves as specified) for all programs in that language, some mechanism needs to exist for translating such programs into an executable form.
@@ -740,14 +740,14 @@ Such transformations, however, do not provide the same guarantees as the Metafro
 \subsection{Intermediate Representations} % (fold)
 \label{sub:intermediate_representations}
 Many compiler systems use an Intermediate Representation (IR).
-This is as it ``hides details about the target execution platform'', allowing semantic-level optimisation and analysis of the program code \citep{Zhao:2012:FLI:2103621.2103709}.
+This is as it ``hides details about the target execution platform'', allowing semantic-level optimisation and analysis of the program code \citep[pg. 427]{Zhao:2012:FLI:2103621.2103709}.
 It is, however, often the case that these IRs do not have well-defined formal semantics, precluding the proving of properties of programs expressed in these IRs. \\
 
 In an effort to formalise the LLVM IR, their Low-Level Virtual Machine, \citet{Zhao:2012:FLI:2103621.2103709} found that the aggressive optimisations performed by industrial strength compilers often had non-deterministic semantics.
 Such semantics preclude the proving of certain termination properties of the transformed programs, even if they use linguistic features that are terminating.
-Such optimisation issues can be seen with the Glasgow Haskell Compiler (GHC), where certain heavy optimisations alter the semantic meaning of programs (see Section~\ref{sub:issues_with_ghc}.\\
+Such optimisation issues can be seen with the Glasgow Haskell Compiler (GHC), where certain heavy optimisations alter the semantic meaning of programs (see \autoref{sub:issues_with_ghc}).\\
 
-While the use of IRs bring benefits in terms of semantic analysis and AVOPT, the complexity of such representations means that for a DSL-based project that it is unlikely to be worth employing one.
+While the use of IRs bring benefits in terms of semantic analysis and \gls{avopt}, the complexity of such representations means that for a DSL-based project that it is unlikely to be worth employing one.
 
 % subsection intermediate_representations (end)
 
@@ -758,7 +758,7 @@ While the use of IRs bring benefits in terms of semantic analysis and AVOPT, the
 A project such as this requires an implementation language with excellent support for symbolic manipulation, domain-specific optimisation, language parsing and control over program execution.
 While languages such as Lisp allow first-class syntax definitions, it has less library support for parsing, and less robust execution control due to the default eager evaluation semantics. \\
 
-Haskell, on the other hand, has robust support for metaprogramming, parsing and execution control, providing the \lstinline{seq} function to force evaluation of the default lazy semantics. 
+Haskell, on the other hand, has robust support for metaprogramming, parsing and execution control, providing the \mintinline{haskell}{seq} function to force evaluation of the default lazy semantics. 
 This makes Haskell an excellent choice for the building of modular language implementations \citep{hudak1996building}.\\
 
 Languages like Haskell and Lisp have excellent support for symbolic manipulation, and hence would be viable implementation languages for such a project. 
