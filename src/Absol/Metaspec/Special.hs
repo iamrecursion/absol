@@ -125,22 +125,22 @@ getSpecialSyntax FeatureFuncall =
 
 -- | Converts a special syntax element to their metaspec form.
 toSpecialSyntaxName :: SemanticSpecialSyntax -> String
-toSpecialSyntaxName SpecialSyntaxMap      = "map"
-toSpecialSyntaxName SpecialSyntaxFold     = "fold"
-toSpecialSyntaxName SpecialSyntaxFilter   = "filter"
-toSpecialSyntaxName SpecialSyntaxDeffun   = "deffun"
-toSpecialSyntaxName SpecialSyntaxDefproc = "callproc"
-toSpecialSyntaxName SpecialSyntaxCallfun  = "callfun"
-toSpecialSyntaxName SpecialSyntaxEnvStore = "envStore"
-toSpecialSyntaxName SpecialSyntaxEnvGet = "envGet"
+toSpecialSyntaxName SpecialSyntaxMap           = "map"
+toSpecialSyntaxName SpecialSyntaxFold          = "fold"
+toSpecialSyntaxName SpecialSyntaxFilter        = "filter"
+toSpecialSyntaxName SpecialSyntaxDeffun        = "deffun"
+toSpecialSyntaxName SpecialSyntaxDefproc       = "callproc"
+toSpecialSyntaxName SpecialSyntaxCallfun       = "callfun"
+toSpecialSyntaxName SpecialSyntaxEnvStore      = "envStore"
+toSpecialSyntaxName SpecialSyntaxEnvGet        = "envGet"
 toSpecialSyntaxName SpecialSyntaxEnvGetDefault = "envGetDefault"
-toSpecialSyntaxName SpecialSyntaxNodeLength = "nodeLength"
-toSpecialSyntaxName SpecialSyntaxCiel = "ciel"
-toSpecialSyntaxName SpecialSyntaxFloor = "floor"
-toSpecialSyntaxName SpecialSyntaxRev = "rev"
-toSpecialSyntaxName SpecialSyntaxSplit = "split"
-toSpecialSyntaxName SpecialSyntaxJoin = "join"
-toSpecialSyntaxName SpecialSyntaxSemanticsOf = "semanticsOf"
+toSpecialSyntaxName SpecialSyntaxNodeLength    = "nodeLength"
+toSpecialSyntaxName SpecialSyntaxCiel          = "ciel"
+toSpecialSyntaxName SpecialSyntaxFloor         = "floor"
+toSpecialSyntaxName SpecialSyntaxRev           = "rev"
+toSpecialSyntaxName SpecialSyntaxSplit         = "split"
+toSpecialSyntaxName SpecialSyntaxJoin          = "join"
+toSpecialSyntaxName SpecialSyntaxSemanticsOf   = "semanticsOf"
 
 -- | Checks if a given feature provides a non-terminal.
 providesNonTerminal :: NonTerminalIdentifier -> MetaspecFeature -> Bool

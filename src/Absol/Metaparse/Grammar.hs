@@ -217,7 +217,7 @@ data SemanticSpecialSyntax
     | SpecialSyntaxRev
     | SpecialSyntaxSplit
     | SpecialSyntaxJoin
-    | SpecialSyntaxSemantics
+    | SpecialSyntaxSemanticsOf
     deriving (Show, Eq)
 
 data EnvironmentAccessRule = EnvironmentAccessRule
